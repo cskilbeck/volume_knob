@@ -23,6 +23,8 @@
 #include "stm32f1xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "user.h"
+#include "rotary.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -210,7 +212,7 @@ void EXTI0_IRQHandler(void)
   {
     LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_0);
     /* USER CODE BEGIN LL_EXTI_LINE_0 */
-
+    read_encoder();
     /* USER CODE END LL_EXTI_LINE_0 */
   }
   /* USER CODE BEGIN EXTI0_IRQn 1 */
@@ -230,7 +232,7 @@ void EXTI1_IRQHandler(void)
   {
     LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_1);
     /* USER CODE BEGIN LL_EXTI_LINE_1 */
-
+    read_encoder();
     /* USER CODE END LL_EXTI_LINE_1 */
   }
   /* USER CODE BEGIN EXTI1_IRQn 1 */
@@ -272,7 +274,8 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
 void TIM2_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM2_IRQn 0 */
-
+    LL_TIM_ClearFlag_UPDATE(TIM2);
+    button_update();
   /* USER CODE END TIM2_IRQn 0 */
   /* USER CODE BEGIN TIM2_IRQn 1 */
 

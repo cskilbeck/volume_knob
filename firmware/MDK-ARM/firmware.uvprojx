@@ -139,7 +139,7 @@
           </Flash1>
           <bUseTDR>1</bUseTDR>
           <Flash2>BIN\UL2V8M.DLL</Flash2>
-          <Flash3></Flash3>
+          <Flash3>"" ()</Flash3>
           <Flash4></Flash4>
           <pFcarmOut></pFcarmOut>
           <pFcarmGrp></pFcarmGrp>
@@ -340,7 +340,7 @@
               <MiscControls>-Wno-deprecated-register</MiscControls>
               <Define>USE_FULL_LL_DRIVER,USE_HAL_DRIVER,STM32F103xB</Define>
               <Undefine></Undefine>
-              <IncludePath>../USB_DEVICE/App;../USB_DEVICE/Target;../Core/Inc;../Drivers/STM32F1xx_HAL_Driver/Inc;../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy;../Middlewares/ST/STM32_USB_Device_Library/Core/Inc;../Middlewares/ST/STM32_USB_Device_Library/Class/HID/Inc;../Drivers/CMSIS/Device/ST/STM32F1xx/Include;../Drivers/CMSIS/Include</IncludePath>
+              <IncludePath>../USB_DEVICE/App; ../USB_DEVICE/Target; ../Core/Inc; ../Drivers/STM32F1xx_HAL_Driver/Inc; ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy; ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc; ../Middlewares/ST/STM32_USB_Device_Library/Class/HID/Inc; ../Drivers/CMSIS/Device/ST/STM32F1xx/Include; ../Drivers/CMSIS/Include</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -395,6 +395,26 @@
           <GroupName>Application/User/Core</GroupName>
           <Files>
             <File>
+              <FileName>user.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\Core\Src\user.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>user.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Core\Inc\user.h</FilePath>
+            </File>
+            <File>
+              <FileName>rotary.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\Core\Src\rotary.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>rotary.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Core\Inc\rotary.h</FilePath>
+            </File>
+            <File>
               <FileName>main.c</FileName>
               <FileType>1</FileType>
               <FilePath>../Core/Src/main.c</FilePath>
@@ -408,16 +428,6 @@
               <FileName>stm32f1xx_hal_msp.c</FileName>
               <FileType>1</FileType>
               <FilePath>../Core/Src/stm32f1xx_hal_msp.c</FilePath>
-            </File>
-            <File>
-              <FileName>user.cpp</FileName>
-              <FileType>8</FileType>
-              <FilePath>..\Core\Src\user.cpp</FilePath>
-            </File>
-            <File>
-              <FileName>user.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\Core\Inc\user.h</FilePath>
             </File>
           </Files>
         </Group>
