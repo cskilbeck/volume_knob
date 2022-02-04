@@ -429,6 +429,11 @@
               <FileType>1</FileType>
               <FilePath>../Core/Src/stm32f1xx_hal_msp.c</FilePath>
             </File>
+            <File>
+              <FileName>queue.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Core\Inc\queue.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
