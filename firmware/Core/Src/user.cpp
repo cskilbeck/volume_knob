@@ -24,14 +24,14 @@ enum class event_type : uint8
 
 struct event
 {
-    uint8 key;          // set key1 to this and send usb packet
-    uint8 delay;        // wait this long to look at the next entry in the queue please
+    uint8 key;          // what to send
+    uint8 delay;        // wait this long before sending the next entry in the queue please
     event_type type;    // it's a key or a media key
     uint8 pad;
 };
 
 //////////////////////////////////////////////////////////////////////
-// keyboard event has slots for 6 keys and the modifiers (shift etc)
+// keyboard report has slots for 6 keys and the modifiers (shift etc)
 
 struct keyboard_report
 {
@@ -46,19 +46,44 @@ struct keyboard_report
 };
 
 //////////////////////////////////////////////////////////////////////
+// media keys handled differently I guess
+
+struct media_key_report
+{
+    uint8 device_id;    // set this to 2
+    uint8 key;          // media keys defined above
+    uint8 pad;          // set this to 0
+};
+
+//////////////////////////////////////////////////////////////////////
 
 extern USBD_HandleTypeDef hUsbDeviceFS;
 
-queue<event, 32> keys = { 0 };
+// queue of things to send to the usb host
+
+queue<event, 32> messages = { 0 };
+
+// usb report source buffers
+
+keyboard_report keyboard_report = { 0 };
+media_key_report media_report = { 0 };
+
+// 10KHz tick count
 
 uint32 ticks10khz = 0;
+
+// admin for waiting between messages
+
 uint32 delay_start = 0;
 uint32 delay_length = 0;
+
+// led flash admin
+
 bool led_flashing = false;
 uint32 led_flash_start = 0;
 uint32 led_flash_time = 0;
 
-keyboard_report keyboard_data = { 0 };
+// button debounce admin
 
 int button_history = 0xffff;
 bool button_state = false;
@@ -72,11 +97,11 @@ void reset_usb()
 {
     // disable usb
     USBD_DeInit(&hUsbDeviceFS);
-    
-    // set A12, A11 as outputs
-    uint32 const pins = (1<<11) | (1<<12);
 
-    LL_GPIO_InitTypeDef GPIO_InitStruct = {0};
+    // set A12, A11 as outputs
+    uint32 const pins = (1 << 11) | (1 << 12);
+
+    LL_GPIO_InitTypeDef GPIO_InitStruct = { 0 };
     GPIO_InitStruct.Pin = pins;
     GPIO_InitStruct.Mode = LL_GPIO_MODE_OUTPUT;
     GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_HIGH;
@@ -114,35 +139,35 @@ void button_update()
     ticks10khz += 1;
 
     // get current button state (0 = pressed, 1 = released)
-    
+
     int b = (GPIOA->IDR >> 7) & 1;
 
     // how much debouncing
-    
+
     int const state_count = 12;
     uint32 const state_mask = (1 << state_count) - 1;
     uint32 const press_pattern = state_mask & (~1);
     uint32 const release_pattern = state_mask >> 1;
 
     // add to record of last N states
-    
+
     button_history = ((button_history << 1) | b) & state_mask;
 
     // lots of offs followed by an on = a press
-    
+
     if(button_history == press_pattern) {
 
         button_state = true;
 
-    // or lots of ons followed by an off = a release
-        
+        // or lots of ons followed by an off = a release
+
     } else if(button_history == release_pattern) {
 
         button_state = false;
     }
 
     // then press/release admin
-    
+
     bool button_change = button_prev != button_state;
     button_prev = button_state;
     button_press = button_state && button_change;
@@ -161,7 +186,7 @@ void add_key_event(uint8 k, event_type ev_type)
 {
     // room for 2 events? (key down, key up)
 
-    if(keys.space() >= 2) {
+    if(messages.space() >= 2) {
 
         event e;
 
@@ -170,14 +195,14 @@ void add_key_event(uint8 k, event_type ev_type)
         e.key = k;
         e.delay = 10;
         e.type = ev_type;
-        keys.add(e);
-        
+        messages.add(e);
+
         // add the key up event
 
         e.key = 0;
         e.delay = 10;
         e.type = ev_type;
-        keys.add(e);
+        messages.add(e);
 
         flash_led(20);
     }
@@ -187,22 +212,28 @@ void add_key_event(uint8 k, event_type ev_type)
 
 void user_main()
 {
-    GPIOC->BSRR = 1 << 13;
-    
+    // start timer 2 for 10KHz ticker
+
     LL_TIM_EnableIT_UPDATE(TIM2);
     LL_TIM_EnableCounter(TIM2);
     LL_TIM_EnableARRPreload(TIM2);
 
+    // force usb enumeration
+
     reset_usb();
-    
-    // start timer 2 for 10KHz ticker
+
+    flash_led(100);
+
+    // main loop
 
     while(true) {
+
+        // idle until an interrupt has occurred
 
         __WFI();
 
         // nab any changes which have happened in interrupts
-        
+
         __disable_irq();
         int knob_movement = rotary_delta;
         bool button_hit = button_press;
@@ -210,34 +241,32 @@ void user_main()
         button_press = false;
         __enable_irq();
 
-        // if timer has expired
+        // if events are ready and waiting to be sent
 
-        if(!keys.empty() && (ticks10khz - delay_start) > delay_length) {
+        if(!messages.empty() && (ticks10khz - delay_start) > delay_length) {
 
             // process next key event
 
-            event e = keys.remove();
-            uint8_t report[3];
+            event e = messages.remove();
 
             switch(e.type) {
 
-            // normal keyboard up or down
+                // normal keyboard up or down
 
-            case event_type::key:
-                keyboard_data.key1 = e.key;
-                USBD_HID_SendReport(&hUsbDeviceFS, (uint8 *)&keyboard_data, sizeof(keyboard_data));
-                break;
+                case event_type::key: {
+                    keyboard_report.key1 = e.key;
+                    USBD_HID_SendReport(&hUsbDeviceFS, (uint8 *)&keyboard_report, sizeof(keyboard_report));
+                } break;
 
-            // media key up or down
+                    // media key up or down
 
-            case event_type::media:
-                report[0] = 2;
-                report[1] = e.key;
-                report[2] = 0;
-                USBD_HID_SendReport(&hUsbDeviceFS, report, 3);
-                break;
+                case event_type::media: {
+                    media_report.device_id = 2;
+                    media_report.key = e.key;
+                    USBD_HID_SendReport(&hUsbDeviceFS, (uint8 *)&media_report, sizeof(media_report));
+                } break;
             }
-            
+
             // set delay so next event is delayed by N milliseconds
 
             delay_start = ticks10khz;
@@ -245,18 +274,18 @@ void user_main()
         }
 
         // if knob was twisted, send volume up or down
-        
+
         switch(knob_movement) {
-            case -1:
-                add_key_event(KEY_MEDIA_VOL_UP, event_type::media);
-                break;
-            case 1:
-                add_key_event(KEY_MEDIA_VOL_DOWN, event_type::media);
-                break;
+        case -1:
+            add_key_event(KEY_MEDIA_VOL_UP, event_type::media);
+            break;
+        case 1:
+            add_key_event(KEY_MEDIA_VOL_DOWN, event_type::media);
+            break;
         }
 
         // if knob was pressed, send mute
-        
+
         if(button_hit) {
             add_key_event(KEY_MEDIA_MUTE, event_type::media);
         }
