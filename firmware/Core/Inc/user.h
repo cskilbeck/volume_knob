@@ -29,7 +29,7 @@ typedef unsigned int uint;
 //////////////////////////////////////////////////////////////////////
 
 void user_main();
-void button_update();
+void update_10khz();
 void update_tick();
 void reset_usb_lines();
 

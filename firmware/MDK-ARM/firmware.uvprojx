@@ -434,6 +434,11 @@
               <FileType>5</FileType>
               <FilePath>..\Core\Inc\queue.h</FilePath>
             </File>
+            <File>
+              <FileName>usbd_hid.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Middlewares\ST\STM32_USB_Device_Library\Class\HID\Inc\usbd_hid.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

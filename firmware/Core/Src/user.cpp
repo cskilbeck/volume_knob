@@ -132,9 +132,9 @@ void flash_led(int ms)
 }
 
 //////////////////////////////////////////////////////////////////////
-// call this in timer 2 isr (10KHz) to update button status
+// call this in timer 2 isr (10KHz) to update button status & led
 
-void button_update()
+void update_10khz()
 {
     ticks10khz += 1;
 
@@ -173,6 +173,8 @@ void button_update()
     button_press = button_state && button_change;
     button_release = !button_state && button_change;
 
+    // debug led flashing admin
+    
     if(led_flashing && (ticks10khz - led_flash_start) > led_flash_time) {
         GPIOC->BSRR = 1 << 13;
         led_flashing = false;
@@ -216,13 +218,12 @@ void user_main()
 
     LL_TIM_EnableIT_UPDATE(TIM2);
     LL_TIM_EnableCounter(TIM2);
-    LL_TIM_EnableARRPreload(TIM2);
+
+    flash_led(100);
 
     // force usb enumeration
 
     reset_usb();
-
-    flash_led(100);
 
     // main loop
 
@@ -253,18 +254,18 @@ void user_main()
 
                 // normal keyboard up or down
 
-                case event_type::key: {
-                    keyboard_report.key1 = e.key;
-                    USBD_HID_SendReport(&hUsbDeviceFS, (uint8 *)&keyboard_report, sizeof(keyboard_report));
-                } break;
+            case event_type::key:
+                keyboard_report.key1 = e.key;
+                USBD_HID_SendReport(&hUsbDeviceFS, (uint8 *)&keyboard_report, sizeof(keyboard_report));
+                break;
 
-                    // media key up or down
+                // media key up or down
 
-                case event_type::media: {
-                    media_report.device_id = 2;
-                    media_report.key = e.key;
-                    USBD_HID_SendReport(&hUsbDeviceFS, (uint8 *)&media_report, sizeof(media_report));
-                } break;
+            case event_type::media:
+                media_report.device_id = 2;
+                media_report.key = e.key;
+                USBD_HID_SendReport(&hUsbDeviceFS, (uint8 *)&media_report, sizeof(media_report));
+                break;
             }
 
             // set delay so next event is delayed by N milliseconds
