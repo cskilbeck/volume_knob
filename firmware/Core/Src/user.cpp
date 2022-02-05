@@ -52,7 +52,11 @@ extern USBD_HandleTypeDef hUsbDeviceFS;
 queue<event, 32> keys = { 0 };
 
 uint32 ticks10khz = 0;
-uint32 expiry = 0;
+uint32 delay_start = 0;
+uint32 delay_length = 0;
+bool led_flashing = false;
+uint32 led_flash_start = 0;
+uint32 led_flash_time = 0;
 
 keyboard_report keyboard_data = { 0 };
 
@@ -90,6 +94,16 @@ void reset_usb()
 
     // switch usb back on
     MX_USB_DEVICE_Init();
+}
+
+//////////////////////////////////////////////////////////////////////
+
+void flash_led(int ms)
+{
+    led_flash_time = ms * 10;
+    led_flash_start = ticks10khz;
+    GPIOC->BSRR = 1 << (13 + 16);
+    led_flashing = true;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -133,6 +147,11 @@ void button_update()
     button_prev = button_state;
     button_press = button_state && button_change;
     button_release = !button_state && button_change;
+
+    if(led_flashing && (ticks10khz - led_flash_start) > led_flash_time) {
+        GPIOC->BSRR = 1 << 13;
+        led_flashing = false;
+    }
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -160,9 +179,7 @@ void add_key_event(uint8 k, event_type ev_type)
         e.type = ev_type;
         keys.add(e);
 
-        // toggle debug led
-        
-        GPIOC->ODR ^= 1 << 13;
+        flash_led(20);
     }
 }
 
@@ -170,6 +187,8 @@ void add_key_event(uint8 k, event_type ev_type)
 
 void user_main()
 {
+    GPIOC->BSRR = 1 << 13;
+    
     LL_TIM_EnableIT_UPDATE(TIM2);
     LL_TIM_EnableCounter(TIM2);
     LL_TIM_EnableARRPreload(TIM2);
@@ -193,7 +212,7 @@ void user_main()
 
         // if timer has expired
 
-        if(!keys.empty() && ticks10khz > expiry) {
+        if(!keys.empty() && (ticks10khz - delay_start) > delay_length) {
 
             // process next key event
 
@@ -219,13 +238,10 @@ void user_main()
                 break;
             }
             
-            // set expiry so next event is delayed by N milliseconds
+            // set delay so next event is delayed by N milliseconds
 
-            expiry = e.delay * 10;
-
-            // reset ticker to avoid overflow hassles
-
-            ticks10khz = 0;
+            delay_start = ticks10khz;
+            delay_length = e.delay * 10;
         }
 
         // if knob was twisted, send volume up or down
