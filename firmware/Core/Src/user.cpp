@@ -199,7 +199,7 @@ void user_main()
 
     while(true) {
 
-        //__WFI();
+        __WFI();
 
         // nab any changes which have happened in interrupts
         
