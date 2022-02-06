@@ -17,3 +17,5 @@ bin/
 *.sublime-workspace
 firmware/MDK-ARM/firmware/
 firmware/*/Backup
+pcb/volume_knob/History/
+pcb/volume_knob/__Previews/

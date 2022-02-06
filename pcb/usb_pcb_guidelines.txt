@@ -1,0 +1,23 @@
+The 1k5 pull-up resistor should be on the connector side of the series resistor
+
+USB terminating (series) resistors should be close to the chip, within 200 mils, not close to the connector.
+
+1k5 pull-up should be controllable by the MCU, as it could take more time to boot the STM32 firmware than the host tolerates for enumeration
+
+Stubs should be avoided. The trace from the differential pair to the 1.5k pullup forms a stub, even if it is very small. The resistor pad could be just in-line with the trace without stub. Smaller size resistors would have smaller pads. The stub length is well within recommendations.
+
+It is not suggested to connect USB shield directly to ground plane and shorting to USB GND, but via capacitor.
+
+VBUS and/or GND are sometimes filtered with ferrite beads.
+
+Don't put more than the allowed 10uF capacitance on VBUS
+
+Don't draw more than the allowed 100mA until MCU has completed enumeration to request more current from host, and the host has allowed it
+
+USB DP/DN is a differential pair whose impedance should be 90 ohms
+
+Avoid traces that run in parallel near USB traces. There should be 20 mil gap to non-periodic low speed signals, or 50 mil gap to clock signals.
+
+If you don't pass EMI testing, you might need to add a common-mode choke near the connector. The ESD protection should be located between connector and common-mode choke.
+
+Match DP/DM trace lengths to within 150 mils.
