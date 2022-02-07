@@ -1,3 +1,5 @@
+# uVision
+
 *.uvoptx
 *.uvguix.*
 *.LOG
@@ -7,15 +9,25 @@
 *.scvd
 *.TMP
 UpgradeLog.htm
-*.suo
-obj/
-bin/
-.vs/
-*.cmp
-*.bin
-*~$*.*
-*.sublime-workspace
+
+# uVision project
+
 firmware/MDK-ARM/firmware/
 firmware/*/Backup
+
+# Altium
+
 pcb/volume_knob/History/
 pcb/volume_knob/__Previews/
+__Previews/
+
+# Altium OutJob
+
+Status Report.Txt
+**/Outputs/**/*.DRR
+**/Outputs/**/*.REP
+**/Outputs/**/*.apr
+**/Outputs/**/*.LDP
+**/Outputs/**/*.EXTREP
+**/Outputs/**/*.APR_LIB
+
