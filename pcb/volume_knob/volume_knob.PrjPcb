@@ -28,7 +28,7 @@ DItemRevisionGUID=
 ReportSuppressedErrorsInMessages=0
 FSMCodingStyle=eFMSDropDownList_OneProcess
 FSMEncodingStyle=eFMSDropDownList_OneHot
-OutputPath=
+OutputPath=Project Outputs for volume_knob
 LogFolderPath=
 ManagedProjectGUID=
 IncludeDesignInRelease=0
@@ -167,7 +167,7 @@ ContentTypeGUID=CB6F2064-E317-11DF-B822-12313F0024A2
 ConfigurationType=Source
 
 [Generic_EDE]
-OutputDir=
+OutputDir=Project Outputs for volume_knob
 
 [OutputGroup1]
 Name=Netlist Outputs
@@ -1150,8 +1150,8 @@ UpdateToLatestRevision=1
 PartTypes=0
 ComponentLibIdentifierKind0=Library Name And Type
 ComponentLibraryIdentifier0=volume_knob.SchLib
-ComponentDesignItemID0=STM32F042F6P6
-ComponentSymbolReference0=STM32F042F6P6
+ComponentDesignItemID0=CAP_CERAMIC
+ComponentSymbolReference0=CAP_CERAMIC
 ComponentUpdate0=1
 ComponentIsDeviceSheet0=0
 FullReplace=0
@@ -1175,11 +1175,19 @@ ParameterName2=Description
 ParameterUpdate2=1
 ParameterName3=Library Reference
 ParameterUpdate3=1
+ParameterName4=Value
+ParameterUpdate4=1
 ModelTypeGroup0=PCBLIB
 ModelTypeUpdate0=1
 ModelType0=PCBLIB
-ModelName0=TSOP65P630X120-20L
-ModelUpdate0=1
+ModelName0=CAPC1608X07L
+ModelUpdate0=0
+ModelType1=PCBLIB
+ModelName1=CAPC3216X07L
+ModelUpdate1=0
+ModelType2=PCBLIB
+ModelName2=MLCC_0805
+ModelUpdate2=1
 
 [DatabaseUpdateOptions]
 SelectedOnly=0
