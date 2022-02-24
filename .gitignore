@@ -12,13 +12,11 @@ UpgradeLog.htm
 
 # uVision project
 
-firmware/MDK-ARM/firmware/
-firmware/*/Backup
-
-# for now
-
-firmware2/
-
+**/MDK-ARM/firmware*/
+**/MDK-ARM/Listings/
+**/MDK-ARM/RTE/
+**/MDK-ARM/DebugConfig/
+**/*/Backup
 
 # Altium
 
