@@ -429,6 +429,11 @@
               <FileType>1</FileType>
               <FilePath>../Core/Src/stm32f0xx_hal_msp.c</FilePath>
             </File>
+            <File>
+              <FileName>timer.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Core\Inc\timer.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

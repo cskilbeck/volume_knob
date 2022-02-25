@@ -32,13 +32,8 @@ static uint8 store = 0;
 
 void read_encoder()
 {
-//#define ROTARYA_Pin LL_GPIO_PIN_8
-//#define ROTARYA_GPIO_Port GPIOB
-//#define ROTARYB_Pin LL_GPIO_PIN_0
-//#define ROTARYB_GPIO_Port GPIOF
-
-    int a = (GPIOB->IDR >> 8) & 1;
-    int b = (GPIOF->IDR << 1) & 2;
+    int a = ((ROTARYA_GPIO_Port->IDR & ROTARYA_Pin) != 0) ? 1 : 0;
+    int b = ((ROTARYB_GPIO_Port->IDR & ROTARYB_Pin) != 0) ? 2 : 0;
 
     state = ((state << 2) | (a | b)) & 0xf;
 

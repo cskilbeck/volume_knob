@@ -7,6 +7,7 @@
 #include "user.h"
 #include "rotary.h"
 #include "queue.h"
+#include "timer.h"
 
 //////////////////////////////////////////////////////////////////////
 
@@ -75,14 +76,12 @@ uint32 ticks10khz = 0;
 
 // admin for waiting between messages
 
-uint32 delay_start = 0;
-uint32 delay_length = 0;
+timer msg_delay;
 
 // led flash admin
 
 bool led_flashing = false;
-uint32 led_flash_start = 0;
-uint32 led_flash_time = 0;
+timer led_flash_timer;
 
 // button debounce admin
 
@@ -124,11 +123,9 @@ extern "C" void TIM14_IRQHandler()
 
 void wait(int ms)
 {
-    uint32 now = ticks10khz;
-    ms *= 10;
-    while((ticks10khz - now) < ms) {
-        //__WFI();
-        __nop();
+    timer t(ms * 10);
+    while(!t.expired()) {
+        __WFI();
     }
 }
 
@@ -136,12 +133,9 @@ void wait(int ms)
 
 void reset_usb()
 {
-    // lower the 1.5K pullup
-    USB_PULLUP_GPIO_Port->BSRR = USB_PULLUP_Pin << 16;
-
     // disable usb
     USBD_DeInit(&hUsbDeviceFS);
-    
+
     // set A12, A11 as outputs
     uint32 const pins = (1 << 11) | (1 << 12);
 
@@ -160,21 +154,14 @@ void reset_usb()
 
     // switch usb back on (seems to steal the GPIOs itself)
     MX_USB_DEVICE_Init();
-    
-    // wait 50ms more
-    wait(50);
-
-    // enable the 1.5K pullup
-    USB_PULLUP_GPIO_Port->BSRR = USB_PULLUP_Pin;
 }
 
 //////////////////////////////////////////////////////////////////////
 
 void flash_led(int ms)
 {
-    led_flash_time = ms * 10;
-    led_flash_start = ticks10khz;
     LED_GPIO_Port->BSRR = LED_Pin << 16;
+    led_flash_timer.reset(ms * 10);
     led_flashing = true;
 }
 
@@ -184,19 +171,14 @@ void flash_led(int ms)
 void update_10khz()
 {
     ticks10khz += 1;
-    
-    //uint32 flash = ((ticks10khz >> 9) & 1) << 4;
-    //LED_GPIO_Port->BSRR = LED_Pin << flash;
-    
+
     // get current button state (0 = pressed, 1 = released)
 
-    // BTN_Pin = LL_GPIO_PIN_4
-
-    int b = (BTN_GPIO_Port->IDR >> 4) & 1;
+    int b = (BTN_GPIO_Port->IDR >> BIT_POS(BTN_Pin)) & 1;
 
     // how much debouncing
 
-    int const state_count = 12;
+    uint32 const state_count = 12;
     uint32 const state_mask = (1 << state_count) - 1;
     uint32 const press_pattern = state_mask & (~1);
     uint32 const release_pattern = state_mask >> 1;
@@ -227,7 +209,7 @@ void update_10khz()
 
     // debug led flashing admin
 
-    if(led_flashing && (ticks10khz - led_flash_start) > led_flash_time) {
+    if(led_flashing && led_flash_timer.expired()) {
         LED_GPIO_Port->BSRR = LED_Pin;
         led_flashing = false;
     }
@@ -241,20 +223,26 @@ void add_key_event(uint8 k, event_type ev_type)
     // room for 2 events? (key down, key up)
 
     if(messages.space() >= 2) {
+        
+        // if queue was empty, send it straight away
+        
+        if(messages.empty()) {
+            msg_delay.reset(0);
+        }
 
         event e;
 
         // add the key down event
 
         e.key = k;
-        e.delay = 10;
+        e.delay = 100;
         e.type = ev_type;
         messages.add(e);
 
         // add the key up event
 
         e.key = 0;
-        e.delay = 10;
+        e.delay = 100;
         e.type = ev_type;
         messages.add(e);
 
@@ -266,11 +254,11 @@ void add_key_event(uint8 k, event_type ev_type)
 
 void user_main()
 {
-    // switch off LED 
+    // set USB class pointers etc but don't switch it on
 
-		USBD_Init(&hUsbDeviceFS, &FS_Desc, DEVICE_FS);
-		USBD_RegisterClass(&hUsbDeviceFS, &USBD_HID);
-		
+    USBD_Init(&hUsbDeviceFS, &FS_Desc, DEVICE_FS);
+    USBD_RegisterClass(&hUsbDeviceFS, &USBD_HID);
+
     // kill systick
 
     HAL_NVIC_DisableIRQ(SysTick_IRQn);
@@ -282,16 +270,16 @@ void user_main()
     LL_TIM_EnableCounter(TIM14);
 
     // enable all the IRQs
-    
+
     NVIC_EnableIRQ(TIM14_IRQn);
     NVIC_EnableIRQ(EXTI0_1_IRQn);
     NVIC_EnableIRQ(EXTI4_15_IRQn);
-    
-    // boot flash
+
+    // flash LED for 100 ms at boot
 
     flash_led(100);
 
-    // force usb enumeration
+    // start usb enumeration
 
     reset_usb();
 
@@ -314,7 +302,7 @@ void user_main()
 
         // if events are ready and waiting to be sent
 
-        if(!messages.empty() && (ticks10khz - delay_start) > delay_length) {
+        if(!messages.empty() && msg_delay.expired()) {
 
             // process next key event
 
@@ -340,10 +328,9 @@ void user_main()
 
             // set delay so next event is delayed by N milliseconds
 
-            delay_start = ticks10khz;
-            delay_length = e.delay * 10;
+            msg_delay.reset(e.delay);
         }
-
+        
         // if knob was twisted, send volume up or down
 
         switch(knob_movement) {
