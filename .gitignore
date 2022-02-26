@@ -10,6 +10,10 @@
 *.TMP
 UpgradeLog.htm
 
+# SolidWorks backup files
+
+~$*.*
+
 # uVision project
 
 **/MDK-ARM/firmware*/
