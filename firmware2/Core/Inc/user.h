@@ -35,6 +35,9 @@ void reset_usb_lines();
 //////////////////////////////////////////////////////////////////////
 // C++ only bits go here
 
+// janky static_assert polyfill
+#define assert_static(name, condition) static const char name[(condition) * 2 - 1];
+
 //////////////////////////////////////////////////////////////////////
 // fight me
 
@@ -59,9 +62,9 @@ template <typename T, uint N> uint countof(T const (&)[N]) noexcept
 
 template <uint32 x> struct bit_pos
 {
-    // janky static_assert polyfill to check exactly one bit is set in x
-    static const char one_bit_must_be_set[(x != 0 && (x & (x - 1)) == 0) * 2 - 1];
-    
+    // exactly one bit must be set in x
+    assert_static(one_bit_must_be_set, (x != 0 && (x & (x - 1)) == 0));
+
     static const int pos = 1 + bit_pos<(x >> 1)>::pos;
 };
 
@@ -70,7 +73,7 @@ template <> struct bit_pos<1>
     static const int pos = 0;
 };
 
-#define BIT_POS(x) (bit_pos<(x)>::pos - 1)
+#define BIT_POS(x) (bit_pos<(x)>::pos)
 
 //////////////////////////////////////////////////////////////////////
 
