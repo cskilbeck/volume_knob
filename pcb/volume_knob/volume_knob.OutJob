@@ -91,15 +91,15 @@ PageOptions3=Record=PageOptions|CenterHorizontal=True|CenterVertical=True|PrintS
 Configuration3_Name1=ColumnNameFormat
 Configuration3_Item1=CaptionAsName
 Configuration3_Name2=General
-Configuration3_Item2=OpenExported=False|AddToProject=False|ReportBOMViolationsInMessages=False|ForceFit=False|NotFitted=False|Database=False|DatabasePriority=False|IncludePcbData=False|IncludeVaultData=True|IncludeCloudData=False|IncludeDocumentData=True|IncludeAlternatives=False|ShowExportOptions=True|TemplateFilename=|TemplateVaultGuid=|TemplateRevisionGuid=|BatchMode=5|FormWidth=1200|FormHeight=710|SupplierProdQty=1|SupplierAutoQty=False|SupplierUseCachedPricing=False|SupplierCurrency=USD|SolutionsPerItem=1|SuppliersPerSolution=1|ViewType=0|UseDirectApi=False|BomSetName=
+Configuration3_Item2=OpenExported=False|AddToProject=False|ReportBOMViolationsInMessages=False|ForceFit=False|NotFitted=False|Database=False|DatabasePriority=False|IncludePcbData=False|IncludeVaultData=True|IncludeCloudData=False|IncludeDocumentData=True|IncludeAlternatives=False|ShowExportOptions=True|TemplateFilename=|TemplateVaultGuid=|TemplateRevisionGuid=|BatchMode=5|FormWidth=1584|FormHeight=892|SupplierProdQty=1|SupplierAutoQty=False|SupplierUseCachedPricing=False|SupplierCurrency=USD|SolutionsPerItem=1|SuppliersPerSolution=1|ViewType=0|UseDirectApi=False|BomSetName=
 Configuration3_Name3=GroupOrder
 Configuration3_Item3=
 Configuration3_Name4=SortOrder
 Configuration3_Item4=Designator=Up
 Configuration3_Name5=VisibleOrder
-Configuration3_Item5=Designator=84|Quantity=58|Value=57|Footprint=139|Model:Footprint=207|Notes=100|Supplier Part Number 1=100
+Configuration3_Item5=Designator=84|Quantity=47|Value=86|DesignItemId=118|Model:Footprint=228|Notes=170|Supplier Part Number 1=100
 Configuration3_Name6=VisibleOrder_Base
-Configuration3_Item6=Designator=84|Quantity=58|Value=57|Footprint=139|Model:Footprint=207|Notes=100|Supplier Part Number 1=100
+Configuration3_Item6=Designator=84|Quantity=47|Value=86|DesignItemId=118|Model:Footprint=228|Notes=170|Supplier Part Number 1=100
 Configuration3_Name7=VisibleOrder_Consolidated
 Configuration3_Item7=Line #=100|Comment=100|Description=100|Designator=100|Quantity=100|Manufacturer 1=102|Manufacturer Part Number 1=169|Manufacturer Lifecycle 1=147|Supplier 1=75|Supplier Part Number 1=142|Supplier Unit Price 1=127|Supplier Subtotal 1=122
 Configuration3_Name8=VisibleOrder_Flat
