@@ -24,8 +24,8 @@ UpgradeLog.htm
 
 # Altium
 
-pcb/volume_knob/History/
-pcb/volume_knob/__Previews/
+pcb/**/History/
+pcb/**/__Previews/
 __Previews/
 
 # Altium OutJob

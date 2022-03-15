@@ -130,6 +130,7 @@ void wait(int ms)
 }
 
 //////////////////////////////////////////////////////////////////////
+// this function blocks for a bit more than 300ms
 
 void reset_usb()
 {
@@ -148,11 +149,20 @@ void reset_usb()
 
     // set them to low
     GPIOA->BSRR = pins << 16;
+    
+    // while we give the host time to realize that the usb is disconnected
 
-    // wait 50ms
+    // flash LED twice, main loop will flash it a third time
+    LED_GPIO_Port->BSRR = LED_Pin << 16;
     wait(50);
+    LED_GPIO_Port->BSRR = LED_Pin;
+    wait(100);
+    LED_GPIO_Port->BSRR = LED_Pin << 16;
+    wait(50);
+    LED_GPIO_Port->BSRR = LED_Pin;
+    wait(100);
 
-    // switch usb back on (seems to steal the GPIOs itself)
+    // switch usb back on, host enumeration will begin (seems to steal the GPIOs itself)
     MX_USB_DEVICE_Init();
 }
 
