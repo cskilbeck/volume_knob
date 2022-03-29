@@ -32,6 +32,17 @@ SBIT(ROTA_BIT, PORT3, ROTA_PIN);
 SBIT(ROTB_BIT, PORT3, ROTB_PIN);
 
 //////////////////////////////////////////////////////////////////////
+
+void hard_fault()
+{
+    while(1) {
+        LED_BIT ^= 1;
+        for(uint16_t i = 1; i != 0; ++i) {
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////////////////
 // rotary encoder reader
 
 uint8 const valid_bits[16] = { 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0 };
@@ -83,19 +94,21 @@ uint8 const led_gamma[256] = { 0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  
 
 uint16 led_brightness = 0;
 
+#define LED_FADE_SPEED 3
+
 void led_update()
 {
-    if(led_brightness == 0) {
+    if(led_brightness <= LED_FADE_SPEED) {
         LED_BIT = 0;
     } else {
-        led_brightness -= 2;
+        led_brightness -= LED_FADE_SPEED;
         LED_BIT = led_gamma[led_brightness >> 8] > TH0;
     }
 }
 
 inline void led_flash()
 {
-    led_brightness = 65534u;
+    led_brightness = 65535u;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -224,15 +237,5 @@ void main()
             usb_set_keystate(queue_get());
         }
         led_update();
-
-        // led flash admin
-        // if(led_flash_time != 0) {
-        //     if(TF0 == 1) {
-        //         led_flash_time -= 1;
-        //         TF0 = 0;
-        //     }
-        // } else {
-        //     LED_BIT = 0;
-        // }
     }
 }
