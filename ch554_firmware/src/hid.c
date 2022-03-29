@@ -13,17 +13,16 @@
 
 #define PRODUCT_DESCRIPTION 'V', 0x00, 'o', 0x00, 'l', 0x00, 'u', 0x00, 'm', 0x00, 'e', 0x00, 'K', 0x00, 'n', 0x00, 'o', 0x00, 'b', 0x00
 
-/*
-Memory map:
-EP0 Buf     00 - 07
-EP1 Buf     10 - 4f
-*/
+// Memory map:
+// EP0 Buf     00 - 07
+// EP1 Buf     10 - 4f
+
 #define FIXED_ADDRESS_EP0_BUFFER 0x0000
 #define FIXED_ADDRESS_EP1_BUFFER 0x0010
 
 #define UsbSetupBuf ((USB_SETUP_REQ *)Ep0Buffer)
 
-__xdata __at(FIXED_ADDRESS_EP0_BUFFER) uint8_t Ep0Buffer[DEFAULT_ENDP0_SIZE];    // Endpoint0 OUT&IN
+__xdata __at(FIXED_ADDRESS_EP0_BUFFER) uint8_t Ep0Buffer[DEFAULT_ENDP0_SIZE];    // Endpoint0 OUT & IN
 __xdata __at(FIXED_ADDRESS_EP1_BUFFER) uint8_t Ep1Buffer[MAX_PACKET_SIZE];       // Endpoint1 IN
 
 uint8_t SetupReq, SetupLen, UsbConfig;
@@ -41,63 +40,65 @@ uint8_t media_key_report[3] = {
 
 // Device Descriptor
 __code uint8_t DevDesc[18] = {
-    0x12,    // bLength
-    0x01,    // bDescriptorType: DEVICE
-    0x10,
-    0x01,                  // bcdUSB: USB1.1
+    0x12,                  // bLength
+    0x01,                  // bDescriptorType: DEVICE
+    0x10,                  // bcdUSB: USB1.1 (1)
+    0x01,                  // bcdUSB: USB1.1 (2)
     0x00,                  // bDeviceClass
     0x00,                  // bDeviceSubClass
     0x00,                  // bDeviceProtocol
     DEFAULT_ENDP0_SIZE,    // bMaxPacketSize0
     VENDOR_ID,             // idVendor
     PRODUCT_ID,            // idProduct
-    0x00,
-    0x01,    // bcdDevice
-    0x01,    // iManufacturer
-    0x02,    // iProduct
-    0x00,    // iSerialNumber
-    0x01     // bNumConfigurations
+    0x00,                  // bcdDevice(1)
+    0x01,                  // bcdDevice(2)
+    0x01,                  // iManufacturer
+    0x02,                  // iProduct
+    0x00,                  // iSerialNumber
+    0x01                   // bNumConfigurations
 };
 
 // Configuration Descriptor
-__code uint8_t CfgDesc[59] = {
+__code uint8_t CfgDesc[34] = {
+
     // Device
-    0x09,          // bLength
-    0x02,          // bDescriptorType: CONFIGURATION
-    0x22, 0x00,    // wTotalLength
-    0x01,          // bNumInterface
-    0x01,          // bConfigurationValue
-    0x00,          // iConfiguration
-    0x80,          // bmAttributes: Bus Power/No Remote Wakeup
-    0x32,          // bMaxPower
+    0x09,                    // bLength
+    USB_DESCR_TYP_CONFIG,    // bDescriptorType: CONFIGURATION
+    0x22, 0x00,              // wTotalLength
+    0x01,                    // bNumInterface
+    0x01,                    // bConfigurationValue
+    0x00,                    // iConfiguration
+    0x80,                    // bmAttributes: Bus Power/No Remote Wakeup
+    0x32,                    // bMaxPower
 
     // Interface
-    0x09,    // bLength
-    0x04,    // bDescriptorType: INTERFACE
-    0x00,    // bInterfaceNumber
-    0x00,    // bAlternateSetting
-    0x01,    // bNumEndpoints
-    0x03,    // bInterfaceClass: Human Interface Device (HID)
-    0x01,    // bInterfaceSubClass
-    0x01,    // bInterfaceProtocol: Keyboard
-    0x00,    // iInterface
+    0x09,                    // bLength
+    USB_DESCR_TYP_INTERF,    // bDescriptorType: INTERFACE
+    0x00,                    // bInterfaceNumber
+    0x00,                    // bAlternateSetting
+    0x01,                    // bNumEndpoints
+    USB_DEV_CLASS_HID,       // bInterfaceClass: HID
+    0x01,                    // bInterfaceSubClass
+    0x01,                    // bInterfaceProtocol: Keyboard
+    0x00,                    // iInterface
 
     // HID
-    0x09,          // bLength
-    0x21,          // bDescriptorType: HID
-    0x11, 0x01,    // bcdHID: 1.10
-    0x00,          // bCountryCode
-    0x01,          // bNumDescriptors
-    0x22,          // bDescriptorType: Report
-    28, 0,         // wDescriptorLength: 28
+    0x09,                 // bLength
+    USB_DESCR_TYP_HID,    // bDescriptorType: HID
+    0x11, 0x01,           // bcdHID: 1.10
+    0x00,                 // bCountryCode
+    0x01,                 // bNumDescriptors
+    0x22,                 // bDescriptorType: Report
+    28, 0,                // wDescriptorLength: 28
 
     // Endpoint
-    0x07,                                            // bLength
-    0x05,                                            // bDescriptorType: ENDPOINT
-    0x81,                                            // bEndpointAddress: IN/Endpoint1
-    0x03,                                            // bmAttributes: Interrupt
-    MAX_PACKET_SIZE & 0xff, MAX_PACKET_SIZE >> 8,    // wMaxPacketSize
-    0x0a,                                            // bInterval
+    0x07,                      // bLength
+    USB_DESCR_TYP_ENDP,        // bDescriptorType: ENDPOINT
+    0x81,                      // bEndpointAddress: IN/Endpoint1
+    0x03,                      // bmAttributes: Interrupt
+    MAX_PACKET_SIZE & 0xff,    // wMaxPacketSize (1)
+    MAX_PACKET_SIZE >> 8,      // wMaxPacketSize (2)
+    0x02,                      // bInterval
 };
 
 __code uint8_t MediaRepDesc[28] = {
