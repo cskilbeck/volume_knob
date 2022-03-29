@@ -1,0 +1,69 @@
+#######################################################
+# print, use like `make print-LFLAGS` to see the value
+# of $(LFLAGS)
+
+print-%  : ; @echo $* = $($*)
+
+#######################################################
+# toolchain
+
+CC = sdcc
+OBJCOPY = objcopy
+PACK_HEX = packihx
+WCHISP ?= wchisptool -g -f
+
+#######################################################
+# layout
+
+FREQ_SYS ?= 24000000
+XRAM_SIZE ?= 0x0400
+XRAM_LOC ?= 0x0000
+CODE_SIZE ?= 0x3800
+
+#######################################################
+# build
+
+ROOT_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+
+CFLAGS := -V -mmcs51 --model-small \
+	--xram-size $(XRAM_SIZE) --xram-loc $(XRAM_LOC) \
+	--code-size $(CODE_SIZE) \
+	-I$(ROOT_DIR)/include -DFREQ_SYS=$(FREQ_SYS) \
+	$(EXTRA_FLAGS)
+
+LFLAGS := $(CFLAGS)
+
+OBJ_DIR ?= obj
+BIN_DIR ?= bin
+
+TARGET_BIN := $(BIN_DIR)/$(TARGET)
+
+RELS := $(C_FILES:.c=.rel)
+OBJ_RELS := $(patsubst %, $(OBJ_DIR)/%, $(notdir $(RELS)))
+
+%.rel: %.c
+	echo $(CC) -c $(CFLAGS) $< -o $(OBJ_DIR)/
+	$(CC) -c $(CFLAGS) $< -o $(OBJ_DIR)/
+
+$(TARGET_BIN).ihx: $(RELS)
+	$(CC) $(OBJ_RELS) $(LFLAGS) -o $(TARGET_BIN).ihx
+
+$(TARGET_BIN).hex: $(TARGET_BIN).ihx
+	$(PACK_HEX) $(TARGET_BIN).ihx > $(TARGET_BIN).hex
+
+$(TARGET_BIN).bin: $(TARGET_BIN).ihx
+	$(OBJCOPY) -I ihex -O binary $(TARGET_BIN).ihx $(TARGET_BIN).bin
+	
+flash: $(TARGET_BIN).bin pre-flash
+	$(WCHISP) $(TARGET_BIN).bin
+
+#######################################################
+# admin
+
+.DEFAULT_GOAL := all
+
+all: $(TARGET_BIN).bin $(TARGET_BIN).hex
+
+clean:
+	rm -f $(OBJ_DIR)/*
+	rm -f $(BIN_DIR)/*
