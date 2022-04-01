@@ -1,4 +1,7 @@
-TARGET = volume_knob
+
+PROJECT := volume_knob
+
+EXTRA_FLAGS = --opt-code-speed
 
 C_FILES = \
 	src/main.c \

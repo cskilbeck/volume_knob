@@ -23,47 +23,63 @@ CODE_SIZE ?= 0x3800
 #######################################################
 # build
 
-ROOT_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
-
-CFLAGS := -V -mmcs51 --model-small \
-	--xram-size $(XRAM_SIZE) --xram-loc $(XRAM_LOC) \
-	--code-size $(CODE_SIZE) \
-	-I$(ROOT_DIR)/include -DFREQ_SYS=$(FREQ_SYS) \
-	$(EXTRA_FLAGS)
-
-LFLAGS := $(CFLAGS)
+PROJECT ?= project
 
 OBJ_DIR ?= obj
 BIN_DIR ?= bin
 
-TARGET_BIN := $(BIN_DIR)/$(TARGET)
+CFLAGS := -mmcs51 \
+		  --model-small \
+		  --xram-size $(XRAM_SIZE) \
+		  --xram-loc $(XRAM_LOC) \
+		  --code-size $(CODE_SIZE) \
+		  -DFREQ_SYS=$(FREQ_SYS) \
+		  -Iinclude \
+		  $(EXTRA_FLAGS)
 
-RELS := $(C_FILES:.c=.rel)
-OBJ_RELS := $(patsubst %, $(OBJ_DIR)/%, $(notdir $(RELS)))
+VPATH = src:lib
 
-%.rel: %.c
-	echo $(CC) -c $(CFLAGS) $< -o $(OBJ_DIR)/
-	$(CC) -c $(CFLAGS) $< -o $(OBJ_DIR)/
+LFLAGS := $(CFLAGS)
 
-$(TARGET_BIN).ihx: $(RELS)
-	$(CC) $(OBJ_RELS) $(LFLAGS) -o $(TARGET_BIN).ihx
+TARGET := $(BIN_DIR)/$(PROJECT)
 
-$(TARGET_BIN).hex: $(TARGET_BIN).ihx
-	$(PACK_HEX) $(TARGET_BIN).ihx > $(TARGET_BIN).hex
+OBJECTS := $(patsubst %.c, $(OBJ_DIR)/%.rel, $(notdir $(C_FILES)))
 
-$(TARGET_BIN).bin: $(TARGET_BIN).ihx
-	$(OBJCOPY) -I ihex -O binary $(TARGET_BIN).ihx $(TARGET_BIN).bin
+AUTODEPS := $(patsubst %.c,$(OBJ_DIR)/%.dep,$(notdir $(C_FILES)))
+
+-include $(AUTODEPS)
+
+$(OBJ_DIR):
+	mkdir $(OBJ_DIR)
+	mkdir $(BIN_DIR)
+
+$(OBJ_DIR)/%.rel: %.c $(OBJ_DIR)
+	@echo $<
+	@$(CC) -MM $(CFLAGS) -o $(OBJ_DIR)/ $< | sed s=$(notdir $@)=obj/$(notdir $@)= >$(OBJ_DIR)/$(notdir $(<:.c=.dep))
+	@$(CC) -c $(CFLAGS) $< -o $(OBJ_DIR)/
+
+$(TARGET).ihx: $(OBJECTS)
+	@echo $@
+	@$(CC) $(OBJECTS) $(LFLAGS) -o $(TARGET).ihx
+
+$(TARGET).hex: $(TARGET).ihx
+	@echo $@
+	@$(PACK_HEX) $(TARGET).ihx > $(TARGET).hex
+
+$(TARGET).bin: $(TARGET).ihx
+	@echo $@
+	@$(OBJCOPY) -I ihex -O binary $(TARGET).ihx $(TARGET).bin
 	
-flash: $(TARGET_BIN).bin pre-flash
-	$(WCHISP) $(TARGET_BIN).bin
+flash: $(TARGET).bin pre-flash
+	$(WCHISP) $(TARGET).bin
 
 #######################################################
 # admin
 
 .DEFAULT_GOAL := all
 
-all: $(TARGET_BIN).bin $(TARGET_BIN).hex
+all: $(TARGET).bin $(TARGET).hex
 
 clean:
-	rm -f $(OBJ_DIR)/*
-	rm -f $(BIN_DIR)/*
+	rm -r $(OBJ_DIR)
+	rm -r $(BIN_DIR)
