@@ -27,11 +27,17 @@
 __xdata __at(FIXED_ADDRESS_EP0_BUFFER) uint8_t Ep0Buffer[DEFAULT_ENDP0_SIZE];    // Endpoint0 OUT & IN
 __xdata __at(FIXED_ADDRESS_EP1_BUFFER) uint8_t Ep1Buffer[MAX_PACKET_SIZE];       // Endpoint1 IN
 
-uint8_t SetupReq, SetupLen, UsbConfig;
+uint8_t SetupReq;
+uint8_t SetupLen;
+uint8_t UsbConfig;
+
 __code uint8_t *pDescr;
 
 volatile __idata uint8_t RepDescSent;
 volatile __idata uint8_t usb_idle = 1;
+
+// this isn't used, just here to show the format of the buffer
+// the bytes are stuffed into Ep1Buffer directly
 
 uint8_t media_key_report[3] = {
     0x2,    //  8 bits: report ID 2
@@ -41,22 +47,23 @@ uint8_t media_key_report[3] = {
 
 // Device Descriptor
 __code uint8_t DevDesc[18] = {
-    0x12,                  // bLength
-    0x01,                  // bDescriptorType: DEVICE
-    0x10,                  // bcdUSB: USB1.1 (1)
-    0x01,                  // bcdUSB: USB1.1 (2)
+
+    0x12,                    // bLength
+    USB_DESCR_TYP_DEVICE,    // bDescriptorType: DEVICE
+    0x10,
+    0x01,                  // bcdUSB: USB1.1
     0x00,                  // bDeviceClass
     0x00,                  // bDeviceSubClass
     0x00,                  // bDeviceProtocol
     DEFAULT_ENDP0_SIZE,    // bMaxPacketSize0
     VENDOR_ID,             // idVendor
     PRODUCT_ID,            // idProduct
-    0x00,                  // bcdDevice(1)
-    0x01,                  // bcdDevice(2)
-    0x01,                  // iManufacturer
-    0x02,                  // iProduct
-    0x00,                  // iSerialNumber
-    0x01                   // bNumConfigurations
+    0x00,
+    0x01,    // bcdDevice(1)
+    0x01,    // iManufacturer
+    0x02,    // iProduct
+    0x00,    // iSerialNumber
+    0x01     // bNumConfigurations
 };
 
 // Configuration Descriptor
@@ -86,7 +93,7 @@ __code uint8_t CfgDesc[34] = {
     // HID
     0x09,                 // bLength
     USB_DESCR_TYP_HID,    // bDescriptorType: HID
-    0x11, 0x01,           // bcdHID: 1.10
+    0x11, 0x01,           // bcdHID: 1.10 (1.11?)
     0x00,                 // bCountryCode
     0x01,                 // bNumDescriptors
     0x22,                 // bDescriptorType: Report
@@ -160,9 +167,10 @@ void usb_isr(void) __interrupt(INT_NO_USB)
 
                 len = 0;
                 SetupReq = UsbSetupBuf->bRequest;
+                uint8_t request_type = UsbSetupBuf->bRequestType;
 
                 // all request types except 'standard' are ignored
-                if((UsbSetupBuf->bRequestType & USB_REQ_TYP_MASK) != USB_REQ_TYP_STANDARD) {
+                if((request_type & USB_REQ_TYP_MASK) != USB_REQ_TYP_STANDARD) {
 
                     switch(SetupReq) {
 
@@ -263,7 +271,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
 
                     case USB_CLEAR_FEATURE:
 
-                        if((UsbSetupBuf->bRequestType & USB_REQ_RECIP_MASK) == USB_REQ_RECIP_ENDP) {
+                        if((request_type & USB_REQ_RECIP_MASK) == USB_REQ_RECIP_ENDP) {
 
                             switch(UsbSetupBuf->wIndexL) {
 
@@ -288,7 +296,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
 
                     case USB_SET_FEATURE:
 
-                        switch(UsbSetupBuf->bRequestType & USB_REQ_RECIP_MASK) {
+                        switch(request_type & USB_REQ_RECIP_MASK) {
 
                         case USB_REQ_RECIP_DEVICE: {
                             if((((uint16_t)UsbSetupBuf->wValueH << 8) | UsbSetupBuf->wValueL) == 0x01) {
@@ -423,8 +431,8 @@ void usb_init()
     uint8_t *p = Ep1Buffer;
 
     *p++ = (uint8_t)0x2;    // report ID 1
-    *p++ = (uint8_t)0x0;    // media key
-    *p++ = (uint8_t)0x0;    // pad, set this to 0
+    *p++ = (uint8_t)0x0;    // media key 0..7
+    *p++ = (uint8_t)0x0;    // media key 8..15
 
     IE_USB = 0;
     USB_CTRL = 0x00;

@@ -45,12 +45,10 @@ void hard_fault()
 //////////////////////////////////////////////////////////////////////
 // rotary encoder reader
 
-uint8 const valid_bits[16] = { 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0 };
+uint8 const encoder_valid_bits[16] = { 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0 };
 
-static uint8 state = 0;
-static uint8 store = 0;
-
-int8 rotary_delta = 0;
+uint8 encoder_state = 0;
+uint8 encoder_store = 0;
 
 int8 read_encoder()
 {
@@ -62,13 +60,13 @@ int8 read_encoder()
         a |= 2;
     }
 
-    state <<= 2;
-    state |= a;
-    state &= 0xf;
+    encoder_state <<= 2;
+    encoder_state |= a;
+    encoder_state &= 0xf;
 
-    if(valid_bits[state] != 0) {
-        store = (store << 4) | state;
-        switch(store) {
+    if(encoder_valid_bits[encoder_state] != 0) {
+        encoder_store = (encoder_store << 4) | encoder_state;
+        switch(encoder_store) {
         case 0xe8:
             return 1;
         case 0x2b:
