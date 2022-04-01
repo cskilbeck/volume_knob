@@ -45,30 +45,42 @@ TARGET := $(BIN_DIR)/$(PROJECT)
 
 OBJECTS := $(patsubst %.c, $(OBJ_DIR)/%.rel, $(notdir $(C_FILES)))
 
-AUTODEPS := $(patsubst %.c,$(OBJ_DIR)/%.dep,$(notdir $(C_FILES)))
+AUTODEPS := $(patsubst %.c, $(OBJ_DIR)/%.dep, $(notdir $(C_FILES)))
 
 -include $(AUTODEPS)
 
-$(OBJ_DIR):
-	mkdir $(OBJ_DIR)
-	mkdir $(BIN_DIR)
+# rebuild everything if the makefile changes
 
-$(OBJ_DIR)/%.rel: %.c $(OBJ_DIR)
+$(OBJECTS): Makefile Makefile.include
+
+# compile c files and create dependency includes
+
+$(OBJ_DIR)/%.rel: %.c
 	@echo $<
-	@$(CC) -MM $(CFLAGS) -o $(OBJ_DIR)/ $< | sed s=$(notdir $@)=obj/$(notdir $@)= >$(OBJ_DIR)/$(notdir $(<:.c=.dep))
+	@mkdir -p $(dir $@)
+	@$(CC) -MM $(CFLAGS) -o $(OBJ_DIR)/ $< | sed 's|$*.rel:|$(OBJ_DIR)/$*.rel:|' >$(OBJ_DIR)/$*.dep
 	@$(CC) -c $(CFLAGS) $< -o $(OBJ_DIR)/
 
+# link to ihx
+
 $(TARGET).ihx: $(OBJECTS)
-	@echo $@
+	@mkdir -p $(dir $@)
+	@echo $(@F)
 	@$(CC) $(OBJECTS) $(LFLAGS) -o $(TARGET).ihx
 
-$(TARGET).hex: $(TARGET).ihx
-	@echo $@
-	@$(PACK_HEX) $(TARGET).ihx > $(TARGET).hex
+# create bin from ihx
 
 $(TARGET).bin: $(TARGET).ihx
-	@echo $@
+	@echo $(@F)
 	@$(OBJCOPY) -I ihex -O binary $(TARGET).ihx $(TARGET).bin
+
+# create normal hex from ihx
+
+$(TARGET).hex: $(TARGET).ihx
+	@echo $(@F)
+	@$(PACK_HEX) $(TARGET).ihx > $(TARGET).hex
+
+# flash it to the chip
 	
 flash: $(TARGET).bin pre-flash
 	$(WCHISP) $(TARGET).bin
@@ -76,9 +88,11 @@ flash: $(TARGET).bin pre-flash
 #######################################################
 # admin
 
-.DEFAULT_GOAL := all
+.DEFAULT_GOAL := build
 
-all: $(TARGET).bin $(TARGET).hex
+.PHONY: clean
+
+build: $(TARGET).bin $(TARGET).hex
 
 clean:
 	rm -r $(OBJ_DIR)

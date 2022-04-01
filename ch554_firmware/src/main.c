@@ -19,17 +19,23 @@ typedef uint16_t uint16;
 #define PORT1 0x90
 #define PORT3 0xB0
 
+#define BTN_PORT PORT1
+#define BTN_PIN 1
+
+#define ROTA_PORT PORT1
+#define ROTA_PIN 5
+
+#define ROTB_PORT PORT1
+#define ROTB_PIN 6
+
+#define LED_PORT PORT1
 #define LED_PIN 7
-#define BTN5_PIN 5
 
-#define ROTA_PIN 3
-#define ROTB_PIN 4
+SBIT(LED_BIT, LED_PORT, LED_PIN);
+SBIT(BTN_BIT, BTN_PORT, BTN_PIN);
 
-SBIT(LED_BIT, PORT1, LED_PIN);
-SBIT(BTN5_BIT, PORT1, BTN5_PIN);
-
-SBIT(ROTA_BIT, PORT3, ROTA_PIN);
-SBIT(ROTB_BIT, PORT3, ROTB_PIN);
+SBIT(ROTA_BIT, ROTA_PORT, ROTA_PIN);
+SBIT(ROTB_BIT, ROTB_PORT, ROTB_PIN);
 
 //////////////////////////////////////////////////////////////////////
 
@@ -176,12 +182,12 @@ void main()
     CfgFsys();
 
     // Set LED_BIT as output, BTN_BITs as input
-    P1_MOD_OC = 0b00100000;
-    P1_DIR_PU = 0b10100000;
+    P1_MOD_OC = 0b01100010;
+    P1_DIR_PU = 0b11100010;
 
     // Set ROTA_BIT, ROTB_BIT as input
-    P3_MOD_OC = 0b00011000;
-    P3_DIR_PU = 0b00011000;
+    //    P3_MOD_OC = 0b00011000;
+    //    P3_DIR_PU = 0b00011000;
 
     // start usb client
     usb_init();
@@ -197,7 +203,7 @@ void main()
 
         // read/debounce the button
         bool pressed = false;
-        bool new_state = !BTN5_BIT;
+        bool new_state = !BTN_BIT;
         if(new_state != button_state && TF2 == 1) {
             TL2 = 0;
             TH2 = T2_DEBOUNCE;
