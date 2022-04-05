@@ -20,7 +20,7 @@ typedef uint16_t uint16;
 #define PORT3 0xB0
 
 #define BTN_PORT PORT1
-#define BTN_PIN 1
+#define BTN_PIN 4
 
 #define ROTA_PORT PORT1
 #define ROTA_PIN 5
@@ -74,9 +74,9 @@ int8 read_encoder()
         encoder_store = (encoder_store << 4) | encoder_state;
         switch(encoder_store) {
         case 0xe8:
-            return 1;
-        case 0x2b:
             return -1;
+        case 0x2b:
+            return 1;
         }
     }
     return 0;
@@ -103,10 +103,10 @@ uint16 led_brightness = 0;
 void led_update()
 {
     if(led_brightness <= LED_FADE_SPEED) {
-        LED_BIT = 0;
+        LED_BIT = 1;
     } else {
         led_brightness -= LED_FADE_SPEED;
-        LED_BIT = led_gamma[led_brightness >> 8] > TH0;
+        LED_BIT = led_gamma[led_brightness >> 8] <= TH0;
     }
 }
 
@@ -182,8 +182,8 @@ void main()
     CfgFsys();
 
     // Set LED_BIT as output, BTN_BITs as input
-    P1_MOD_OC = 0b01100010;
-    P1_DIR_PU = 0b11100010;
+    P1_MOD_OC = 0b01110000;
+    P1_DIR_PU = 0b11110000;
 
     // Set ROTA_BIT, ROTB_BIT as input
     //    P3_MOD_OC = 0b00011000;

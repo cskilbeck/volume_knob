@@ -156,6 +156,26 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=
 
+[GeneratedDocument1]
+DocumentPath=C:\Users\chs\AppData\Local\Temp\Pro1C06.xls
+DItemRevisionGUID=
+
+[GeneratedDocument2]
+DocumentPath=C:\Users\chs\AppData\Local\Temp\Pro59B5.xls
+DItemRevisionGUID=
+
+[GeneratedDocument3]
+DocumentPath=C:\Users\chs\AppData\Local\Temp\Pro88AA.xls
+DItemRevisionGUID=
+
+[GeneratedDocument4]
+DocumentPath=C:\Users\chs\AppData\Local\Temp\ProBC9E.xls
+DItemRevisionGUID=
+
+[GeneratedDocument5]
+DocumentPath=C:\Users\chs\AppData\Local\Temp\ProC28A.xls
+DItemRevisionGUID=
+
 [Configuration1]
 Name=Sources
 ParameterCount=0

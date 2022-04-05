@@ -1,4 +1,21 @@
 #######################################################
+# Makefile.include for SDCC in bash
+#
+# include this file from from Makefile where
+# you should define these variables:
+#
+# required:
+#
+# $(C_FILES)        all the C sources
+#
+# optional:
+#
+# $(PROJECT)        name of the project (defaults to 'project')
+# $(OBJ_DIR)        where to put object files (defaults to 'obj')
+# $(BIN_DIR)        where to put binary/hex files (defaults to 'bin')
+# $(EXTRA_FLAGS)    for SDCC command line (no default)
+
+#######################################################
 # print, use like `make print-LFLAGS` to see the value
 # of $(LFLAGS)
 
@@ -90,10 +107,13 @@ flash: $(TARGET).bin pre-flash
 
 .DEFAULT_GOAL := build
 
-.PHONY: clean
+.PHONY: clean all
 
 build: $(TARGET).bin $(TARGET).hex
 
 clean:
-	rm -r $(OBJ_DIR)
-	rm -r $(BIN_DIR)
+	@if [ -d "$(OBJ_DIR)" ]; then rm -r $(OBJ_DIR); fi
+	@if [ -d "$(BIN_DIR)" ]; then rm -r $(BIN_DIR); fi
+	@echo cleaned $(PROJECT)
+
+all: clean build
