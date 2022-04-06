@@ -34,7 +34,7 @@ BraceWrapping: {
 BreakBeforeTernaryOperators: 'false'
 BreakConstructorInitializersBeforeComma: 'true'
 BreakStringLiterals: 'true'
-ColumnLimit: '180'
+ColumnLimit: '84'
 ConstructorInitializerAllOnOneLineOrOnePerLine: 'true'
 ConstructorInitializerIndentWidth: '4'
 ContinuationIndentWidth: '4'
@@ -65,49 +65,4 @@ SpacesInSquareBrackets: 'false'
 Standard: Auto
 TabWidth: '4'
 UseTab: Never
----
-Language: JavaScript
-ColumnLimit: '180'
-AllowShortFunctionsOnASingleLine: None
-ContinuationIndentWidth: '4'
-SpaceBeforeAssignmentOperators: 'true'
-SpaceBeforeParens: Never
-SpaceInEmptyParentheses: 'false'
-SpacesBeforeTrailingComments: '4'
-SpacesInParentheses: 'false'
-SpacesInSquareBrackets: 'false'
-Standard: Auto
-TabWidth: '4'
-UseTab: Never
-AlignAfterOpenBracket: Align
-AlignConsecutiveAssignments: 'false'
-AlignConsecutiveDeclarations: 'false'
-AlignEscapedNewlinesLeft: 'true'
-AlignOperands: 'true'
-AlignTrailingComments: 'true'
-AllowAllParametersOfDeclarationOnNextLine: 'true'
-AllowShortBlocksOnASingleLine: 'false'
-AllowShortCaseLabelsOnASingleLine: 'false'
-AllowShortFunctionsOnASingleLine: None
-AllowShortIfStatementsOnASingleLine: 'false'
-AllowShortLoopsOnASingleLine: 'false'
-AlwaysBreakAfterDefinitionReturnType: None
-AlwaysBreakAfterReturnType: None
-AlwaysBreakBeforeMultilineStrings: 'false'
-AlwaysBreakTemplateDeclarations: 'false'
-BinPackArguments: 'true'
-BinPackParameters: 'true'
-BreakBeforeBraces: Custom
-BraceWrapping: {
-    AfterControlStatement: 'false'
-    AfterEnum : 'true'
-    AfterFunction : 'true'
-    AfterNamespace : 'true'
-    AfterClass: 'true'
-    AfterStruct : 'true'
-    AfterUnion : 'true'
-    BeforeCatch : 'false'
-    BeforeElse : 'false'
-    IndentBraces : 'false'
-}
-...
+

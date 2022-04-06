@@ -81,8 +81,8 @@ $(OBJ_DIR)/%.rel: %.c
 # link to ihx
 
 $(TARGET).ihx: $(OBJECTS)
-	@mkdir -p $(dir $@)
 	@echo $(@F)
+	@mkdir -p $(dir $@)
 	@$(CC) $(OBJECTS) $(LFLAGS) -o $(TARGET).ihx
 
 # create bin from ihx
