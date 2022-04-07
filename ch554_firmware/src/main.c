@@ -84,8 +84,7 @@ int8 read_encoder()
 }
 
 //////////////////////////////////////////////////////////////////////
-// flash the led for n intervals (Timer0 wrap time)
-// see end of main for the actual flashing bit
+// led pulse/fade thing to indicate rotary/button activity
 
 uint8 const led_gamma[256] = {
     0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
@@ -194,10 +193,6 @@ void main()
     // Set LED_BIT as output, BTN_BITs as input
     P1_MOD_OC = 0b01110000;
     P1_DIR_PU = 0b11110000;
-
-    // Set ROTA_BIT, ROTB_BIT as input
-    //    P3_MOD_OC = 0b00011000;
-    //    P3_DIR_PU = 0b00011000;
 
     // start usb client
     usb_init();
