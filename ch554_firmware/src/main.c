@@ -7,11 +7,24 @@
 #include "hid.h"
 
 //////////////////////////////////////////////////////////////////////
+// how long a button press goes into bootloader
+
+#define BOOTLOADER_DELAY 0x100    // about 1 seconds
+//#define BOOTLOADER_DELAY 0x500    // about 5 seconds
+
+//////////////////////////////////////////////////////////////////////
 
 typedef int8_t int8;
 typedef int16_t int16;
 typedef uint8_t uint8;
 typedef uint16_t uint16;
+
+//////////////////////////////////////////////////////////////////////
+// BOOTLOADER admin
+
+typedef void (*TBL)(void);
+#define bootloader554 ((TBL)0x3800)    // CH551/2/3/4
+#define bootloader559 ((TBL)0xF400)    // CH558/9
 
 //////////////////////////////////////////////////////////////////////
 // GPIOs
@@ -126,7 +139,6 @@ inline void led_flash()
 
 //////////////////////////////////////////////////////////////////////
 // a queue of key states to send
-// if usb is idle and the queue is not empty, send next one
 
 // must be a power of 2
 #define KEY_QUEUE_LEN 32
@@ -185,6 +197,8 @@ void do_press(int k)
 #define DEBOUNCE_TIME 0x70u
 #define T2_DEBOUNCE (0xFFu - DEBOUNCE_TIME)
 
+uint16 bootloader_delay = 0;
+
 void main()
 {
     // init clock
@@ -215,6 +229,22 @@ void main()
             TF2 = 0;
             pressed = new_state;
             button_state = new_state;
+        }
+
+        if(button_state) {
+            if(TF0 == 1) {
+                TF0 = 0;
+                bootloader_delay += 1;
+                if(bootloader_delay == BOOTLOADER_DELAY) {
+                    EA = 0;
+                    USB_CTRL = 0;
+                    UDEV_CTRL = 0;
+                    mDelaymS(1000);
+                    bootloader554();
+                }
+            }
+        } else {
+            bootloader_delay = 0;
         }
 
         // read the rotary encoder (returns -1, 0 or 1)

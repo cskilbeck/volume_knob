@@ -3,7 +3,8 @@
 
 #include <ch554.h>
 
-// uncomment this line for full speed
+// uncomment this line for full speed (12Mb)
+// comment it out for low speed (1.5Mb)
 
 //#define USB_FULL_SPEED 1
 
@@ -271,7 +272,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                         }
 
                         // send at most 8 bytes per request (coalesced on host)
-                        len = MIN(SetupLen, 8);
+                        len = MIN(SetupLen, MAX_PACKET_SIZE);
                         memcpy(Ep0Buffer, pDescr, len);
                         SetupLen -= len;
                         pDescr += len;

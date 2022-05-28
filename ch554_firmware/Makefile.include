@@ -13,6 +13,7 @@
 # $(PROJECT)        name of the project (defaults to 'project')
 # $(OBJ_DIR)        where to put object files (defaults to 'obj')
 # $(BIN_DIR)        where to put binary/hex files (defaults to 'bin')
+# $(INC_DIR)		where to look for include files (defaults to 'include')
 # $(EXTRA_FLAGS)    for SDCC command line (no default)
 
 #######################################################
@@ -44,6 +45,7 @@ PROJECT ?= project
 
 OBJ_DIR ?= obj
 BIN_DIR ?= bin
+INC_DIR ?= include
 
 CFLAGS := -mmcs51 \
 		  --model-small \
@@ -51,7 +53,7 @@ CFLAGS := -mmcs51 \
 		  --xram-loc $(XRAM_LOC) \
 		  --code-size $(CODE_SIZE) \
 		  -DFREQ_SYS=$(FREQ_SYS) \
-		  -Iinclude \
+		  -I$(INC_DIR) \
 		  $(EXTRA_FLAGS)
 
 VPATH = src:lib
@@ -107,7 +109,7 @@ flash: $(TARGET).bin pre-flash
 
 .DEFAULT_GOAL := build
 
-.PHONY: clean all
+.PHONY: clean all build
 
 build: $(TARGET).bin $(TARGET).hex
 
