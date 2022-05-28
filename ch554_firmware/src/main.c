@@ -231,6 +231,7 @@ void main()
             button_state = new_state;
         }
 
+        // hold button down to go into bootloader
         if(button_state) {
             if(TF0 == 1) {
                 TF0 = 0;
@@ -239,7 +240,7 @@ void main()
                     EA = 0;
                     USB_CTRL = 0;
                     UDEV_CTRL = 0;
-                    mDelaymS(1000);
+                    mDelaymS(250);
                     bootloader554();
                 }
             }
