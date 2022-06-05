@@ -1,0 +1,32 @@
+Altium Designer Pick and Place Locations
+U:\dev\hid_kbd\pcb\wch554g\Outputs\2022-06-05\Pick Place for wch554g.csv
+
+========================================================================================================================
+File Design Information:
+
+Date:       05/06/22
+Time:       19:40
+Revision:   Not in VersionControl
+Variant:    No variations
+Units used: mm
+
+"Designator","Center-X(mm)","Center-Y(mm)","Layer","Rotation"
+"DBG","17.4880mm","3.6068mm","BottomLayer","270"
+"MCU2","6.7818mm","7.6454mm","BottomLayer","360"
+"ROTARY_ENCODER1","6.7700mm","8.0050mm","TopLayer","180"
+"R10","14.6424mm","6.1468mm","BottomLayer","180"
+"R9","9.3328mm","1.9059mm","BottomLayer","180"
+"R8","6.9231mm","14.1000mm","BottomLayer","180"
+"R7","1.6122mm","15.0114mm","BottomLayer","180"
+"R6","1.6622mm","1.0090mm","BottomLayer","180"
+"J2","16.1755mm","11.3200mm","BottomLayer","270"
+"F2","12.0844mm","14.8144mm","BottomLayer","180"
+"D8","11.1053mm","13.4248mm","BottomLayer","360"
+"D7","12.3698mm","12.4953mm","BottomLayer","90"
+"D6","12.3698mm","10.8022mm","BottomLayer","270"
+"D5","6.4648mm","1.8538mm","BottomLayer","180"
+"C10","1.6872mm","2.4384mm","BottomLayer","180"
+"C9","0.9144mm","12.7378mm","BottomLayer","90"
+"C8","4.1833mm","13.8460mm","BottomLayer","360"
+"C7","11.9394mm","4.4908mm","BottomLayer","180"
+"C6","11.8667mm","2.2489mm","BottomLayer","90"
