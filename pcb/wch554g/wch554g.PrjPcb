@@ -86,7 +86,7 @@ ClassGenCCAutoRoomEnabled=1
 ClassGenNCAutoScope=None
 DItemRevisionGUID=
 GenerateClassCluster=0
-DocumentUniqueId=
+DocumentUniqueId=HVMKJXRU
 
 [Document4]
 DocumentPath=..\wch554e\wch554e\wch554e.SchLib
@@ -103,7 +103,7 @@ ClassGenCCAutoRoomEnabled=1
 ClassGenNCAutoScope=None
 DItemRevisionGUID=
 GenerateClassCluster=0
-DocumentUniqueId=
+DocumentUniqueId=AOUJCHZG
 
 [Document5]
 DocumentPath=wch554g.PvLib
@@ -1270,7 +1270,8 @@ PartTypes=0
 [NetInfos]
 Net1=NetName=3v3|NetColor=clYellow
 Net2=NetName=GND|NetColor=$006EFF6E
-Net3=NetName=VUSB|NetColor=$00FFFF6E
+Net3=NetName=VIN|NetColor=$00FFFF6E
+Net4=NetName=VUSB|NetColor=$00FFFF6E
 
 [Comparison Options]
 ComparisonOptions0=Kind=Net|MinPercent=75|MinMatch=3|ShowMatch=-1|Confirm=-1|UseName=-1|InclAllRules=0
