@@ -6,11 +6,15 @@
 #include <debug.h>
 #include "hid.h"
 
-// Define this as 1 for one kind of encoders, -1 for the other ones (some are
-// reversed). This is the default rotation, reverse by triple-clicking the knob
+#define CLOCKWISE 2
+#define ANTI_CLOCKWISE 0
 
-#define ROTARY_DIRECTION (1)
-//#define ROTARY_DIRECTION (-1)
+// Define this as CLOCKWISE for one kind of encoders, ANTI_CLOCKWISE for the other
+// ones (some are reversed). This sets the default rotation (after first flash),
+// reverse by triple-clicking the knob
+
+#define ROTARY_DIRECTION (CLOCKWISE)
+//#define ROTARY_DIRECTION (ANTI_CLOCKWISE)
 
 //////////////////////////////////////////////////////////////////////
 // how long a button press goes into bootloader
@@ -143,6 +147,64 @@ inline void led_flash()
 }
 
 //////////////////////////////////////////////////////////////////////
+// read bytes from the data flash area
+
+void read_flash_data(uint8 flash_addr, uint8 len, uint8 *data)
+{
+    flash_addr <<= 1;
+
+    while(len-- != 0) {
+
+        ROM_ADDR_L = flash_addr;
+        ROM_ADDR_H = DATA_FLASH_ADDR >> 8;
+
+        ROM_CTRL = ROM_CMD_READ;
+
+        if((ROM_STATUS & bROM_CMD_ERR) != 0) {
+            break;
+        }
+
+        *data++ = ROM_DATA_L;
+
+        flash_addr += 2;
+    }
+}
+
+//////////////////////////////////////////////////////////////////////
+// write bytes to the data flash area
+
+void write_flash_data(uint8 flash_addr, uint8 len, uint8 *data)
+{
+    flash_addr <<= 1;
+
+    SAFE_MOD = 0x55;
+    SAFE_MOD = 0xAA;
+
+    GLOBAL_CFG |= bDATA_WE;
+
+    while(len-- != 0) {
+
+        ROM_ADDR_L = flash_addr;
+        ROM_ADDR_H = DATA_FLASH_ADDR >> 8;
+
+        ROM_DATA_L = *data++;
+
+        ROM_CTRL = ROM_CMD_WRITE;
+
+        if((ROM_STATUS & bROM_CMD_ERR) != 0) {
+            break;
+        }
+
+        flash_addr += 2;
+    }
+
+    SAFE_MOD = 0x55;
+    SAFE_MOD = 0xAA;
+
+    GLOBAL_CFG &= ~bDATA_WE;
+}
+
+//////////////////////////////////////////////////////////////////////
 // a queue of key states to send
 
 // must be a power of 2
@@ -204,10 +266,20 @@ void do_press(int k)
 
 uint16 bootloader_delay = 0;
 
+uint8 vol_direction;
+int8 turn_value;
+
 void main()
 {
     // init clock
     CfgFsys();
+
+    read_flash_data(0, 1, &vol_direction);
+
+    if(vol_direction == 0xff) {
+        vol_direction = ROTARY_DIRECTION;
+    }
+    turn_value = (int8)vol_direction - 1;    // becomes -1 or 1
 
     // Set LED_BIT as output, BTN_BITs as input
     P1_MOD_OC = 0b01110000;
@@ -224,7 +296,6 @@ void main()
     // Triple click admin
     uint8 t1_count = 0;
     uint8 clicks = 0;
-    int8 vol_direction = -ROTARY_DIRECTION;
 
     // for debouncing the button
     bool button_state = false;
@@ -289,7 +360,9 @@ void main()
             if(t1_count < 200) {
                 clicks += 1;
                 if(clicks == 2) {
-                    vol_direction = -vol_direction;
+                    vol_direction = 2 - vol_direction;
+                    turn_value = vol_direction - 1;
+                    write_flash_data(0, 1, &vol_direction);
                 }
             }
             TL1 = 0;
@@ -298,10 +371,11 @@ void main()
             t1_count = 0;
         }
 
-        if(direction == -vol_direction) {
+        if(direction == turn_value) {
             do_press(KEY_MEDIA_VOL_UP);
+        }
 
-        } else if(direction == vol_direction) {
+        else if(direction == -turn_value) {
             do_press(KEY_MEDIA_VOL_DOWN);
         }
 
