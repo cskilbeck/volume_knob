@@ -6,11 +6,16 @@
 #include <debug.h>
 #include "hid.h"
 
+// Define this as 1 for one kind of encoders, -1 for the other ones (some are
+// reversed). This is the default rotation, reverse by triple-clicking the knob
+
+#define ROTARY_DIRECTION (1)
+//#define ROTARY_DIRECTION (-1)
+
 //////////////////////////////////////////////////////////////////////
 // how long a button press goes into bootloader
 
-#define BOOTLOADER_DELAY 0x100    // about 1 seconds
-//#define BOOTLOADER_DELAY 0x500    // about 5 seconds
+#define BOOTLOADER_DELAY 0x300    // about 3 seconds
 
 //////////////////////////////////////////////////////////////////////
 
@@ -213,7 +218,13 @@ void main()
 
     // Start Timer0, Timer2
     TR0 = 1;
+    TR1 = 1;
     TR2 = 1;
+
+    // Triple click admin
+    uint8 t1_count = 0;
+    uint8 clicks = 0;
+    int8 vol_direction = -ROTARY_DIRECTION;
 
     // for debouncing the button
     bool button_state = false;
@@ -248,6 +259,16 @@ void main()
             bootloader_delay = 0;
         }
 
+        // delay counter for knob triple-click
+        if(TF1 == 1) {
+            TF1 = 0;
+            if(t1_count < 200) {
+                t1_count += 1;
+            } else {
+                clicks = 0;
+            }
+        }
+
         // read the rotary encoder (returns -1, 0 or 1)
         int8 direction = read_encoder();
 
@@ -263,12 +284,24 @@ void main()
         // queue up some keypresses if something happened
         if(pressed) {
             do_press(KEY_MEDIA_MUTE);
+
+            // check for triple-click
+            if(t1_count < 200) {
+                clicks += 1;
+                if(clicks == 2) {
+                    vol_direction = -vol_direction;
+                }
+            }
+            TL1 = 0;
+            TH1 = 0;
+            TF1 = 0;
+            t1_count = 0;
         }
 
-        if(direction == -1) {
+        if(direction == -vol_direction) {
             do_press(KEY_MEDIA_VOL_UP);
 
-        } else if(direction == 1) {
+        } else if(direction == vol_direction) {
             do_press(KEY_MEDIA_VOL_DOWN);
         }
 
