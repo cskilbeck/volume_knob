@@ -9,9 +9,9 @@
 #define CLOCKWISE 2
 #define ANTI_CLOCKWISE 0
 
-// Define this as CLOCKWISE for one kind of encoders, ANTI_CLOCKWISE for the other
-// ones (some are reversed). This sets the default rotation (after first flash),
-// reverse by triple-clicking the knob
+// Define ROTARY_DIRECTION as CLOCKWISE for one kind of encoders, ANTI_CLOCKWISE for
+// the other ones (some are reversed). This sets the default rotation (after first
+// flash), reverse by triple-clicking the knob
 
 #define ROTARY_DIRECTION (CLOCKWISE)
 //#define ROTARY_DIRECTION (ANTI_CLOCKWISE)
@@ -361,7 +361,7 @@ void main()
                 clicks += 1;
                 if(clicks == 2) {
                     vol_direction = 2 - vol_direction;
-                    turn_value = vol_direction - 1;
+                    turn_value = (int8)vol_direction - 1;
                     write_flash_data(0, 1, &vol_direction);
                 }
             }
