@@ -5,6 +5,7 @@
 #include <ch554.h>
 #include <debug.h>
 #include "hid.h"
+#include "hid_keys.h"
 
 #define CLOCKWISE 2
 #define ANTI_CLOCKWISE 0
@@ -103,6 +104,22 @@ int8 read_encoder()
         }
     }
     return 0;
+}
+
+//////////////////////////////////////////////////////////////////////
+// Flash LED before jumping to bootloader
+
+void bootloader_led_flash()
+{
+    LED_BIT = 0;
+    for(int8 i = 0; i < 8; ++i) {
+        TF2 = 0;
+        TH2 = 0;
+        TL2 = 120;
+        while(TF2 != 1) {
+        }
+        LED_BIT ^= 1;
+    }
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -264,7 +281,7 @@ void do_press(int k)
 #define DEBOUNCE_TIME 0x70u
 #define T2_DEBOUNCE (0xFFu - DEBOUNCE_TIME)
 
-uint16 bootloader_delay = 0;
+uint16 press_time = 0;
 
 uint8 vol_direction;
 int8 turn_value;
@@ -288,7 +305,7 @@ void main()
     // start usb client
     usb_init();
 
-    // Start Timer0, Timer2
+    // Start Timer0, Timer1, Timer2
     TR0 = 1;
     TR1 = 1;
     TR2 = 1;
@@ -317,17 +334,23 @@ void main()
         if(button_state) {
             if(TF0 == 1) {
                 TF0 = 0;
-                bootloader_delay += 1;
-                if(bootloader_delay == BOOTLOADER_DELAY) {
+                press_time += 1;
+                if(press_time == BOOTLOADER_DELAY) {
+
+                    // shutdown peripherals
                     EA = 0;
                     USB_CTRL = 0;
                     UDEV_CTRL = 0;
-                    mDelaymS(250);
+
+                    // flash LED for a bit
+                    bootloader_led_flash();
+
+                    // and jump to bootloader
                     bootloader554();
                 }
             }
         } else {
-            bootloader_delay = 0;
+            press_time = 0;
         }
 
         // delay counter for knob triple-click
@@ -372,11 +395,11 @@ void main()
         }
 
         if(direction == turn_value) {
-            do_press(KEY_MEDIA_VOL_UP);
+            do_press(KEY_MEDIA_VOLUMEUP);
         }
 
         else if(direction == -turn_value) {
-            do_press(KEY_MEDIA_VOL_DOWN);
+            do_press(KEY_MEDIA_VOLUMEDOWN);
         }
 
         // send key on/off to usb hid if there are some waiting to be sent

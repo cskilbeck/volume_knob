@@ -44,10 +44,12 @@
 #define UsbSetupBuf ((USB_SETUP_REQ *)Ep0Buffer)
 
 // Endpoint0 OUT & IN
-__xdata __at(FIXED_ADDRESS_EP0_BUFFER) uint8_t Ep0Buffer[DEFAULT_ENDP0_SIZE];
+__xdata __at(FIXED_ADDRESS_EP0_BUFFER)
+uint8_t Ep0Buffer[DEFAULT_ENDP0_SIZE];
 
 // Endpoint1 IN
-__xdata __at(FIXED_ADDRESS_EP1_BUFFER) uint8_t Ep1Buffer[MAX_PACKET_SIZE];
+__xdata __at(FIXED_ADDRESS_EP1_BUFFER)
+uint8_t Ep1Buffer[MAX_PACKET_SIZE];
 
 uint8_t SetupReq;
 uint8_t SetupLen;
