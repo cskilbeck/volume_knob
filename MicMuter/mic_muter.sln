@@ -1,0 +1,44 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32929.385
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mic_muter", "MicMuter\MicMuter.vcxproj", "{4E2A0630-2E2A-4DF9-9132-579F91F05899}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1596A0B4-E47D-4FF7-8042-56BD6BFDDB9C} = {1596A0B4-E47D-4FF7-8042-56BD6BFDDB9C}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mic_muter_dll", "mic_muter_dll\mic_muter_dll.vcxproj", "{1596A0B4-E47D-4FF7-8042-56BD6BFDDB9C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4E2A0630-2E2A-4DF9-9132-579F91F05899}.Debug|x64.ActiveCfg = Debug|x64
+		{4E2A0630-2E2A-4DF9-9132-579F91F05899}.Debug|x64.Build.0 = Debug|x64
+		{4E2A0630-2E2A-4DF9-9132-579F91F05899}.Debug|x86.ActiveCfg = Debug|Win32
+		{4E2A0630-2E2A-4DF9-9132-579F91F05899}.Debug|x86.Build.0 = Debug|Win32
+		{4E2A0630-2E2A-4DF9-9132-579F91F05899}.Release|x64.ActiveCfg = Release|x64
+		{4E2A0630-2E2A-4DF9-9132-579F91F05899}.Release|x64.Build.0 = Release|x64
+		{4E2A0630-2E2A-4DF9-9132-579F91F05899}.Release|x86.ActiveCfg = Release|Win32
+		{4E2A0630-2E2A-4DF9-9132-579F91F05899}.Release|x86.Build.0 = Release|Win32
+		{1596A0B4-E47D-4FF7-8042-56BD6BFDDB9C}.Debug|x64.ActiveCfg = Debug|x64
+		{1596A0B4-E47D-4FF7-8042-56BD6BFDDB9C}.Debug|x64.Build.0 = Debug|x64
+		{1596A0B4-E47D-4FF7-8042-56BD6BFDDB9C}.Debug|x86.ActiveCfg = Debug|Win32
+		{1596A0B4-E47D-4FF7-8042-56BD6BFDDB9C}.Debug|x86.Build.0 = Debug|Win32
+		{1596A0B4-E47D-4FF7-8042-56BD6BFDDB9C}.Release|x64.ActiveCfg = Release|x64
+		{1596A0B4-E47D-4FF7-8042-56BD6BFDDB9C}.Release|x64.Build.0 = Release|x64
+		{1596A0B4-E47D-4FF7-8042-56BD6BFDDB9C}.Release|x86.ActiveCfg = Release|Win32
+		{1596A0B4-E47D-4FF7-8042-56BD6BFDDB9C}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3AF8BFBD-1D5E-4DE0-9C8C-6C34F3CA6192}
+	EndGlobalSection
+EndGlobal
