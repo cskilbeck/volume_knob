@@ -13,3 +13,4 @@
 #include "ansi.h"
 #include "logger.h"
 #include "hook.h"
+#include "mic_muter.h"

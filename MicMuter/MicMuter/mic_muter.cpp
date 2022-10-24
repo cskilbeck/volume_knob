@@ -23,7 +23,6 @@ namespace chs
 
     //////////////////////////////////////////////////////////////////////
 
-    HWND main_hwnd = nullptr;
     HINSTANCE hInst;
 
     ComPtr<audio_controller> audio;
@@ -90,16 +89,12 @@ namespace chs
 
         case WM_CREATE: {
 
-            main_hwnd = hWnd;
-
             // Make BLACK the transparency color and use 25% alpha
             SetLayeredWindowAttributes(hWnd, RGB(0, 0, 0), 64, LWA_ALPHA | LWA_COLORKEY);
 
             init_dpi_scale(hWnd);
 
-            // Position at the center of the primary monitor
-            POINT const ptZeroZero = {};
-            HMONITOR hMonitor = MonitorFromPoint(ptZeroZero, MONITOR_DEFAULTTOPRIMARY);
+            HMONITOR hMonitor = MonitorFromPoint({ 0, 0 }, MONITOR_DEFAULTTOPRIMARY);
             MONITORINFO mi = { sizeof(mi) };
             GetMonitorInfo(hMonitor, &mi);
 
@@ -107,7 +102,7 @@ namespace chs
 
             SIZE const size = { img_size, img_size };
 
-            POINT const pt = { mi.rcMonitor.left + img_size, mi.rcMonitor.bottom - size.cy * 2 };
+            POINT const pt = { mi.rcMonitor.left + img_size, mi.rcMonitor.bottom - img_size * 2 };
 
             SetWindowPos(hWnd, HWND_TOPMOST, pt.x, pt.y, size.cx, size.cy, 0);
 
@@ -116,20 +111,17 @@ namespace chs
             util::load_bitmap(ID_IMG_MUTED, &muted_bmp, img_size, img_size);
             util::load_bitmap(ID_IMG_NOT_MUTED, &non_muted_bmp, img_size, img_size);
 
+            main_hwnd = hWnd;
+
             break;
         }
 
-        case WM_DESTROY: {
+        case WM_DESTROY:
             notify_icon.destroy();
             UnhookWindowsHookEx(mic_mute_hook);
             DeleteDC(bmp_dc);
             PostQuitMessage(0);
             return 0;
-        }
-
-        case WM_ERASEBKGND: {
-            return 1;
-        }
 
         case WM_COMMAND: {
             int const wmId = LOWORD(wParam);
@@ -141,7 +133,7 @@ namespace chs
             break;
         }
 
-        case WM_NOTIFICATION_ICON: {
+        case WM_NOTIFICATION_ICON:
 
             switch(LOWORD(lParam)) {
             case WM_CONTEXTMENU:
@@ -149,9 +141,8 @@ namespace chs
                 break;
             }
             break;
-        }
 
-        case WM_VOLUMECHANGE: {
+        case WM_VOLUMECHANGE:
             audio->get_level_info(&current_volume);
             notify_icon.update(current_volume.bMuted);
             window_alpha = 255;
@@ -160,12 +151,10 @@ namespace chs
             InvalidateRect(hWnd, nullptr, TRUE);
             timer_id = SetTimer(hWnd, 101, 33, nullptr);
             return 0;
-        }
 
-        case WM_ENDPOINTCHANGE: {
+        case WM_ENDPOINTCHANGE:
             audio->change_endpoint();
             return 0;
-        }
 
         case WM_TIMER: {
             window_alpha -= 1;
@@ -177,6 +166,13 @@ namespace chs
             }
             return 0;
         }
+
+        case WM_HOTKEY_PRESSED:
+            audio->toggle_mute();
+            break;
+
+        case WM_ERASEBKGND:
+            return 1;
 
         case WM_PAINT: {
             PAINTSTRUCT ps;
@@ -218,8 +214,6 @@ namespace chs
 
     HRESULT init_window()
     {
-        HR(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE));
-
         double_buffered = SUCCEEDED(BufferedPaintInit());
 
         constexpr char class_name[] = "mic_muter";
@@ -254,6 +248,8 @@ namespace chs
         UNREFERENCED_PARAMETER(lpCmdLine);
 
         hInst = hInstance;
+
+        HR(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE));
 
         SetProcessDPIAware();
 

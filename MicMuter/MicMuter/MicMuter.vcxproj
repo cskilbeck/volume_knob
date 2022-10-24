@@ -154,6 +154,8 @@
     <ResourceCompile Include="MicMuter.rc" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="images\microphone_mute.ico" />
+    <Image Include="images\microphone_normal.ico" />
     <Image Include="MicMuter.ico" />
     <Image Include="small.ico" />
   </ItemGroup>

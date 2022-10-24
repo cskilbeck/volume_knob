@@ -1,14 +1,5 @@
 #pragma once
 
-// THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
-// ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO
-// THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
-// PARTICULAR PURPOSE.
-//
-// Copyright (c) Microsoft Corporation. All rights reserved
-
-#pragma once
-
 namespace chs
 {
     struct VOLUME_INFO
@@ -36,8 +27,8 @@ namespace chs
         HRESULT attach_to_default_endpoint();
         void detach_from_endpoint();
 
-
         // IMMNotificationClient (only need to really implement OnDefaultDeviceChanged)
+
         IFACEMETHODIMP OnDeviceStateChanged(LPCWSTR /*pwstrDeviceId*/, DWORD /*dwNewState*/)
         {
             return S_OK;
@@ -53,9 +44,7 @@ namespace chs
             return S_OK;
         }
 
-        IFACEMETHODIMP OnDefaultDeviceChanged(EDataFlow flow, ERole role, LPCWSTR pwstrDefaultDeviceId);    // ****
-
-        IFACEMETHODIMP OnPropertyValueChanged(LPCWSTR /*pwstrDeviceId*/, const PROPERTYKEY /*key*/)
+        IFACEMETHODIMP OnPropertyValueChanged(LPCWSTR, const PROPERTYKEY)
         {
             return S_OK;
         }
@@ -74,6 +63,8 @@ namespace chs
         {
             return S_OK;
         }
+
+        IFACEMETHODIMP OnDefaultDeviceChanged(EDataFlow flow, ERole role, LPCWSTR pwstrDefaultDeviceId);
 
         IFACEMETHODIMP OnNotify(PAUDIO_VOLUME_NOTIFICATION_DATA pNotify);
 
