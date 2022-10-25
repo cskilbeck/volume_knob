@@ -32,9 +32,9 @@ typedef uint16_t uint16;
 //////////////////////////////////////////////////////////////////////
 // BOOTLOADER admin
 
-typedef void (*TBL)(void);
-#define bootloader554 ((TBL)0x3800)    // CH551/2/3/4
-#define bootloader559 ((TBL)0xF400)    // CH558/9
+typedef void (*BOOTLOADER)(void);
+#define bootloader554 ((BOOTLOADER)0x3800)    // CH551/2/3/4
+#define bootloader559 ((BOOTLOADER)0xF400)    // CH558/9
 
 //////////////////////////////////////////////////////////////////////
 // GPIOs
@@ -109,10 +109,10 @@ int8 read_encoder()
 //////////////////////////////////////////////////////////////////////
 // Flash LED before jumping to bootloader
 
-void bootloader_led_flash()
+void bootloader_led_flash(int8 n)
 {
     LED_BIT = 0;
-    for(int8 i = 0; i < 8; ++i) {
+    for(int8 i = 0; i < n; ++i) {
         TF2 = 0;
         TH2 = 0;
         TL2 = 120;
@@ -225,9 +225,9 @@ void write_flash_data(uint8 flash_addr, uint8 len, uint8 *data)
 // a queue of key states to send
 
 // must be a power of 2
-#define KEY_QUEUE_LEN 32
+#define KEY_QUEUE_LEN 16
 
-uint8 queue_buffer[KEY_QUEUE_LEN];
+uint16 queue_buffer[KEY_QUEUE_LEN];
 uint8 queue_head = 0;
 uint8 queue_size = 0;
 
@@ -250,15 +250,15 @@ inline bool queue_empty()
 
 void queue_put(int k)
 {
-    queue_buffer[(queue_head + queue_size) & (KEY_QUEUE_LEN - 1)] = k;
+    queue_buffer[(queue_head + queue_size) & (KEY_QUEUE_LEN - 1)] = (uint16)k;
     queue_size += 1;
 }
 
 // check it's not empty before calling this
 
-uint8 queue_get()
+uint16 queue_get()
 {
-    uint8 next = queue_buffer[queue_head];
+    uint16 next = queue_buffer[queue_head];
     queue_size -= 1;
     queue_head = ++queue_head & (KEY_QUEUE_LEN - 1);
     return next;
@@ -267,18 +267,18 @@ uint8 queue_get()
 //////////////////////////////////////////////////////////////////////
 // add a momentary keypress to the queue and flash the led
 
-void do_press(int k)
+void do_press(uint16 k)
 {
     if(queue_space() > 1) {
         queue_put(k);
-        queue_put(0);
+        queue_put(k & 0x8000);
         led_flash();
     }
 }
 
 //////////////////////////////////////////////////////////////////////
 
-#define DEBOUNCE_TIME 0x70u
+#define DEBOUNCE_TIME 0xA0u
 #define T2_DEBOUNCE (0xFFu - DEBOUNCE_TIME)
 
 uint16 press_time = 0;
@@ -309,6 +309,8 @@ void main()
     TR0 = 1;
     TR1 = 1;
     TR2 = 1;
+
+    bootloader_led_flash(7);
 
     // Triple click admin
     uint8 t1_count = 0;
@@ -343,7 +345,7 @@ void main()
                     UDEV_CTRL = 0;
 
                     // flash LED for a bit
-                    bootloader_led_flash();
+                    bootloader_led_flash(8);
 
                     // and jump to bootloader
                     bootloader554();
@@ -377,7 +379,7 @@ void main()
 
         // queue up some keypresses if something happened
         if(pressed) {
-            do_press(KEY_MEDIA_MUTE);
+            do_press(KEY_F24);
 
             // check for triple-click
             if(t1_count < 200) {
@@ -395,15 +397,15 @@ void main()
         }
 
         if(direction == turn_value) {
-            do_press(KEY_MEDIA_VOLUMEUP);
+            do_press(KEY_MEDIA_VOLUMEUP | 0x8000);
         }
 
         else if(direction == -turn_value) {
-            do_press(KEY_MEDIA_VOLUMEDOWN);
+            do_press(KEY_MEDIA_VOLUMEDOWN | 0x8000);
         }
 
         // send key on/off to usb hid if there are some waiting to be sent
-        if(usb_idle && !queue_empty()) {
+        if(usb_idle == 3 && !queue_empty()) {
             usb_set_keystate(queue_get());
         }
         led_update();
