@@ -8,7 +8,7 @@ namespace
 
     LOG_CONTEXT("icon");
 
-    class __declspec(uuid("CB4F485F-66A8-4A91-8D8F-3BEF481B6C3D")) icon_guid;
+    class __declspec(uuid("75F258D7-14E5-433B-B5D7-7ECA6AABE078")) icon_guid;
 }
 
 namespace chs
@@ -18,7 +18,8 @@ namespace chs
     HRESULT notification_icon::load(bool is_muted)
     {
         HR(LoadIconMetric(GetModuleHandle(nullptr), MAKEINTRESOURCEW(IDI_ICON_MIC_MUTE), LIM_SMALL, &muted_icon));
-        HR(LoadIconMetric(GetModuleHandle(nullptr), MAKEINTRESOURCEW(IDI_ICON_MIC_GREEN), LIM_SMALL, &normal_icon));
+        HR(LoadIconMetric(GetModuleHandle(nullptr), MAKEINTRESOURCEW(IDI_ICON_MIC_NORMAL), LIM_SMALL, &normal_icon));
+        HR(LoadIconMetric(GetModuleHandle(nullptr), MAKEINTRESOURCEW(IDI_ICON_MIC_NORMAL), LIM_SMALL, &missing_icon));
 
         NOTIFYICONDATA nid = { sizeof(nid) };
         nid.hWnd = main_hwnd;

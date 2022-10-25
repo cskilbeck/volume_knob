@@ -22,7 +22,7 @@
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{4e2a0630-2e2a-4df9-9132-579f91f05899}</ProjectGuid>
-    <RootNamespace>MicMuter</RootNamespace>
+    <RootNamespace>mic_muter</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     <ProjectName>mic_muter</ProjectName>
   </PropertyGroup>
@@ -151,12 +151,18 @@
     <ClCompile Include="util.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="MicMuter.rc" />
+    <ResourceCompile Include="mic_muter.rc" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="images\icon1.ico" />
+    <Image Include="images\icon2.ico" />
+    <Image Include="images\microphone.ico" />
+    <Image Include="images\microphone_missing.ico" />
     <Image Include="images\microphone_mute.ico" />
+    <Image Include="images\microphone_mute.png" />
     <Image Include="images\microphone_normal.ico" />
-    <Image Include="MicMuter.ico" />
+    <Image Include="images\microphone_normal.png" />
+    <Image Include="mic_muter.ico" />
     <Image Include="small.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

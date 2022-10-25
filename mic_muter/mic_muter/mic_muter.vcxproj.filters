@@ -61,15 +61,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="MicMuter.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
     <Image Include="small.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="MicMuter.ico">
       <Filter>Resource Files</Filter>
     </Image>
     <Image Include="images\microphone_mute.ico">
@@ -78,5 +70,31 @@
     <Image Include="images\microphone_normal.ico">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="mic_muter.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="images\microphone.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="images\microphone_mute.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="images\microphone_normal.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="images\icon1.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="images\icon2.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="images\microphone_missing.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="mic_muter.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

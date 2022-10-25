@@ -41,6 +41,7 @@ namespace chs
     int img_size;
 
     int window_alpha = 255;
+    int min_window_alpha = 0;
 
     UINT_PTR timer_id = 101;
 
@@ -100,11 +101,9 @@ namespace chs
 
             img_size = (mi.rcMonitor.right - mi.rcMonitor.left) * 5 / 100;
 
-            SIZE const size = { img_size, img_size };
-
             POINT const pt = { mi.rcMonitor.left + img_size, mi.rcMonitor.bottom - img_size * 2 };
 
-            SetWindowPos(hWnd, HWND_TOPMOST, pt.x, pt.y, size.cx, size.cy, 0);
+            SetWindowPos(hWnd, HWND_TOPMOST, pt.x, pt.y, img_size, img_size, 0);
 
             bmp_dc = CreateCompatibleDC(nullptr);
 
@@ -145,11 +144,12 @@ namespace chs
         case WM_VOLUMECHANGE:
             audio->get_level_info(&current_volume);
             notify_icon.update(current_volume.bMuted);
-            window_alpha = 255;
+            window_alpha = 512;
+            min_window_alpha = current_volume.bMuted ? 64 : 0;
             SetLayeredWindowAttributes(hWnd, RGB(0, 0, 0), window_alpha, LWA_ALPHA | LWA_COLORKEY);
             ShowWindow(hWnd, SW_SHOW);
-            InvalidateRect(hWnd, nullptr, TRUE);
-            timer_id = SetTimer(hWnd, 101, 33, nullptr);
+            InvalidateRect(hWnd, nullptr, false);
+            timer_id = SetTimer(hWnd, 101, 16, nullptr);
             return 0;
 
         case WM_ENDPOINTCHANGE:
@@ -157,9 +157,9 @@ namespace chs
             return 0;
 
         case WM_TIMER: {
-            window_alpha -= 1;
+            window_alpha = std::max(min_window_alpha, window_alpha - 3);
             if(window_alpha != 0) {
-                SetLayeredWindowAttributes(hWnd, RGB(0, 0, 0), window_alpha, LWA_ALPHA | LWA_COLORKEY);
+                SetLayeredWindowAttributes(hWnd, RGB(0, 0, 0), std::min(255, window_alpha), LWA_ALPHA | LWA_COLORKEY);
             } else {
                 ShowWindow(hWnd, SW_HIDE);
                 KillTimer(hWnd, timer_id);
@@ -168,6 +168,7 @@ namespace chs
         }
 
         case WM_HOTKEY_PRESSED:
+            LOG_INFO("HOTKEY!");
             audio->toggle_mute();
             break;
 
@@ -175,14 +176,14 @@ namespace chs
             return 1;
 
         case WM_PAINT: {
+
             PAINTSTRUCT ps;
-            HPAINTBUFFER hBufferedPaint = nullptr;
-            RECT rc;
-
-
-            GetClientRect(hWnd, &rc);
             HDC hdc = BeginPaint(hWnd, &ps);
 
+            RECT rc;
+            GetClientRect(hWnd, &rc);
+
+            HPAINTBUFFER hBufferedPaint = nullptr;
             if(double_buffered) {
                 HDC hdcMem;
                 hBufferedPaint = BeginBufferedPaint(hdc, &rc, BPBF_COMPOSITED, nullptr, &hdcMem);

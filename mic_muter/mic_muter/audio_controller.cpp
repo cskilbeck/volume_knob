@@ -1,10 +1,3 @@
-// THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
-// ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO
-// THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
-// PARTICULAR PURPOSE.
-//
-// Copyright (c) Microsoft Corporation. All rights reserved
-
 #include "framework.h"
 
 namespace chs
@@ -66,8 +59,9 @@ namespace chs
         }
 
         HR(volume_control->GetMute(&pInfo->bMuted));
-        HR(volume_control->GetVolumeStepInfo(&pInfo->nStep, &pInfo->cSteps));
-        LOG_DEBUG("Microphone is {}muted", pInfo->bMuted ? "" : "not ");
+        // HR(volume_control->GetVolumeStepInfo(&pInfo->nStep, &pInfo->cSteps));
+        LOG_INFO("Microphone is {}muted", pInfo->bMuted ? "" : "not ");
+        current_mic_state = pInfo->bMuted ? microphone_state::muted : microphone_state::normal;
         return S_OK;
     }
 
@@ -101,7 +95,8 @@ namespace chs
         HR(audio_endpoint->Activate(__uuidof(volume_control), CLSCTX_INPROC_SERVER, NULL, (void **)&volume_control));
         HR(volume_control->RegisterControlChangeNotify(this));
         volume_registered = true;
-        LOG_DEBUG("Microphone is attached and enabled");
+        LOG_INFO("Microphone is attached and enabled");
+        current_mic_state = microphone_state::normal;
         return S_OK;
     }
 
@@ -119,8 +114,9 @@ namespace chs
                 volume_registered = false;
             }
             volume_control.Reset();
+            LOG_INFO("Detached from microphone");
+            current_mic_state = microphone_state::missing;
         }
-        LOG_DEBUG("Detached from microphone");
         audio_endpoint.Reset();
     }
 
@@ -135,21 +131,76 @@ namespace chs
     }
 
     // ----------------------------------------------------------------------
+    //  IMMNotificationClient::OnDeviceStateChanged
+    // ----------------------------------------------------------------------
+
+    HRESULT audio_controller::OnDeviceStateChanged(LPCWSTR pwstrDeviceId, DWORD dwNewState)
+    {
+        if(pwstrDeviceId == nullptr) {
+            pwstrDeviceId = L"NULL";
+        }
+        LOG_DEBUG(L"OnDeviceStateChanged to {}: {}", dwNewState, pwstrDeviceId);
+        if(dwNewState != DEVICE_STATE_ACTIVE) {
+            current_mic_state = microphone_state::missing;
+            PostMessage(main_hwnd, WM_ENDPOINTCHANGE, 0, 0);
+        }
+        return S_OK;
+    }
+
+    // ----------------------------------------------------------------------
     //  Implementation of IMMNotificationClient::OnDefaultDeviceChanged
     //
     //  When the user changes the default output device we want to stop monitoring the
     //  former default and start monitoring the new default
     // ----------------------------------------------------------------------
 
-    HRESULT audio_controller::OnDefaultDeviceChanged(EDataFlow flow, ERole, LPCWSTR)
+    HRESULT audio_controller::OnDefaultDeviceChanged(EDataFlow flow, ERole role, LPCWSTR pwstrDeviceId)
     {
-        if(flow == eCapture && main_hwnd != nullptr) {
+        if(pwstrDeviceId == nullptr) {
+            pwstrDeviceId = L"NULL";
+        }
+        LOG_DEBUG(L"OnDefaultDeviceChanged: {}", pwstrDeviceId);
+        if(flow == eCapture && role == eCommunications && main_hwnd != nullptr) {
             PostMessage(main_hwnd, WM_ENDPOINTCHANGE, 0, 0);
         }
-        // return value of this callback is ignored
         return S_OK;
     }
 
+    // ----------------------------------------------------------------------
+    // IMMNotificationClient::OnDeviceAdded
+    // ----------------------------------------------------------------------
+
+    HRESULT audio_controller::OnDeviceAdded(LPCWSTR pwstrDeviceId)
+    {
+        if(pwstrDeviceId == nullptr) {
+            pwstrDeviceId = L"NULL";
+        }
+        LOG_DEBUG(L"OnDeviceAdded: {}", pwstrDeviceId);
+        LPWSTR cur_id;
+        HR(audio_endpoint->GetId(&cur_id));
+        if(wcscmp(cur_id, pwstrDeviceId) == 0) {
+            LOG_DEBUG("SHOW THE ICON!");
+        }
+        return S_OK;
+    }
+
+    // ----------------------------------------------------------------------
+    // IMMNotificationClient::OnDeviceRemoved
+    // ----------------------------------------------------------------------
+
+    HRESULT audio_controller::OnDeviceRemoved(LPCWSTR pwstrDeviceId)
+    {
+        if(pwstrDeviceId == nullptr) {
+            pwstrDeviceId = L"NULL";
+        }
+        LOG_DEBUG(L"OnDeviceRemoved: {}", pwstrDeviceId);
+        LPWSTR cur_id;
+        HR(audio_endpoint->GetId(&cur_id));
+        if(wcscmp(cur_id, pwstrDeviceId) == 0) {
+            LOG_DEBUG("HIDE THE ICON!");
+        }
+        return S_OK;
+    }
 
     // ----------------------------------------------------------------------
     //  Implementation of IAudioEndpointVolumeCallback::OnNotify

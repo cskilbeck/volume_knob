@@ -21,7 +21,7 @@
     <ClInclude Include="hook.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\MicMuter\logger.h">
+    <ClInclude Include="..\mic_muter\logger.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -32,10 +32,10 @@
     <ClCompile Include="hook.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\MicMuter\logger.cpp">
+    <ClCompile Include="..\mic_muter\logger.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\MicMuter\util.cpp">
+    <ClCompile Include="..\mic_muter\util.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

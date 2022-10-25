@@ -10,5 +10,6 @@ namespace chs
 
         HICON muted_icon;
         HICON normal_icon;
+        HICON missing_icon;
     };
 }

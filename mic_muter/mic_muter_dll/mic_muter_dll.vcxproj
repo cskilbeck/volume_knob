@@ -241,16 +241,16 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(SolutionDir)MicMuter;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)mic_muter;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(SolutionDir)MicMuter;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)mic_muter;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(SolutionDir)MicMuter;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)mic_muter;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(SolutionDir)MicMuter;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)mic_muter;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -517,13 +517,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\MicMuter\logger.h" />
+    <ClInclude Include="..\mic_muter\logger.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="hook.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\MicMuter\logger.cpp" />
-    <ClCompile Include="..\MicMuter\util.cpp" />
+    <ClCompile Include="..\mic_muter\logger.cpp" />
+    <ClCompile Include="..\mic_muter\util.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="hook.cpp" />
   </ItemGroup>

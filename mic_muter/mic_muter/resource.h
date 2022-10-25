@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by MicMuter.rc
+// Used by mic_muter.rc
 //
 #define IDC_MYICON                      2
 #define IDD_MICMUTER_DIALOG             102
@@ -14,8 +14,11 @@
 #define ID_IMG_NOT_MUTED                111
 #define IDR_MAINFRAME                   128
 #define IDI_ICON_MIC_GREEN              133
+#define IDI_ICON_MIC_NORMAL             133
 #define IDI_ICON_MIC_MUTE               134
 #define IDR_MENU_POPUP                  135
+#define IDI_ICON1                       140
+#define IDI_ICON_MIC_MISSING            140
 #define ID_POPUP_QUIT                   32771
 #define ID_POPUP_ETC                    32772
 #define IDC_STATIC                      -1
@@ -25,7 +28,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        136
+#define _APS_NEXT_RESOURCE_VALUE        141
 #define _APS_NEXT_COMMAND_VALUE         32773
 #define _APS_NEXT_CONTROL_VALUE         1000
 #define _APS_NEXT_SYMED_VALUE           112
