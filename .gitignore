@@ -38,3 +38,13 @@ Status Report.Txt
 **/Outputs/**/*.EXTREP
 **/Outputs/**/*.APR_LIB
 
+
+orders.txt
+
+
+.DS_Store
+
+xcuserdata/
+
+*.xcscmblueprint
+*.xccheckout
