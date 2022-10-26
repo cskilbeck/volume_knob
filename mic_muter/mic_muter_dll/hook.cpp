@@ -1,15 +1,24 @@
+//////////////////////////////////////////////////////////////////////
+
 #include "framework.h"
+
+//////////////////////////////////////////////////////////////////////
 
 HOOKDLL_API HHOOK mic_mute_hook;
 HOOKDLL_API HWND main_hwnd;
 
-namespace
+//////////////////////////////////////////////////////////////////////
+
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
-    LOG_CONTEXT("hook");
+    return TRUE;
 }
+//////////////////////////////////////////////////////////////////////
 
 HOOKDLL_API LRESULT CALLBACK mic_mute_hook_function(int nCode, WPARAM wParam, LPARAM lParam)
 {
+    LOG_CONTEXT("hook");
+
     auto const *data = reinterpret_cast<KBDLLHOOKSTRUCT *>(lParam);
     int const key = data->vkCode;
     DWORD const flags = data->flags;

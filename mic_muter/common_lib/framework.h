@@ -1,8 +1,6 @@
 
 #pragma once
 
-#include "targetver.h"
-
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
 
@@ -27,14 +25,6 @@
 #include <new>
 #include <vector>
 
-#include "resource.h"
-
-#include "mic_muter.h"
-#include "../common_lib/util.h"
-#include "../common_lib/ansi.h"
-#include "../common_lib/logger.h"
-
-#include "audio_controller.h"
-#include "notification_icon.h"
-
-#include "../mic_muter_dll/hook.h"
+#include "ansi.h"
+#include "util.h"
+#include "logger.h"

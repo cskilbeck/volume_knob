@@ -1,10 +1,10 @@
 #include "framework.h"
 
-namespace chs
+namespace chs::mic_muter
 {
     // ----------------------------------------------------------------------
 
-    audio_controller::audio_controller() : endpoint_registered(false), volume_registered(false), m_cRef(1)
+    audio_controller::audio_controller() : endpoint_registered(false), volume_registered(false), ref_count(1)
     {
     }
 
@@ -39,29 +39,31 @@ namespace chs
     HRESULT audio_controller::init()
     {
         HR(CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_INPROC_SERVER, __uuidof(IMMDeviceEnumerator),
-                            (LPVOID *)enumerator.GetAddressOf()));
+                            reinterpret_cast<LPVOID *>(enumerator.GetAddressOf())));
         HR(enumerator->RegisterEndpointNotificationCallback(this));
         HR(attach_to_default_endpoint());
         return S_OK;
     }
 
     // ----------------------------------------------------------------------
-    //  Called from the UI thread when the volume is changed (see OSD.cpp
-    //  WM_VOLUMECHANGE handler)
+    //  get current state of mic - plugged in/muted
     // ----------------------------------------------------------------------
 
-    HRESULT audio_controller::get_level_info(VOLUME_INFO *pInfo)
+    HRESULT audio_controller::get_mic_info(bool *present, bool *muted)
     {
-        std::lock_guard lock(endpoint_mutex);
-
-        if(volume_control == nullptr) {
-            return E_FAIL;
+        if(present == nullptr || muted == nullptr) {
+            return ERROR_BAD_ARGUMENTS;
         }
 
-        HR(volume_control->GetMute(&pInfo->bMuted));
-        // HR(volume_control->GetVolumeStepInfo(&pInfo->nStep, &pInfo->cSteps));
-        LOG_INFO("Microphone is {}muted", pInfo->bMuted ? "" : "not ");
-        current_mic_state = pInfo->bMuted ? microphone_state::muted : microphone_state::normal;
+        std::lock_guard lock(endpoint_mutex);
+
+        *present = volume_registered;
+        if(!volume_registered) {
+            return S_OK;
+        }
+        BOOL is_muted;
+        HR(volume_control->GetMute(&is_muted));
+        *muted = static_cast<bool>(is_muted);
         return S_OK;
     }
 
@@ -76,6 +78,8 @@ namespace chs
         if(volume_control == nullptr) {
             return E_FAIL;
         }
+
+        LOG_INFO("Toggling mute...");
 
         BOOL current_mute_state;
         HR(volume_control->GetMute(&current_mute_state));
@@ -96,9 +100,9 @@ namespace chs
         HR(volume_control->RegisterControlChangeNotify(this));
         volume_registered = true;
         LOG_INFO("Microphone is attached and enabled");
-        current_mic_state = microphone_state::normal;
         return S_OK;
     }
+
 
     // ----------------------------------------------------------------------
     //  Stop monitoring the device and release all associated references
@@ -115,7 +119,6 @@ namespace chs
             }
             volume_control.Reset();
             LOG_INFO("Detached from microphone");
-            current_mic_state = microphone_state::missing;
         }
         audio_endpoint.Reset();
     }
@@ -137,13 +140,9 @@ namespace chs
     HRESULT audio_controller::OnDeviceStateChanged(LPCWSTR pwstrDeviceId, DWORD dwNewState)
     {
         if(pwstrDeviceId == nullptr) {
-            pwstrDeviceId = L"NULL";
+            return S_OK;
         }
         LOG_DEBUG(L"OnDeviceStateChanged to {}: {}", dwNewState, pwstrDeviceId);
-        if(dwNewState != DEVICE_STATE_ACTIVE) {
-            current_mic_state = microphone_state::missing;
-            PostMessage(main_hwnd, WM_ENDPOINTCHANGE, 0, 0);
-        }
         return S_OK;
     }
 
@@ -172,15 +171,6 @@ namespace chs
 
     HRESULT audio_controller::OnDeviceAdded(LPCWSTR pwstrDeviceId)
     {
-        if(pwstrDeviceId == nullptr) {
-            pwstrDeviceId = L"NULL";
-        }
-        LOG_DEBUG(L"OnDeviceAdded: {}", pwstrDeviceId);
-        LPWSTR cur_id;
-        HR(audio_endpoint->GetId(&cur_id));
-        if(wcscmp(cur_id, pwstrDeviceId) == 0) {
-            LOG_DEBUG("SHOW THE ICON!");
-        }
         return S_OK;
     }
 
@@ -190,15 +180,6 @@ namespace chs
 
     HRESULT audio_controller::OnDeviceRemoved(LPCWSTR pwstrDeviceId)
     {
-        if(pwstrDeviceId == nullptr) {
-            pwstrDeviceId = L"NULL";
-        }
-        LOG_DEBUG(L"OnDeviceRemoved: {}", pwstrDeviceId);
-        LPWSTR cur_id;
-        HR(audio_endpoint->GetId(&cur_id));
-        if(wcscmp(cur_id, pwstrDeviceId) == 0) {
-            LOG_DEBUG("HIDE THE ICON!");
-        }
         return S_OK;
     }
 
@@ -238,14 +219,14 @@ namespace chs
 
     ULONG audio_controller::AddRef()
     {
-        return InterlockedIncrement(&m_cRef);
+        return InterlockedIncrement(&ref_count);
     }
 
     // ----------------------------------------------------------------------
 
     ULONG audio_controller::Release()
     {
-        long lRef = InterlockedDecrement(&m_cRef);
+        long lRef = InterlockedDecrement(&ref_count);
         if(lRef == 0) {
             delete this;
         }

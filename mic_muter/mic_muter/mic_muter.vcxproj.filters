@@ -27,19 +27,13 @@
     <ClInclude Include="mic_muter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="util.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="logger.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ansi.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="audio_controller.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="notification_icon.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="settings.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -47,16 +41,13 @@
     <ClCompile Include="mic_muter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="logger.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="util.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="audio_controller.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="notification_icon.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -80,12 +71,6 @@
       <Filter>Resource Files</Filter>
     </Image>
     <Image Include="images\microphone_normal.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="images\icon1.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="images\icon2.ico">
       <Filter>Resource Files</Filter>
     </Image>
     <Image Include="images\microphone_missing.ico">

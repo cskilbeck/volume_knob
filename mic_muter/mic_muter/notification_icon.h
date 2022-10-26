@@ -1,11 +1,11 @@
 #pragma once
 
-namespace chs
+namespace chs::mic_muter
 {
     struct notification_icon
     {
-        HRESULT load(bool is_muted);
-        HRESULT update(bool is_muted);
+        HRESULT load();
+        HRESULT update(bool attached, bool muted);
         HRESULT destroy();
 
         HICON muted_icon;

@@ -1,5 +1,4 @@
 //////////////////////////////////////////////////////////////////////
-// keyboard hook
 // startup registry entry
 // options
 // installer
@@ -17,7 +16,7 @@
 
 //////////////////////////////////////////////////////////////////////
 
-namespace chs
+namespace chs::mic_muter
 {
     LOG_CONTEXT("mic_muter");
 
@@ -29,10 +28,11 @@ namespace chs
 
     notification_icon notify_icon;
 
+    bool is_muted;
+    bool is_attached;
+
     bool double_buffered = false;
     float current_dpi = 1.0f;
-
-    VOLUME_INFO current_volume{};
 
     HBITMAP muted_bmp;
     HBITMAP non_muted_bmp;
@@ -43,7 +43,8 @@ namespace chs
     int window_alpha = 255;
     int min_window_alpha = 0;
 
-    UINT_PTR timer_id = 101;
+    UINT_PTR const TIMER_ID_WAIT = 101;
+    UINT_PTR const TIMER_ID_FADE = 102;
 
     //////////////////////////////////////////////////////////////////////
 
@@ -63,23 +64,87 @@ namespace chs
 
     //////////////////////////////////////////////////////////////////////
 
-    void show_context_menu(HWND hwnd, POINT const &pt)
+    HRESULT show_context_menu(HWND hwnd, POINT const &pt)
     {
+        bool present{ true };
+        bool muted{ false };
+        HR(audio->get_mic_info(&present, &muted));
         HMENU hMenu = LoadMenu(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDR_MENU_POPUP));
-        if(hMenu) {
-            HMENU hSubMenu = GetSubMenu(hMenu, 0);
-            if(hSubMenu) {
-                SetForegroundWindow(hwnd);
-                UINT uFlags = TPM_RIGHTBUTTON;
-                if(GetSystemMetrics(SM_MENUDROPALIGNMENT) != 0) {
-                    uFlags |= TPM_RIGHTALIGN;
-                } else {
-                    uFlags |= TPM_LEFTALIGN;
-                }
-                TrackPopupMenuEx(hSubMenu, uFlags, pt.x, pt.y, hwnd, NULL);
-            }
-            DestroyMenu(hMenu);
+        if(hMenu == nullptr) {
+            return WIN32_ERROR("LoadMenu");
         }
+        DEFER(DestroyMenu(hMenu));
+        HMENU hSubMenu = GetSubMenu(hMenu, 0);
+        if(hSubMenu == nullptr) {
+            return WIN32_ERROR("GetSubMenu");
+        }
+
+        MENUITEMINFO mi;
+        mi.cbSize = sizeof(MENUITEMINFO);
+        mi.fMask = MIIM_STATE | MIIM_STRING;
+        mi.fState = present ? MFS_ENABLED : MFS_DISABLED;
+        mi.dwTypeData = const_cast<LPSTR>(muted ? "Unmute" : "Mute");
+        if(!SetMenuItemInfo(hSubMenu, ID_POPUP_MUTE, false, &mi)) {
+            return WIN32_ERROR("SetMenuItemInfo");
+        }
+        SetForegroundWindow(hwnd);
+        UINT uFlags = TPM_RIGHTBUTTON;
+        if(GetSystemMetrics(SM_MENUDROPALIGNMENT) != 0) {
+            uFlags |= TPM_RIGHTALIGN;
+        } else {
+            uFlags |= TPM_LEFTALIGN;
+        }
+        if(!TrackPopupMenuEx(hSubMenu, uFlags, pt.x, pt.y, hwnd, NULL)) {
+            return WIN32_ERROR("TrackPopupMenuEx");
+        }
+        return S_OK;
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
+    void draw_image(HWND hWnd, HDC hdc)
+    {
+        RECT rc;
+        GetClientRect(hWnd, &rc);
+
+        HPAINTBUFFER hBufferedPaint = nullptr;
+        if(double_buffered) {
+            HDC hdcMem;
+            hBufferedPaint = BeginBufferedPaint(hdc, &rc, BPBF_COMPOSITED, nullptr, &hdcMem);
+            if(hBufferedPaint) {
+                hdc = hdcMem;
+            }
+        }
+
+        FillRect(hdc, &rc, (HBRUSH)GetStockObject(BLACK_BRUSH));
+
+        HBITMAP old_bmp = SelectBitmap(bmp_dc, is_muted ? muted_bmp : non_muted_bmp);
+        BitBlt(hdc, 0, 0, img_size, img_size, bmp_dc, 0, 0, SRCPAINT);
+        SelectBitmap(bmp_dc, old_bmp);
+
+        if(hBufferedPaint) {
+            BufferedPaintMakeOpaque(hBufferedPaint, nullptr);
+            EndBufferedPaint(hBufferedPaint, true);
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
+    INT_PTR CALLBACK options_dlg_proc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lParam)
+    {
+        switch(message) {
+        case WM_COMMAND:
+            switch(LOWORD(wParam)) {
+            case IDOK:
+                EndDialog(hwndDlg, IDOK);
+                break;
+            case IDCANCEL:
+                EndDialog(hwndDlg, IDCANCEL);
+                break;
+            }
+            break;
+        }
+        return FALSE;
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -112,6 +177,21 @@ namespace chs
 
             main_hwnd = hWnd;
 
+            audio.Attach(new(std::nothrow) audio_controller());
+
+            mic_mute_hook = SetWindowsHookEx(WH_KEYBOARD_LL, mic_mute_hook_function, hInst, 0);
+
+            audio->init();
+
+            audio->get_mic_info(&is_attached, &is_muted);
+
+            notify_icon.load();
+            notify_icon.update(is_attached, is_muted);
+
+            // check here if they want the overlay to be shown based on mute
+            // status
+            PostMessage(hWnd, WM_VOLUMECHANGE, 0, 0);
+
             break;
         }
 
@@ -119,6 +199,11 @@ namespace chs
             notify_icon.destroy();
             UnhookWindowsHookEx(mic_mute_hook);
             DeleteDC(bmp_dc);
+            if(double_buffered) {
+                BufferedPaintUnInit();
+            }
+            audio->Dispose();
+            audio.Reset();
             PostQuitMessage(0);
             return 0;
 
@@ -127,6 +212,12 @@ namespace chs
             switch(wmId) {
             case ID_POPUP_QUIT:
                 DestroyWindow(main_hwnd);
+                break;
+            case ID_POPUP_OPTIONS:
+                DialogBox(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDD_ABOUTBOX), main_hwnd, options_dlg_proc);
+                break;
+            case ID_POPUP_MUTE:
+                audio->toggle_mute();
                 break;
             }
             break;
@@ -141,28 +232,51 @@ namespace chs
             }
             break;
 
-        case WM_VOLUMECHANGE:
-            audio->get_level_info(&current_volume);
-            notify_icon.update(current_volume.bMuted);
-            window_alpha = 512;
-            min_window_alpha = current_volume.bMuted ? 64 : 0;
-            SetLayeredWindowAttributes(hWnd, RGB(0, 0, 0), window_alpha, LWA_ALPHA | LWA_COLORKEY);
-            ShowWindow(hWnd, SW_SHOW);
-            InvalidateRect(hWnd, nullptr, false);
-            timer_id = SetTimer(hWnd, 101, 16, nullptr);
+        case WM_VOLUMECHANGE: {
+            audio->get_mic_info(&is_attached, &is_muted);
+            notify_icon.update(is_attached, is_muted);
+            KillTimer(hWnd, TIMER_ID_WAIT);
+            KillTimer(hWnd, TIMER_ID_FADE);
+            if(!is_attached) {
+                ShowWindow(hWnd, SW_HIDE);
+            } else {
+                window_alpha = 255;
+                min_window_alpha = is_muted ? 64 : 0;
+                SetLayeredWindowAttributes(hWnd, RGB(0, 0, 0), window_alpha, LWA_ALPHA | LWA_COLORKEY);
+                HDC dc = GetDC(hWnd);
+                draw_image(hWnd, dc);
+                ReleaseDC(hWnd, dc);
+                ShowWindow(hWnd, SW_SHOW);
+                SetTimer(hWnd, TIMER_ID_WAIT, 1000 * 3, nullptr);
+            }
             return 0;
+        }
+
+        case WM_MIC_STATE_CHANGED:
+            break;
 
         case WM_ENDPOINTCHANGE:
             audio->change_endpoint();
+            PostMessage(main_hwnd, WM_VOLUMECHANGE, 0, 0);
             return 0;
 
         case WM_TIMER: {
-            window_alpha = std::max(min_window_alpha, window_alpha - 3);
-            if(window_alpha != 0) {
-                SetLayeredWindowAttributes(hWnd, RGB(0, 0, 0), std::min(255, window_alpha), LWA_ALPHA | LWA_COLORKEY);
-            } else {
-                ShowWindow(hWnd, SW_HIDE);
-                KillTimer(hWnd, timer_id);
+            switch(wParam) {
+            case TIMER_ID_WAIT:
+                KillTimer(hWnd, TIMER_ID_WAIT);
+                SetTimer(hWnd, TIMER_ID_FADE, 16, nullptr);
+                break;
+            case TIMER_ID_FADE:
+                window_alpha = std::max(min_window_alpha, window_alpha - 16);
+                if(window_alpha != 0) {
+                    SetLayeredWindowAttributes(hWnd, RGB(0, 0, 0), std::min(255, window_alpha),
+                                               LWA_ALPHA | LWA_COLORKEY);
+                    ShowWindow(hWnd, SW_SHOW);
+                } else {
+                    KillTimer(hWnd, TIMER_ID_FADE);
+                    ShowWindow(hWnd, SW_HIDE);
+                }
+                break;
             }
             return 0;
         }
@@ -179,30 +293,7 @@ namespace chs
 
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
-
-            RECT rc;
-            GetClientRect(hWnd, &rc);
-
-            HPAINTBUFFER hBufferedPaint = nullptr;
-            if(double_buffered) {
-                HDC hdcMem;
-                hBufferedPaint = BeginBufferedPaint(hdc, &rc, BPBF_COMPOSITED, nullptr, &hdcMem);
-                if(hBufferedPaint) {
-                    hdc = hdcMem;
-                }
-            }
-
-            FillRect(hdc, &rc, (HBRUSH)GetStockObject(BLACK_BRUSH));
-
-            HBITMAP old_bmp = SelectBitmap(bmp_dc, current_volume.bMuted ? muted_bmp : non_muted_bmp);
-            BitBlt(hdc, 0, 0, img_size, img_size, bmp_dc, 0, 0, SRCPAINT);
-            SelectBitmap(bmp_dc, old_bmp);
-
-            if(hBufferedPaint) {
-                BufferedPaintMakeOpaque(hBufferedPaint, nullptr);
-                EndBufferedPaint(hBufferedPaint, true);
-            }
-
+            draw_image(hWnd, hdc);
             EndPaint(hWnd, &ps);
             return 0;
         }
@@ -248,6 +339,10 @@ namespace chs
         UNREFERENCED_PARAMETER(hPrevInstance);
         UNREFERENCED_PARAMETER(lpCmdLine);
 
+        BOOL suppress = true;
+        SetUserObjectInformationW(GetCurrentProcess(), UOI_TIMERPROC_EXCEPTION_SUPPRESSION, &suppress,
+                                  sizeof(suppress));
+
         hInst = hInstance;
 
         HR(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE));
@@ -256,29 +351,11 @@ namespace chs
 
         HR(init_window());
 
-        mic_mute_hook = SetWindowsHookEx(WH_KEYBOARD_LL, mic_mute_hook_function, hInstance, 0);
-
-        audio.Attach(new(std::nothrow) chs::audio_controller());
-
-        // OK if this fails (e.g. microphone unplugged - if it gets plugged in it will pick it up)
-        audio->init();
-
-        audio->get_level_info(&current_volume);
-
-        notify_icon.load(current_volume.bMuted);
-
         MSG msg;
         while(GetMessage(&msg, nullptr, 0, 0)) {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
-
-        if(double_buffered) {
-            BufferedPaintUnInit();
-        }
-
-        audio->Dispose();
-        audio.Reset();
 
         CoUninitialize();
 
@@ -292,7 +369,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmd
 {
     LOG_CONTEXT("wWinMain");
 
-    HRESULT hr = chs::win_main(hInstance, hPrevInstance, lpCmdLine, nCmdShow);
+    HRESULT hr = chs::mic_muter::win_main(hInstance, hPrevInstance, lpCmdLine, nCmdShow);
     if(FAILED(hr)) {
         LOG_ERROR("win_main() failed: {}", chs::util::windows_error_text(hr));
     }

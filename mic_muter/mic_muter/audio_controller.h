@@ -1,6 +1,6 @@
 #pragma once
 
-namespace chs
+namespace chs::mic_muter
 {
     struct VOLUME_INFO
     {
@@ -28,7 +28,7 @@ namespace chs
         ComPtr<IAudioEndpointVolume> volume_control;
         std::mutex endpoint_mutex;
 
-        long m_cRef;
+        long ref_count;
 
         ~audio_controller();    // refcounted object... make the destructor private
 
@@ -69,8 +69,9 @@ namespace chs
 
         HRESULT init();
         void Dispose();
-        HRESULT get_level_info(VOLUME_INFO *pInfo);
         void change_endpoint();
+
+        HRESULT get_mic_info(bool *present, bool *muted);
 
         HRESULT toggle_mute();
 

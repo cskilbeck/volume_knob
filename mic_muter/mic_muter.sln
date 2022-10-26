@@ -6,34 +6,34 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mic_muter", "mic_muter\mic_muter.vcxproj", "{4E2A0630-2E2A-4DF9-9132-579F91F05899}"
 	ProjectSection(ProjectDependencies) = postProject
 		{1596A0B4-E47D-4FF7-8042-56BD6BFDDB9C} = {1596A0B4-E47D-4FF7-8042-56BD6BFDDB9C}
+		{2CB943B3-4D95-4CD3-9115-31C90EDF9557} = {2CB943B3-4D95-4CD3-9115-31C90EDF9557}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mic_muter_dll", "mic_muter_dll\mic_muter_dll.vcxproj", "{1596A0B4-E47D-4FF7-8042-56BD6BFDDB9C}"
+	ProjectSection(ProjectDependencies) = postProject
+		{2CB943B3-4D95-4CD3-9115-31C90EDF9557} = {2CB943B3-4D95-4CD3-9115-31C90EDF9557}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "common_lib", "common_lib\common_lib.vcxproj", "{2CB943B3-4D95-4CD3-9115-31C90EDF9557}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
-		Debug|x86 = Debug|x86
 		Release|x64 = Release|x64
-		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{4E2A0630-2E2A-4DF9-9132-579F91F05899}.Debug|x64.ActiveCfg = Debug|x64
 		{4E2A0630-2E2A-4DF9-9132-579F91F05899}.Debug|x64.Build.0 = Debug|x64
-		{4E2A0630-2E2A-4DF9-9132-579F91F05899}.Debug|x86.ActiveCfg = Debug|Win32
-		{4E2A0630-2E2A-4DF9-9132-579F91F05899}.Debug|x86.Build.0 = Debug|Win32
 		{4E2A0630-2E2A-4DF9-9132-579F91F05899}.Release|x64.ActiveCfg = Release|x64
 		{4E2A0630-2E2A-4DF9-9132-579F91F05899}.Release|x64.Build.0 = Release|x64
-		{4E2A0630-2E2A-4DF9-9132-579F91F05899}.Release|x86.ActiveCfg = Release|Win32
-		{4E2A0630-2E2A-4DF9-9132-579F91F05899}.Release|x86.Build.0 = Release|Win32
 		{1596A0B4-E47D-4FF7-8042-56BD6BFDDB9C}.Debug|x64.ActiveCfg = Debug|x64
 		{1596A0B4-E47D-4FF7-8042-56BD6BFDDB9C}.Debug|x64.Build.0 = Debug|x64
-		{1596A0B4-E47D-4FF7-8042-56BD6BFDDB9C}.Debug|x86.ActiveCfg = Debug|Win32
-		{1596A0B4-E47D-4FF7-8042-56BD6BFDDB9C}.Debug|x86.Build.0 = Debug|Win32
 		{1596A0B4-E47D-4FF7-8042-56BD6BFDDB9C}.Release|x64.ActiveCfg = Release|x64
 		{1596A0B4-E47D-4FF7-8042-56BD6BFDDB9C}.Release|x64.Build.0 = Release|x64
-		{1596A0B4-E47D-4FF7-8042-56BD6BFDDB9C}.Release|x86.ActiveCfg = Release|Win32
-		{1596A0B4-E47D-4FF7-8042-56BD6BFDDB9C}.Release|x86.Build.0 = Release|Win32
+		{2CB943B3-4D95-4CD3-9115-31C90EDF9557}.Debug|x64.ActiveCfg = Debug|x64
+		{2CB943B3-4D95-4CD3-9115-31C90EDF9557}.Debug|x64.Build.0 = Debug|x64
+		{2CB943B3-4D95-4CD3-9115-31C90EDF9557}.Release|x64.ActiveCfg = Release|x64
+		{2CB943B3-4D95-4CD3-9115-31C90EDF9557}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
