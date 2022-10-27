@@ -64,9 +64,6 @@
     <Image Include="mic_muter.ico">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="images\microphone.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
     <Image Include="images\microphone_mute.png">
       <Filter>Resource Files</Filter>
     </Image>

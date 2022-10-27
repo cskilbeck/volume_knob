@@ -9,9 +9,9 @@ namespace
     LOG_CONTEXT("icon");
 
 #if defined(_DEBUG)
-    class __declspec(uuid("75F258D7-14E5-433B-B5D7-7ECA6AABE078")) icon_guid;
+    class __declspec(uuid("D0B47348-3429-4153-8213-298C1D4E8D26")) icon_guid;
 #else
-    class __declspec(uuid("0E4A1539-9A8A-4299-94EE-E6B9C30671CB")) icon_guid;
+    class __declspec(uuid("D019AEF9-2868-41C6-AD3F-79023844F8E7")) icon_guid;
 #endif
 }
 

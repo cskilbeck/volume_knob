@@ -1,5 +1,8 @@
+//////////////////////////////////////////////////////////////////////
 
 #pragma once
+
+//////////////////////////////////////////////////////////////////////
 
 #include "targetver.h"
 
@@ -15,10 +18,14 @@
 #include <mmdeviceapi.h>
 #include <endpointvolume.h>
 
+//////////////////////////////////////////////////////////////////////
+
 #include <stdlib.h>
 #include <malloc.h>
 #include <memory.h>
 #include <tchar.h>
+
+//////////////////////////////////////////////////////////////////////
 
 #include <string>
 #include <mutex>
@@ -27,14 +34,17 @@
 #include <new>
 #include <vector>
 
+//////////////////////////////////////////////////////////////////////
+
 #include "resource.h"
 
 #include "mic_muter.h"
-#include "../common_lib/util.h"
 #include "../common_lib/ansi.h"
 #include "../common_lib/logger.h"
+#include "../common_lib/util.h"
 
 #include "audio_controller.h"
 #include "notification_icon.h"
+#include "settings.h"
 
 #include "../mic_muter_dll/hook.h"

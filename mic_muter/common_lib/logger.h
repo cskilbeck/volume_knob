@@ -21,6 +21,10 @@
 #define LOG_LEVEL_MAX LOG_LEVEL_ALL
 #endif
 
+#define LOG_NOP \
+    do {        \
+    } while(false)
+
 #if !defined(DISABLE_LOGGING)
 
 //////////////////////////////////////////////////////////////////////
@@ -242,10 +246,6 @@ namespace chs::logger
 
 //////////////////////////////////////////////////////////////////////
 
-#define LOG_NOP \
-    do {        \
-    } while(false)
-
 #define LOG_EMIT_MESSAGE(_level, _msg, ...)                                                                   \
     do {                                                                                                      \
         if(chs::logger::log_level >= chs::logger::level::_level) {                                            \
@@ -301,14 +301,14 @@ namespace chs::logger
 
 #else    // DISABLE_LOGGING
 
-#define LOG_Context(...) LOG_NOP
-#define LOG_Level(...) LOG_NOP
-#define LOG_SetLevel(...) LOG_NOP
-#define LOG_Debug(...) LOG_NOP
-#define LOG_Verbose(...) LOG_NOP
-#define LOG_Info(...) LOG_NOP
-#define LOG_Warn(...) LOG_NOP
-#define LOG_Error(...) LOG_NOP
+#define LOG_CONTEXT(...) LOG_NOP
+#define LOG_LEVEL(...) LOG_NOP
+#define LOG_SETLEVEL(...) LOG_NOP
+#define LOG_DEBUG(...) LOG_NOP
+#define LOG_VERBOSE(...) LOG_NOP
+#define LOG_INFO(...) LOG_NOP
+#define LOG_WARN(...) LOG_NOP
+#define LOG_ERROR(...) LOG_NOP
 
 //////////////////////////////////////////////////////////////////////
 

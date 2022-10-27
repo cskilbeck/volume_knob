@@ -17,9 +17,12 @@ namespace chs
     namespace util
     {
         HRESULT load_resource_binary(std::vector<byte> &buffer, uintptr_t const id, LPSTR const type = RT_RCDATA);
-        HRESULT load_bitmap(uintptr_t const id, HBITMAP *bmp, uint32 max_width = 0, uint32 max_height = 0);
+        HRESULT load_bitmap(uintptr_t const id, HBITMAP *bmp, uint32 width = 0, uint32 height = 0);
         bool console_set_ansi_enabled(bool const enabled);
         std::string windows_error_text(DWORD err);
+
+        template <typename T> HRESULT registry_write(char const *name, T f);
+        template <typename T> HRESULT registry_read(char const *name, T *f);
 
         //////////////////////////////////////////////////////////////////////
         // DEFER
@@ -109,3 +112,53 @@ namespace chs
         LOG_ERROR("{} failed: {:08x} {}", x, _err, ::chs::util::windows_error_text(_err)); \
         return HRESULT_FROM_WIN32(_err);                                                   \
     }()
+
+#define WIN32_LSTATUS_ERROR(_err, x)                                                       \
+    [&]() {                                                                                \
+        LOG_ERROR("{} failed: {:08x} {}", x, _err, ::chs::util::windows_error_text(_err)); \
+        return HRESULT_FROM_WIN32(_err);                                                   \
+    }()
+
+//////////////////////////////////////////////////////////////////////
+
+template <typename T> HRESULT chs::util::registry_write(char const *name, T f)
+{
+    LOG_CONTEXT("registry_write");
+
+    HKEY key;
+    LSTATUS status = RegCreateKey(HKEY_CURRENT_USER, "SOFTWARE\\MicMuter", &key);
+    if(status != ERROR_SUCCESS) {
+        return WIN32_LSTATUS_ERROR(status, "RegCreateKey");
+    }
+    DEFER(RegCloseKey(key));
+    status = RegSetValueEx(key, name, 0, REG_BINARY, (BYTE const *)&f, sizeof(T));
+    if(status != ERROR_SUCCESS) {
+        return WIN32_LSTATUS_ERROR(status, "RegSetValue");
+    }
+    return S_OK;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+template <typename T> HRESULT chs::util::registry_read(char const *name, T *f)
+{
+    LOG_CONTEXT("registry_read");
+
+    DWORD sz = sizeof(T);
+    LSTATUS status;
+    HKEY key;
+    status = RegOpenKey(HKEY_CURRENT_USER, "SOFTWARE\\MicMuter", &key);
+    if(status != ERROR_SUCCESS) {
+        return WIN32_LSTATUS_ERROR(status, "RegOpenKey");
+    }
+    DEFER(RegCloseKey(key));
+    DWORD type;
+    status = RegQueryValueEx(key, name, nullptr, &type, reinterpret_cast<byte *>(f), &sz);
+    if(status != ERROR_SUCCESS) {
+        return WIN32_LSTATUS_ERROR(status, "RegQueryValueEx");
+    }
+    if(type != REG_BINARY || sz != sizeof(T)) {
+        return ERROR_BADKEY;
+    }
+    return S_OK;
+}

@@ -1,5 +1,4 @@
 //////////////////////////////////////////////////////////////////////
-// enable vt codes in windows console
 
 #include "framework.h"
 
@@ -68,7 +67,7 @@ namespace
 
     //////////////////////////////////////////////////////////////////////
 
-    HRESULT load_image(std::vector<byte> const &src, uint32 const max_width, uint32 const max_height, HBITMAP *bmp)
+    HRESULT load_image(std::vector<byte> const &src, uint32 const width, uint32 const height, HBITMAP *bmp)
     {
         if(src.empty()) {
             return E_INVALIDARG;
@@ -105,15 +104,15 @@ namespace
 
         LOG_DEBUG("Bitmap is {}x{}", bmp_w, bmp_h);
 
-        if(bmp_w > max_width || bmp_h > max_height) {
+        if(width != 0 && height != 0 && (bmp_w != width || bmp_h != height)) {
 
             float x = 1.0f;
             float y = 1.0f;
-            if(max_width != 0) {
-                x = static_cast<float>(max_width) / static_cast<float>(bmp_w);
+            if(width != 0) {
+                x = static_cast<float>(width) / static_cast<float>(bmp_w);
             }
-            if(max_height != 0) {
-                y = static_cast<float>(max_height) / static_cast<float>(bmp_h);
+            if(height != 0) {
+                y = static_cast<float>(height) / static_cast<float>(bmp_h);
             }
 
             float const scale = std::min(x, y);
@@ -244,7 +243,7 @@ namespace chs::util
 
     //////////////////////////////////////////////////////////////////////
 
-    HRESULT load_bitmap(uintptr_t const id, HBITMAP *bmp, uint32 max_width, uint32 max_height)
+    HRESULT load_bitmap(uintptr_t const id, HBITMAP *bmp, uint32 width, uint32 height)
     {
         LOG_CONTEXT("load_bitmap");
 
@@ -254,7 +253,7 @@ namespace chs::util
         LOG_DEBUG("Loading bitmap {}", id);
         std::vector<byte> resource_buffer;
         HR(load_resource_binary(resource_buffer, id));
-        HR(load_image(resource_buffer, max_width, max_height, bmp));
+        HR(load_image(resource_buffer, width, height, bmp));
         return S_OK;
     }
 
