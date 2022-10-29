@@ -2,13 +2,6 @@
 
 namespace chs::mic_muter
 {
-    struct VOLUME_INFO
-    {
-        UINT nStep;
-        UINT cSteps;
-        BOOL bMuted;
-    };
-
     enum class microphone_state
     {
         normal,
