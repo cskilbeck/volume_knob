@@ -131,7 +131,7 @@ namespace
         }
 
         // Force 32 bpp BGRA dest format
-        WICPixelFormatGUID const dst_format = GUID_WICPixelFormat32bppBGRA;
+        WICPixelFormatGUID const dst_format = GUID_WICPixelFormat32bppPBGRA;
         WICPixelFormatGUID src_format;
         HR(bmp_src->GetPixelFormat(&src_format));
 
@@ -191,25 +191,25 @@ namespace chs::util
 
         HRSRC const resource = FindResource(module, reinterpret_cast<LPSTR>(id), type);
         if(resource == nullptr) {
-            return WIN32_ERROR("FindResource");
+            return WIN32_LAST_ERROR("FindResource");
         }
 
         HGLOBAL const mem = LoadResource(module, resource);
         if(mem == nullptr) {
-            return WIN32_ERROR("LoadResource");
+            return WIN32_LAST_ERROR("LoadResource");
         }
         DEFER(FreeResource(mem));
 
         DWORD const size = SizeofResource(module, resource);
         if(size == 0) {
-            return WIN32_ERROR("SizeofResource");
+            return WIN32_LAST_ERROR("SizeofResource");
         }
 
         LOG_DEBUG("Resource {} is {} bytes", id, size);
 
         auto ptr = static_cast<byte *>(LockResource(mem));
         if(ptr == nullptr) {
-            return WIN32_ERROR("LockResource");
+            return WIN32_LAST_ERROR("LockResource");
         }
         DEFER((void)UnlockResource(ptr));    // NOLINT(clang-diagnostic-unused-value)
 

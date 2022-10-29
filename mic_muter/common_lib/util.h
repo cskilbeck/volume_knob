@@ -21,8 +21,8 @@ namespace chs
         bool console_set_ansi_enabled(bool const enabled);
         std::string windows_error_text(DWORD err);
 
-        template <typename T> HRESULT registry_write(char const *name, T f);
-        template <typename T> HRESULT registry_read(char const *name, T *f);
+        template <typename T> HRESULT registry_write(char const *key_name, char const *name, T f, uint32 size = 0);
+        template <typename T> HRESULT registry_read(char const *key_name, char const *name, T *f);
 
         //////////////////////////////////////////////////////////////////////
         // DEFER
@@ -106,56 +106,59 @@ namespace chs
         }                                                                                                 \
     } while(false)
 
-#define WIN32_ERROR(x)                                                                     \
+#define WIN32_ERROR(_err, x)                                                               \
     [&]() {                                                                                \
-        DWORD _err = GetLastError();                                                       \
         LOG_ERROR("{} failed: {:08x} {}", x, _err, ::chs::util::windows_error_text(_err)); \
         return HRESULT_FROM_WIN32(_err);                                                   \
     }()
 
-#define WIN32_LSTATUS_ERROR(_err, x)                                                       \
-    [&]() {                                                                                \
-        LOG_ERROR("{} failed: {:08x} {}", x, _err, ::chs::util::windows_error_text(_err)); \
-        return HRESULT_FROM_WIN32(_err);                                                   \
+#define WIN32_LAST_ERROR(x)                                                                  \
+    [&]() {                                                                                  \
+        DWORD __err = GetLastError();                                                        \
+        LOG_ERROR("{} failed: {:08x} {}", x, __err, ::chs::util::windows_error_text(__err)); \
+        return HRESULT_FROM_WIN32(__err);                                                    \
     }()
 
 //////////////////////////////////////////////////////////////////////
 
-template <typename T> HRESULT chs::util::registry_write(char const *name, T f)
+template <typename T> HRESULT chs::util::registry_write(char const *key_name, char const *name, T f, uint32 size)
 {
     LOG_CONTEXT("registry_write");
 
     HKEY key;
-    LSTATUS status = RegCreateKey(HKEY_CURRENT_USER, "SOFTWARE\\MicMuter", &key);
+    LSTATUS status = RegCreateKey(HKEY_CURRENT_USER, key_name, &key);
     if(status != ERROR_SUCCESS) {
-        return WIN32_LSTATUS_ERROR(status, "RegCreateKey");
+        return WIN32_ERROR(status, "RegCreateKey");
     }
     DEFER(RegCloseKey(key));
-    status = RegSetValueEx(key, name, 0, REG_BINARY, (BYTE const *)&f, sizeof(T));
+    if(size == 0) {
+        size = sizeof(T);
+    }
+    status = RegSetValueEx(key, name, 0, REG_BINARY, (BYTE const *)&f, size);
     if(status != ERROR_SUCCESS) {
-        return WIN32_LSTATUS_ERROR(status, "RegSetValue");
+        return WIN32_ERROR(status, "RegSetValue");
     }
     return S_OK;
 }
 
 //////////////////////////////////////////////////////////////////////
 
-template <typename T> HRESULT chs::util::registry_read(char const *name, T *f)
+template <typename T> HRESULT chs::util::registry_read(char const *key_name, char const *name, T *f)
 {
     LOG_CONTEXT("registry_read");
 
     DWORD sz = sizeof(T);
     LSTATUS status;
     HKEY key;
-    status = RegOpenKey(HKEY_CURRENT_USER, "SOFTWARE\\MicMuter", &key);
+    status = RegOpenKey(HKEY_CURRENT_USER, key_name, &key);
     if(status != ERROR_SUCCESS) {
-        return WIN32_LSTATUS_ERROR(status, "RegOpenKey");
+        return WIN32_ERROR(status, "RegOpenKey");
     }
     DEFER(RegCloseKey(key));
     DWORD type;
     status = RegQueryValueEx(key, name, nullptr, &type, reinterpret_cast<byte *>(f), &sz);
     if(status != ERROR_SUCCESS) {
-        return WIN32_LSTATUS_ERROR(status, "RegQueryValueEx");
+        return WIN32_ERROR(status, "RegQueryValueEx");
     }
     if(type != REG_BINARY || sz != sizeof(T)) {
         return ERROR_BADKEY;

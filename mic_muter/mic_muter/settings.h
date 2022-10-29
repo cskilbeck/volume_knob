@@ -40,14 +40,14 @@ namespace chs::mic_muter
 
         // corresponding values for the enums
 
-        static constexpr int fadeout_after_ms[]{ 1000, 5000, 10000, 0 };
+        static constexpr int fadeout_after_ms[]{ 0, 1000, 5000, 10000, -1 };
 
-        static constexpr int fadeout_to_percent[]{ 0, 25, 50 };
+        static constexpr int fadeout_to_alpha[]{ 0, 64, 128 };
 
         static constexpr int fadeout_over_ms[]{ 10000, 3000, 1000, 1 };
 
-        static constexpr char const *fadeout_after_ms_names[]{ "after 1 second", "after 5 seconds", "after 10 seconds",
-                                                               "Never" };
+        static constexpr char const *fadeout_after_ms_names[]{ "straight away", "after 1 second", "after 5 seconds",
+                                                               "after 10 seconds", "never" };
 
         static constexpr char const *fadeout_to_names[]{ "Invisible", "25 percent", "50 percent" };
 
@@ -78,13 +78,20 @@ namespace chs::mic_muter
 
         //////////////////////////////////////////////////////////////////////
 
-#define SETTINGS_SAVE_VALUE(x) HR(chs::util::registry_write(#x, x))
-#define SETTINGS_LOAD_VALUE(x) HR(chs::util::registry_read(#x, &x))
+#define SETTINGS_SAVE_VALUE(x) HR(chs::util::registry_write("SOFTWARE\\MicMuter", #x, x))
+#define SETTINGS_LOAD_VALUE(x) HR(chs::util::registry_read("SOFTWARE\\MicMuter", #x, &x))
 
         //////////////////////////////////////////////////////////////////////
 
         HRESULT save()
         {
+            LOG_CONTEXT("settings.save");
+
+            RECT rc;
+            GetClientRect(main_hwnd, &rc);
+            MapWindowPoints(main_hwnd, nullptr, reinterpret_cast<LPPOINT>(&rc), 2);
+            overlay_position = rc;
+
             SETTINGS_SAVE_VALUE(run_at_startup);
             SETTINGS_SAVE_VALUE(mute_overlay.enabled);
             SETTINGS_SAVE_VALUE(mute_overlay.fadeout_time_ms);
@@ -94,6 +101,34 @@ namespace chs::mic_muter
             SETTINGS_SAVE_VALUE(unmute_overlay.fadeout_time_ms);
             SETTINGS_SAVE_VALUE(unmute_overlay.fadeout_speed_ms);
             SETTINGS_SAVE_VALUE(unmute_overlay.fadeout_to_percent);
+            SETTINGS_SAVE_VALUE(overlay_position);
+
+#if !defined(_DEBUG)
+            HKEY key;
+            char const *run_key = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run";
+            LSTATUS status = RegCreateKey(HKEY_CURRENT_USER, run_key, &key);
+            if(status != ERROR_SUCCESS) {
+                return WIN32_ERROR(status, "RegCreateKey");
+            }
+            DEFER(RegCloseKey(key));
+
+            if(run_at_startup) {
+                char filename[MAX_PATH * 2];
+                DWORD len = GetModuleFileName(GetModuleHandle(nullptr), filename, _countof(filename));
+                if(len == 0 || len == _countof(filename)) {
+                    return WIN32_LAST_ERROR("GetModuleFileName");
+                }
+                status = RegSetValueEx(key, "MicMuter", 0, REG_SZ, reinterpret_cast<BYTE const *>(filename), len);
+                if(status != ERROR_SUCCESS) {
+                    return WIN32_ERROR(status, "RegSetValueEx");
+                }
+            } else {
+                status = RegDeleteValue(key, "MicMuter");
+                if(status != ERROR_SUCCESS && status != ERROR_FILE_NOT_FOUND) {
+                    return WIN32_ERROR(status, "RegDeleteValue");
+                }
+            }
+#endif
             return S_OK;
         }
 
@@ -101,6 +136,8 @@ namespace chs::mic_muter
 
         HRESULT load()
         {
+            LOG_CONTEXT("settings.load");
+
             SETTINGS_LOAD_VALUE(run_at_startup);
             SETTINGS_LOAD_VALUE(mute_overlay.enabled);
             SETTINGS_LOAD_VALUE(mute_overlay.fadeout_time_ms);
@@ -110,6 +147,7 @@ namespace chs::mic_muter
             SETTINGS_LOAD_VALUE(unmute_overlay.fadeout_time_ms);
             SETTINGS_LOAD_VALUE(unmute_overlay.fadeout_speed_ms);
             SETTINGS_LOAD_VALUE(unmute_overlay.fadeout_to_percent);
+            SETTINGS_LOAD_VALUE(overlay_position);
             return S_OK;
         }
     };

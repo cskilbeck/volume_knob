@@ -43,8 +43,8 @@
 #include "../common_lib/logger.h"
 #include "../common_lib/util.h"
 
+#include "../mic_muter_dll/hook.h"
+
 #include "audio_controller.h"
 #include "notification_icon.h"
 #include "settings.h"
-
-#include "../mic_muter_dll/hook.h"
