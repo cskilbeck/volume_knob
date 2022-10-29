@@ -131,7 +131,7 @@ namespace
         }
 
         // Force 32 bpp BGRA dest format
-        WICPixelFormatGUID const dst_format = GUID_WICPixelFormat32bppPBGRA;
+        WICPixelFormatGUID const dst_format = GUID_WICPixelFormat32bppBGRA;
         WICPixelFormatGUID src_format;
         HR(bmp_src->GetPixelFormat(&src_format));
 
