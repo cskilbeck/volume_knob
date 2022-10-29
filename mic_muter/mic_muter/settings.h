@@ -12,13 +12,32 @@ namespace chs::mic_muter
     {
         LOG_CONTEXT("settings");
 
+        // clang-format off
+
         // after mute status is changed, wait this long before fading out
         enum fadeout_time : byte
         {
-            fadeout_after_1_second = 0,
-            fadeout_after_5_seconds = 1,
-            fadeout_after_10_seconds = 2,
-            fadeout_never = 3
+            fadeout_after_0_seconds = 0,
+            fadeout_after_1_second = 1,
+            fadeout_after_5_seconds = 2,
+            fadeout_after_10_seconds = 3,
+            fadeout_never = 4
+        };
+
+        static constexpr int fadeout_after_ms[]{
+            0,
+            1000,
+            5000,
+            10000,
+            -1
+        };
+
+        static constexpr char const *fadeout_after_ms_names[]{
+            "straight away",
+            "after 1 second",
+            "after 5 seconds",
+            "after 10 seconds",
+            "never"
         };
 
         // fade out to this alpha
@@ -29,29 +48,40 @@ namespace chs::mic_muter
             fadeout_to_50_percent = 2
         };
 
+        static constexpr int fadeout_to_alpha[]{
+            0,
+            64,
+            128
+        };
+
+        static constexpr char const *fadeout_to_names[]{
+            "Invisible",
+            "25 percent",
+            "50 percent"
+        };
+
         // fade out this quickly
         enum fadeout_speed : byte
         {
-            fadout_speed_slow = 0,
-            fadout_speed_medium = 1,
+            fadeout_speed_slow = 0,
+            fadeout_speed_medium = 1,
             fadeout_speed_fast = 2,
             fadeout_speed_instantly = 2,
         };
+        static constexpr int fadeout_over_ms[]{
+            3000,
+            1000,
+            160,
+            1
+        };
 
-        // corresponding values for the enums
-
-        static constexpr int fadeout_after_ms[]{ 0, 1000, 5000, 10000, -1 };
-
-        static constexpr int fadeout_to_alpha[]{ 0, 64, 128 };
-
-        static constexpr int fadeout_over_ms[]{ 10000, 3000, 1000, 1 };
-
-        static constexpr char const *fadeout_after_ms_names[]{ "straight away", "after 1 second", "after 5 seconds",
-                                                               "after 10 seconds", "never" };
-
-        static constexpr char const *fadeout_to_names[]{ "Invisible", "25 percent", "50 percent" };
-
-        static constexpr char const *fadeout_speed_names[]{ "Slow", "Medium", "Fast", "Instant" };
+        static constexpr char const *fadeout_speed_names[]{
+            "Slow",
+            "Medium",
+            "Fast",
+            "Instant"
+        };
+        // clang-format on
 
         // need one each of these for mute/unmute
 
@@ -64,7 +94,7 @@ namespace chs::mic_muter
             byte fadeout_time_ms{ fadeout_after_5_seconds };
 
             // take this many seconds to fade to final_opacity
-            byte fadeout_speed_ms{ fadeout_speed_fast };
+            byte fadeout_speed_ms{ fadeout_speed_medium };
 
             byte fadeout_to_percent{ fadeout_to_25_percent };
         };
@@ -151,4 +181,6 @@ namespace chs::mic_muter
             return S_OK;
         }
     };
+
+    extern settings_t settings;
 }

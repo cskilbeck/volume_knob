@@ -160,7 +160,7 @@ namespace chs::mic_muter
         }
         LOG_DEBUG(L"OnDefaultDeviceChanged: {}", pwstrDeviceId);
         if(flow == eCapture && role == eCommunications && main_hwnd != nullptr) {
-            PostMessage(main_hwnd, WM_ENDPOINTCHANGE, 0, 0);
+            PostMessage(main_hwnd, WM_APP_ENDPOINT_CHANGE, 0, 0);
         }
         return S_OK;
     }
@@ -193,7 +193,7 @@ namespace chs::mic_muter
     HRESULT audio_controller::OnNotify(PAUDIO_VOLUME_NOTIFICATION_DATA /*pNotify*/)
     {
         if(main_hwnd != nullptr) {
-            PostMessage(main_hwnd, WM_VOLUMECHANGE, 0, 0);
+            PostMessage(main_hwnd, WM_APP_SHOW_OVERLAY, 0, 0);
         }
         return S_OK;
     }

@@ -29,7 +29,7 @@ namespace chs::mic_muter
         nid.hWnd = main_hwnd;
         nid.uFlags = NIF_GUID | NIF_MESSAGE;
         nid.guidItem = __uuidof(icon_guid);
-        nid.uCallbackMessage = WM_NOTIFICATION_ICON;
+        nid.uCallbackMessage = WM_APP_NOTIFICATION_ICON;
         if(!Shell_NotifyIcon(NIM_ADD, &nid)) {
             return HRESULT_FROM_WIN32(GetLastError());
         }

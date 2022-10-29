@@ -28,22 +28,20 @@ namespace chs::mic_muter
 
     settings_t settings;
 
-    bool is_muted;
-    bool is_attached;
+    bool mic_muted;
+    bool mic_attached;
 
     bool double_buffered = false;
 
+    HDC bmp_dc;
     HBITMAP muted_bmp;
     HBITMAP non_muted_bmp;
-    HDC bmp_dc;
 
     int img_size;
 
     uint64 ticks;
 
-    HWND dialog_box{ nullptr };
-
-    HANDLE m_singleInstanceMutex{ nullptr };
+    HWND options_dlg{ nullptr };
 
     UINT_PTR constexpr TIMER_ID_WAIT = 101;
     UINT_PTR constexpr TIMER_ID_FADE = 102;
@@ -117,7 +115,7 @@ namespace chs::mic_muter
 
         FillRect(hdc, &rc, (HBRUSH)GetStockObject(BLACK_BRUSH));
 
-        HBITMAP old_bmp = SelectBitmap(bmp_dc, is_muted ? muted_bmp : non_muted_bmp);
+        HBITMAP old_bmp = SelectBitmap(bmp_dc, mic_muted ? muted_bmp : non_muted_bmp);
         if(w != img_size || h != img_size) {
             SetStretchBltMode(hdc, HALFTONE);
             StretchBlt(hdc, 0, 0, w, h, bmp_dc, 0, 0, img_size, img_size, SRCPAINT);
@@ -136,8 +134,8 @@ namespace chs::mic_muter
 
     void do_fadeout()
     {
-        auto &s = is_muted ? settings.mute_overlay : settings.unmute_overlay;
-        if(is_attached && s.enabled) {
+        auto &s = mic_muted ? settings.mute_overlay : settings.unmute_overlay;
+        if(mic_attached && s.enabled) {
             ShowWindow(main_hwnd, SW_SHOW);
             int fade_after = settings_t::fadeout_after_ms[s.fadeout_time_ms];
             if(fade_after > 0) {
@@ -233,80 +231,6 @@ namespace chs::mic_muter
 
     //////////////////////////////////////////////////////////////////////
 
-    HWND Ctrl(int id)
-    {
-        return GetDlgItem(dialog_box, id);
-    }
-
-    //////////////////////////////////////////////////////////////////////
-
-    INT_PTR CALLBACK options_dlg_proc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lParam)
-    {
-        switch(message) {
-
-        case WM_INITDIALOG:
-            dialog_box = hwndDlg;
-
-            CheckDlgButton(dialog_box, IDC_CHECK_RUN_AT_STARTUP, settings.run_at_startup);
-            CheckDlgButton(dialog_box, IDC_CHECK_OVERLAY_ENABLE_MUTE, settings.mute_overlay.enabled);
-            CheckDlgButton(dialog_box, IDC_CHECK_OVERLAY_ENABLE_UNMUTE, settings.unmute_overlay.enabled);
-
-            for(auto const *text : settings.fadeout_after_ms_names) {
-                ComboBox_AddString(Ctrl(IDC_COMBO_FADEOUT_AFTER_MUTE), text);
-                ComboBox_AddString(Ctrl(IDC_COMBO_FADEOUT_AFTER_UNMUTE), text);
-            }
-
-            for(auto const *text : settings.fadeout_to_names) {
-                ComboBox_AddString(Ctrl(IDC_COMBO_FADEOUT_TO_MUTE), text);
-                ComboBox_AddString(Ctrl(IDC_COMBO_FADEOUT_TO_UNMUTE), text);
-            }
-
-            for(auto const *text : settings.fadeout_speed_names) {
-                ComboBox_AddString(Ctrl(IDC_COMBO_FADEOUT_SPEED_MUTE), text);
-                ComboBox_AddString(Ctrl(IDC_COMBO_FADEOUT_SPEED_UNMUTE), text);
-            }
-
-            ComboBox_SetCurSel(Ctrl(IDC_COMBO_FADEOUT_AFTER_MUTE), settings.mute_overlay.fadeout_time_ms);
-            ComboBox_SetCurSel(Ctrl(IDC_COMBO_FADEOUT_AFTER_UNMUTE), settings.unmute_overlay.fadeout_time_ms);
-            ComboBox_SetCurSel(Ctrl(IDC_COMBO_FADEOUT_TO_MUTE), settings.mute_overlay.fadeout_to_percent);
-            ComboBox_SetCurSel(Ctrl(IDC_COMBO_FADEOUT_TO_UNMUTE), settings.unmute_overlay.fadeout_to_percent);
-            ComboBox_SetCurSel(Ctrl(IDC_COMBO_FADEOUT_SPEED_MUTE), settings.mute_overlay.fadeout_speed_ms);
-            ComboBox_SetCurSel(Ctrl(IDC_COMBO_FADEOUT_SPEED_UNMUTE), settings.unmute_overlay.fadeout_speed_ms);
-            break;
-
-        case WM_DESTROY:
-            dialog_box = nullptr;
-            PostMessage(main_hwnd, WM_VOLUMECHANGE, 0, 0);
-            break;
-
-        case WM_COMMAND:
-
-            switch(LOWORD(wParam)) {
-
-            case IDOK:
-                settings.run_at_startup = Button_GetCheck(Ctrl(IDC_CHECK_RUN_AT_STARTUP));
-                settings.mute_overlay.enabled = Button_GetCheck(Ctrl(IDC_CHECK_OVERLAY_ENABLE_MUTE));
-                settings.unmute_overlay.enabled = Button_GetCheck(Ctrl(IDC_CHECK_OVERLAY_ENABLE_UNMUTE));
-                settings.mute_overlay.fadeout_time_ms = ComboBox_GetCurSel(Ctrl(IDC_COMBO_FADEOUT_AFTER_MUTE));
-                settings.unmute_overlay.fadeout_time_ms = ComboBox_GetCurSel(Ctrl(IDC_COMBO_FADEOUT_AFTER_UNMUTE));
-                settings.mute_overlay.fadeout_to_percent = ComboBox_GetCurSel(Ctrl(IDC_COMBO_FADEOUT_TO_MUTE));
-                settings.unmute_overlay.fadeout_to_percent = ComboBox_GetCurSel(Ctrl(IDC_COMBO_FADEOUT_TO_UNMUTE));
-                settings.mute_overlay.fadeout_speed_ms = ComboBox_GetCurSel(Ctrl(IDC_COMBO_FADEOUT_SPEED_MUTE));
-                settings.unmute_overlay.fadeout_speed_ms = ComboBox_GetCurSel(Ctrl(IDC_COMBO_FADEOUT_SPEED_UNMUTE));
-                settings.save();
-                EndDialog(hwndDlg, LOWORD(wParam));
-                break;
-
-            case IDCANCEL:
-                EndDialog(hwndDlg, LOWORD(wParam));
-                break;
-            }
-        }
-        return FALSE;
-    }
-
-    //////////////////////////////////////////////////////////////////////
-
     void handle_menu_option(int const wmId)
     {
         switch(wmId) {
@@ -316,9 +240,9 @@ namespace chs::mic_muter
             break;
 
         case ID_POPUP_ABOUTMICMUTER:
-            if(dialog_box != nullptr) {
-                SetForegroundWindow(dialog_box);
-                SetActiveWindow(dialog_box);
+            if(options_dlg != nullptr) {
+                SetForegroundWindow(options_dlg);
+                SetActiveWindow(options_dlg);
             } else {
                 DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), main_hwnd, options_dlg_proc);
             }
@@ -332,23 +256,6 @@ namespace chs::mic_muter
             start_move_overlay();
             break;
         }
-    }
-
-    //////////////////////////////////////////////////////////////////////
-    // https://devblogs.microsoft.com/oldnewthing/20131017-00/?p=2903
-
-    BOOL UnadjustWindowRectEx(LPRECT prc, DWORD dwStyle, BOOL fMenu, DWORD dwExStyle)
-    {
-        RECT rc;
-        SetRectEmpty(&rc);
-        BOOL fRc = AdjustWindowRectEx(&rc, dwStyle, fMenu, dwExStyle);
-        if(fRc) {
-            prc->left -= rc.left;
-            prc->top -= rc.top;
-            prc->right -= rc.right;
-            prc->bottom -= rc.bottom;
-        }
-        return fRc;
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -375,7 +282,7 @@ namespace chs::mic_muter
 
             img_size = (mi.rcMonitor.right - mi.rcMonitor.left) * 5 / 100;
 
-            POINT const pt = { mi.rcMonitor.left + img_size, mi.rcMonitor.bottom - img_size * 2 };
+            POINT const pt = { mi.rcMonitor.right - img_size * 2, mi.rcMonitor.bottom - img_size * 2 };
 
             RECT rc{ pt.x, pt.y, pt.x + img_size, pt.y + img_size };
 
@@ -399,13 +306,13 @@ namespace chs::mic_muter
 
             audio->init();
 
-            audio->get_mic_info(&is_attached, &is_muted);
+            audio->get_mic_info(&mic_attached, &mic_muted);
 
             notify_icon.load();
-            notify_icon.update(is_attached, is_muted);
+            notify_icon.update(mic_attached, mic_muted);
 
             // check here if they want the overlay to be shown based on mute status
-            PostMessage(hWnd, WM_VOLUMECHANGE, 0, 0);
+            PostMessage(hWnd, WM_APP_SHOW_OVERLAY, 0, 0);
             break;
         }
 
@@ -416,7 +323,7 @@ namespace chs::mic_muter
         case WM_SIZING: {
             RECT *r = reinterpret_cast<RECT *>(lParam);
 
-            UnadjustWindowRectEx(r, drag_window_flags, false, drag_window_ex_flags);
+            util::UnadjustWindowRectEx(r, drag_window_flags, false, drag_window_ex_flags);
 
             int w = r->right - r->left;
             int h = r->bottom - r->top;
@@ -488,42 +395,10 @@ namespace chs::mic_muter
             handle_menu_option(LOWORD(wParam));
             break;
 
-        case WM_NOTIFICATION_ICON:
-
-            switch(LOWORD(lParam)) {
-            case NIN_SELECT:
-            case WM_CONTEXTMENU:
-                show_context_menu(main_hwnd, { LOWORD(wParam), HIWORD(wParam) });
-                break;
-            }
-            break;
-
         case WM_ACTIVATE:
             if(wParam == WA_INACTIVE && is_overlay_position_mode()) {
                 stop_move_overlay();
             }
-            break;
-
-        case WM_VOLUMECHANGE: {
-            audio->get_mic_info(&is_attached, &is_muted);
-            notify_icon.update(is_attached, is_muted);
-            KillTimer(hWnd, TIMER_ID_WAIT);
-            KillTimer(hWnd, TIMER_ID_FADE);
-            if(!is_attached) {
-                ShowWindow(hWnd, SW_HIDE);
-            } else {
-
-                HDC dc = GetDC(hWnd);
-                draw_image(hWnd, dc);
-                ReleaseDC(hWnd, dc);
-                do_fadeout();
-            }
-            break;
-        }
-
-        case WM_ENDPOINTCHANGE:
-            audio->change_endpoint();
-            PostMessage(main_hwnd, WM_VOLUMECHANGE, 0, 0);
             break;
 
         case WM_TIMER: {
@@ -543,7 +418,7 @@ namespace chs::mic_muter
 
             case TIMER_ID_FADE: {
 
-                auto &s = is_muted ? settings.mute_overlay : settings.unmute_overlay;
+                auto &s = mic_muted ? settings.mute_overlay : settings.unmute_overlay;
 
                 uint64 now = GetTickCount64();
                 float elapsed = static_cast<float>(now - ticks);
@@ -566,10 +441,6 @@ namespace chs::mic_muter
             break;
         }
 
-        case WM_HOTKEY_PRESSED:
-            audio->toggle_mute();
-            break;
-
         case WM_ERASEBKGND:
             break;
 
@@ -579,6 +450,41 @@ namespace chs::mic_muter
             draw_image(hWnd, hdc);
             EndPaint(hWnd, &ps);
         } break;
+
+        case WM_APP_NOTIFICATION_ICON:
+            switch(LOWORD(lParam)) {
+            case NIN_SELECT:
+            case WM_CONTEXTMENU:
+                show_context_menu(main_hwnd, { LOWORD(wParam), HIWORD(wParam) });
+                break;
+            }
+            break;
+
+        case WM_APP_SHOW_OVERLAY: {
+            audio->get_mic_info(&mic_attached, &mic_muted);
+            notify_icon.update(mic_attached, mic_muted);
+            KillTimer(hWnd, TIMER_ID_WAIT);
+            KillTimer(hWnd, TIMER_ID_FADE);
+            if(!mic_attached) {
+                ShowWindow(hWnd, SW_HIDE);
+            } else {
+
+                HDC dc = GetDC(hWnd);
+                draw_image(hWnd, dc);
+                ReleaseDC(hWnd, dc);
+                do_fadeout();
+            }
+            break;
+        }
+
+        case WM_APP_ENDPOINT_CHANGE:
+            audio->change_endpoint();
+            PostMessage(main_hwnd, WM_APP_SHOW_OVERLAY, 0, 0);
+            break;
+
+        case WM_APP_HOTKEY_PRESSED:
+            audio->toggle_mute();
+            break;
 
         default:
             return DefWindowProc(hWnd, message, wParam, lParam);
@@ -620,15 +526,20 @@ namespace chs::mic_muter
     {
         // single instance admin
 
-        HANDLE single_instance_mutex = CreateMutex(nullptr, true, "{82C56D8B-E69C-4DA1-BC5A-39B27188E00D}");
-        if(single_instance_mutex == nullptr || GetLastError() == ERROR_ALREADY_EXISTS) {
+        HANDLE single_instance_mutex = CreateMutex(nullptr, true, "micmutermutex82C56D8B-E69C-4DA1-BC5A-39B27188E00D");
+        if(single_instance_mutex == nullptr) {
+            return WIN32_LAST_ERROR("CreateMutex");
+        }
+
+        DEFER(CloseHandle(single_instance_mutex));
+
+        if(GetLastError() == ERROR_ALREADY_EXISTS) {
             HWND hwnd = FindWindow(window_class_name, window_title);
-            if(hwnd) {
-                PostMessage(hwnd, WM_VOLUMECHANGE, 0, 0);
+            if(hwnd != nullptr) {
+                PostMessage(hwnd, WM_APP_SHOW_OVERLAY, 0, 0);
             }
             return S_OK;
         }
-        DEFER(CloseHandle(single_instance_mutex));
 
         // WM_TIMER exception supression (
 

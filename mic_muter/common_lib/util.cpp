@@ -279,4 +279,21 @@ namespace chs::util
 
         return s;
     }
+
+    //////////////////////////////////////////////////////////////////////
+    // https://devblogs.microsoft.com/oldnewthing/20131017-00/?p=2903
+
+    BOOL UnadjustWindowRectEx(LPRECT prc, DWORD dwStyle, BOOL fMenu, DWORD dwExStyle)
+    {
+        RECT rc;
+        SetRectEmpty(&rc);
+        BOOL fRc = AdjustWindowRectEx(&rc, dwStyle, fMenu, dwExStyle);
+        if(fRc) {
+            prc->left -= rc.left;
+            prc->top -= rc.top;
+            prc->right -= rc.right;
+            prc->bottom -= rc.bottom;
+        }
+        return fRc;
+    }
 }

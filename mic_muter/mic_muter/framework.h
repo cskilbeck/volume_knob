@@ -48,3 +48,4 @@
 #include "audio_controller.h"
 #include "notification_icon.h"
 #include "settings.h"
+#include "options_dlg.h"
