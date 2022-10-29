@@ -1,4 +1,11 @@
 //////////////////////////////////////////////////////////////////////
+// Installer
+//      Copy exe, dll to install folder
+//      run it
+// Uninstaller
+//      delete exe, dll
+//      delete install folder
+//      remove HKEY_CURRENT_USER\SOFTWARE\MicMuter
 
 #include "framework.h"
 #include "mic_muter.h"
@@ -55,6 +62,8 @@ namespace chs::mic_muter
 
     constexpr char window_class_name[] = "mic_muter_FC29A1DC-16DE-4E9A-83E5-2DD9A5E034AA";
     constexpr char window_title[] = "MicMuter";
+
+    uint32 WM_TASKBARCREATED;
 
     //////////////////////////////////////////////////////////////////////
 
@@ -487,7 +496,14 @@ namespace chs::mic_muter
             break;
 
         default:
-            return DefWindowProc(hWnd, message, wParam, lParam);
+            if(message == WM_TASKBARCREATED) {
+                LOG_INFO("WM_TASKBARCREATED!");
+                notify_icon.destroy();
+                notify_icon.load();
+                notify_icon.update(mic_attached, mic_muted);
+            } else {
+                return DefWindowProc(hWnd, message, wParam, lParam);
+            }
         }
         return 0;
     }
@@ -559,6 +575,8 @@ namespace chs::mic_muter
         DEFER(CoUninitialize());
 
         SetProcessDPIAware();
+
+        WM_TASKBARCREATED = RegisterWindowMessage("TaskbarCreated");
 
         HR(init_window());
 
