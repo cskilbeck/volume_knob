@@ -379,7 +379,7 @@ void main()
 
         // queue up some keypresses if something happened
         if(pressed) {
-            do_press(KEY_F24);
+            do_press(KEY_F19);
 
             // check for triple-click
             if(t1_count < 200) {
