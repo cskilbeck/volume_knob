@@ -8,7 +8,6 @@
 #define IDD_ABOUTBOX                    103
 #define IDM_ABOUT                       104
 #define IDI_MICMUTER                    107
-#define IDI_SMALL                       108
 #define IDC_MICMUTER                    109
 #define ID_IMG_MUTED                    110
 #define ID_IMG_NOT_MUTED                111
@@ -27,7 +26,6 @@
 #define IDC_SLIDER6                     1008
 #define IDC_SLIDER7                     1009
 #define IDC_STATIC_OVERLAY_POS          1012
-#define IDC_CHECK1                      1013
 #define IDC_CHECK_RUN_AT_STARTUP        1013
 #define IDC_CHECK_OVERLAY_ENABLE_MUTE   1014
 #define IDC_CHECK_OVERLAY_ENABLE_UNMUTE 1015

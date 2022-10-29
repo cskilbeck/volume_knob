@@ -9,9 +9,9 @@ namespace
     LOG_CONTEXT("icon");
 
 #if defined(_DEBUG)
-    class __declspec(uuid("D0B47348-3429-4153-8213-298C1D4E8D26")) icon_guid;
+    class __declspec(uuid("CC2EC94D-B8E2-4FF5-9C4C-41DCD4AC8D87")) icon_guid;
 #else
-    class __declspec(uuid("D019AEF9-2868-41C6-AD3F-79023844F8E7")) icon_guid;
+    class __declspec(uuid("8312E0D8-5CB0-4799-B13F-B52B8AE6F61E")) icon_guid;
 #endif
 }
 
@@ -68,7 +68,8 @@ namespace chs::mic_muter
     {
         NOTIFYICONDATA nid = { sizeof(nid) };
         nid.hWnd = main_hwnd;
-        nid.uFlags = NIF_GUID;
+        nid.uFlags = NIF_GUID | NIF_MESSAGE;
+        nid.uCallbackMessage = WM_APP_NOTIFICATION_ICON;
         nid.guidItem = __uuidof(icon_guid);
         if(!Shell_NotifyIcon(NIM_DELETE, &nid)) {
             return HRESULT_FROM_WIN32(GetLastError());
