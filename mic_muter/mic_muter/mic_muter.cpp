@@ -32,7 +32,6 @@ namespace chs::mic_muter
     bool is_attached;
 
     bool double_buffered = false;
-    float current_dpi = 1.0f;
 
     HBITMAP muted_bmp;
     HBITMAP non_muted_bmp;
@@ -44,6 +43,8 @@ namespace chs::mic_muter
 
     HWND dialog_box{ nullptr };
 
+    HANDLE m_singleInstanceMutex{ nullptr };
+
     UINT_PTR constexpr TIMER_ID_WAIT = 101;
     UINT_PTR constexpr TIMER_ID_FADE = 102;
     UINT_PTR constexpr TIMER_ID_DRAG = 103;
@@ -54,21 +55,8 @@ namespace chs::mic_muter
     uint32 constexpr overlay_window_flags = WS_POPUP;
     uint32 constexpr overlay_window_ex_flags = WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_NOACTIVATE | WS_EX_TRANSPARENT;
 
-    //////////////////////////////////////////////////////////////////////
-
-    void init_dpi_scale(HWND hWnd)
-    {
-        HDC hdc = GetDC(hWnd);
-        current_dpi = GetDeviceCaps(hdc, LOGPIXELSX) / 96.0f;
-        ReleaseDC(hWnd, hdc);
-    }
-
-    //////////////////////////////////////////////////////////////////////
-
-    int dpi_scale(int iValue)
-    {
-        return static_cast<int>(static_cast<float>(iValue) * current_dpi);
-    }
+    constexpr char window_class_name[] = "mic_muter_FC29A1DC-16DE-4E9A-83E5-2DD9A5E034AA";
+    constexpr char window_title[] = "MicMuter";
 
     //////////////////////////////////////////////////////////////////////
 
@@ -149,7 +137,7 @@ namespace chs::mic_muter
     void do_fadeout()
     {
         auto &s = is_muted ? settings.mute_overlay : settings.unmute_overlay;
-        if(s.enabled) {
+        if(is_attached && s.enabled) {
             ShowWindow(main_hwnd, SW_SHOW);
             int fade_after = settings_t::fadeout_after_ms[s.fadeout_time_ms];
             if(fade_after > 0) {
@@ -288,6 +276,7 @@ namespace chs::mic_muter
 
         case WM_DESTROY:
             dialog_box = nullptr;
+            PostMessage(main_hwnd, WM_VOLUMECHANGE, 0, 0);
             break;
 
         case WM_COMMAND:
@@ -379,8 +368,6 @@ namespace chs::mic_muter
 
             // Make BLACK the transparency color and use 25% alpha
             SetLayeredWindowAttributes(hWnd, RGB_BLACK, 64, LWA_ALPHA | LWA_COLORKEY);
-
-            init_dpi_scale(hWnd);
 
             HMONITOR hMonitor = MonitorFromPoint({ 0, 0 }, MONITOR_DEFAULTTOPRIMARY);
             MONITORINFO mi = { sizeof(mi) };
@@ -605,15 +592,13 @@ namespace chs::mic_muter
     {
         double_buffered = SUCCEEDED(BufferedPaintInit());
 
-        constexpr char class_name[] = "mic_muter";
-
         WNDCLASSEX wcex = { sizeof(wcex) };
         wcex.style = CS_HREDRAW | CS_VREDRAW;
         wcex.lpfnWndProc = WndProc;
         wcex.hInstance = hInst;
         wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
         wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-        wcex.lpszClassName = class_name;
+        wcex.lpszClassName = window_class_name;
 
         if(RegisterClassEx(&wcex) == 0) {
             return WIN32_LAST_ERROR(GetLastError());
@@ -621,7 +606,7 @@ namespace chs::mic_muter
 
         DWORD const style = overlay_window_flags;
         DWORD const ex_style = overlay_window_ex_flags;
-        CreateWindowEx(ex_style, class_name, nullptr, style, 0, 0, 0, 0, nullptr, nullptr, hInst, nullptr);
+        CreateWindowEx(ex_style, window_class_name, window_title, style, 0, 0, 0, 0, nullptr, nullptr, hInst, nullptr);
 
         if(main_hwnd == nullptr) {
             return WIN32_LAST_ERROR(GetLastError());
@@ -633,9 +618,25 @@ namespace chs::mic_muter
 
     HRESULT win_main(HINSTANCE hInstance)
     {
+        // single instance admin
+
+        HANDLE single_instance_mutex = CreateMutex(nullptr, true, "{82C56D8B-E69C-4DA1-BC5A-39B27188E00D}");
+        if(single_instance_mutex == nullptr || GetLastError() == ERROR_ALREADY_EXISTS) {
+            HWND hwnd = FindWindow(window_class_name, window_title);
+            if(hwnd) {
+                PostMessage(hwnd, WM_VOLUMECHANGE, 0, 0);
+            }
+            return S_OK;
+        }
+        DEFER(CloseHandle(single_instance_mutex));
+
+        // WM_TIMER exception supression (
+
         BOOL suppress = true;
         SetUserObjectInformationW(GetCurrentProcess(), UOI_TIMERPROC_EXCEPTION_SUPPRESSION, &suppress,
                                   sizeof(suppress));
+
+        // Load the settings
 
         if(FAILED(settings.load())) {
             // 1st run, probably... show an about thing?
@@ -644,6 +645,7 @@ namespace chs::mic_muter
         hInst = hInstance;
 
         HR(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE));
+        DEFER(CoUninitialize());
 
         SetProcessDPIAware();
 
@@ -654,8 +656,6 @@ namespace chs::mic_muter
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
-
-        CoUninitialize();
 
         return S_OK;
     }
