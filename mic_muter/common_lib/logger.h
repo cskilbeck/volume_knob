@@ -18,7 +18,11 @@
 // Compile-time logging limit:
 
 #if !defined(LOG_LEVEL_MAX)
+#if defined(_DEBUG)
 #define LOG_LEVEL_MAX LOG_LEVEL_ALL
+#else
+#define LOG_LEVEL_MAX LOG_LEVEL_NONE
+#endif
 #endif
 
 #define LOG_NOP \
@@ -257,31 +261,31 @@ namespace chs::logger
 #if LOG_LEVEL_MAX >= LOG_LEVEL_DEBUG
 #define LOG_DEBUG(msg, ...) LOG_EMIT_MESSAGE(debug, msg, __VA_ARGS__)
 #else
-#define LOG_Debug(msg, ...) LOG_NOP
+#define LOG_DEBUG(msg, ...) LOG_NOP
 #endif
 
 #if LOG_LEVEL_MAX >= LOG_LEVEL_VERBOSE
 #define LOG_VERBOSE(msg, ...) LOG_EMIT_MESSAGE(verbose, msg, __VA_ARGS__)
 #else
-#define LOG_Verbose(msg, ...) LOG_NOP
+#define LOG_VERBOSE(msg, ...) LOG_NOP
 #endif
 
 #if LOG_LEVEL_MAX >= LOG_LEVEL_INFO
 #define LOG_INFO(msg, ...) LOG_EMIT_MESSAGE(info, msg, __VA_ARGS__)
 #else
-#define LOG_Info(msg, ...) LOG_NOP
+#define LOG_INFO(msg, ...) LOG_NOP
 #endif
 
 #if LOG_LEVEL_MAX >= LOG_LEVEL_WARN
 #define LOG_WARN(msg, ...) LOG_EMIT_MESSAGE(warn, msg, __VA_ARGS__)
 #else
-#define LOG_Warn(msg, ...) LOG_NOP
+#define LOG_WARN(msg, ...) LOG_NOP
 #endif
 
 #if LOG_LEVEL_MAX >= LOG_LEVEL_ERROR
 #define LOG_ERROR(msg, ...) LOG_EMIT_MESSAGE(error, msg, __VA_ARGS__)
 #else
-#define LOG_Error(msg, ...) LOG_NOP
+#define LOG_ERROR(msg, ...) LOG_NOP
 #endif
 
 //////////////////////////////////////////////////////////////////////

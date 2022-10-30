@@ -31,12 +31,12 @@ namespace chs::mic_muter
         nid.guidItem = __uuidof(icon_guid);
         nid.uCallbackMessage = WM_APP_NOTIFICATION_ICON;
         if(!Shell_NotifyIcon(NIM_ADD, &nid)) {
-            return HRESULT_FROM_WIN32(GetLastError());
+            return WIN32_LAST_ERROR("Shell_NotifyIcon(NIM_ADD)");
         }
 
         nid.uVersion = NOTIFYICON_VERSION_4;
         if(!Shell_NotifyIcon(NIM_SETVERSION, &nid)) {
-            return HRESULT_FROM_WIN32(GetLastError());
+            return WIN32_LAST_ERROR("Shell_NotifyIcon(NIM_SETVERSION)");
         }
         return S_OK;
     }
@@ -57,7 +57,7 @@ namespace chs::mic_muter
         nid.uFlags = NIF_ICON | NIF_GUID;
         nid.guidItem = __uuidof(icon_guid);
         if(!Shell_NotifyIcon(NIM_MODIFY, &nid)) {
-            return HRESULT_FROM_WIN32(GetLastError());
+            return WIN32_LAST_ERROR("Shell_NotifyIcon(NIM_MODIFY)");
         }
         return S_OK;
     }
@@ -72,7 +72,7 @@ namespace chs::mic_muter
         nid.uCallbackMessage = WM_APP_NOTIFICATION_ICON;
         nid.guidItem = __uuidof(icon_guid);
         if(!Shell_NotifyIcon(NIM_DELETE, &nid)) {
-            return HRESULT_FROM_WIN32(GetLastError());
+            return WIN32_LAST_ERROR("Shell_NotifyIcon(NIM_DELETE)");
         }
         return S_OK;
     }

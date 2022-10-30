@@ -168,14 +168,16 @@ namespace chs::mic_muter
     {
         auto &s = mic_muted ? settings.mute_overlay : settings.unmute_overlay;
         if(mic_attached && s.enabled) {
+            update_layered_window(255);
             ShowWindow(main_hwnd, SW_SHOW);
             int fade_after = settings_t::fadeout_after_ms[s.fadeout_time_ms];
             if(fade_after > 0) {
-                update_layered_window(255);
                 SetTimer(main_hwnd, TIMER_ID_WAIT, fade_after, nullptr);
             } else if(fade_after == 0) {
                 ticks = GetTickCount64();
                 SetTimer(main_hwnd, TIMER_ID_FADE, 16, nullptr);
+            } else {
+                // -1 == fadeout never
             }
         } else {
             ShowWindow(main_hwnd, SW_HIDE);
