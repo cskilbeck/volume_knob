@@ -50,14 +50,14 @@ namespace chs::mic_muter
 
         static constexpr int fadeout_to_alpha[]{
             0,
-            64,
-            128
+            96,
+            150
         };
 
         static constexpr char const *fadeout_to_names[]{
             "Invisible",
-            "25 percent",
-            "50 percent"
+            "Ghostly",
+            "Transparent"
         };
 
         // fade out this quickly
@@ -71,7 +71,7 @@ namespace chs::mic_muter
         static constexpr int fadeout_over_ms[]{
             3000,
             1000,
-            160,
+            250,
             1
         };
 

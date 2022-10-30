@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.3)
 
 project(lunasvg VERSION 2.3.3 LANGUAGES CXX C)
 
+set(CMAKE_CXX_FLAGS_RELEASE "/MT")
+set(CMAKE_CXX_FLAGS_DEBUG "/MTd")
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 11)
 

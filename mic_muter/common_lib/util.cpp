@@ -2,6 +2,12 @@
 
 #include "framework.h"
 
+#if defined(_DEBUG)
+#pragma comment(lib, "..\\lunasvg-2.3.4\\out\\build\\x64-Debug\\lunasvg.lib")
+#else
+#pragma comment(lib, "..\\lunasvg-2.3.4\\out\\build\\x64-Release\\lunasvg.lib")
+#endif
+
 namespace
 {
     using chs::ComPtr;
@@ -254,6 +260,57 @@ namespace chs::util
         std::vector<byte> resource_buffer;
         HR(load_resource_binary(resource_buffer, id));
         HR(load_image(resource_buffer, width, height, bmp));
+        return S_OK;
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
+    HRESULT svg_to_bitmap(char const *svg, int width, int height, HBITMAP *bmp)
+    {
+        auto document = lunasvg::Document::loadFromData(svg);
+        if(document.get() == nullptr) {
+            return E_FAIL;
+        }
+        auto bitmap = document->renderToBitmap(width, height);
+        if(!bitmap.valid()) {
+            return E_FAIL;
+        }
+
+        int w = bitmap.width();
+        int h = (int)bitmap.height();
+
+        BITMAPV5HEADER bmi{};
+        bmi.bV5Size = sizeof(BITMAPV5HEADER);
+        bmi.bV5Width = w;
+        bmi.bV5Height = -h;
+        bmi.bV5Planes = 1;
+        bmi.bV5BitCount = 32;
+        bmi.bV5Compression = BI_BITFIELDS;
+        bmi.bV5SizeImage = bitmap.stride() * bitmap.height();
+        bmi.bV5RedMask = 0x00ff0000;
+        bmi.bV5GreenMask = 0x0000ff00;
+        bmi.bV5BlueMask = 0x000000ff;
+        bmi.bV5AlphaMask = 0xff000000;
+        bmi.bV5CSType = LCS_WINDOWS_COLOR_SPACE;
+        bmi.bV5Intent = LCS_GM_GRAPHICS;
+
+        BITMAPINFO src_bmi{};
+        src_bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+        src_bmi.bmiHeader.biWidth = w;
+        src_bmi.bmiHeader.biHeight = -h;
+        src_bmi.bmiHeader.biPlanes = 1;
+        src_bmi.bmiHeader.biBitCount = 32;
+        src_bmi.bmiHeader.biCompression = BI_RGB;
+
+        HDC screen_dc = GetDC(nullptr);
+        DEFER(ReleaseDC(nullptr, screen_dc));
+
+        auto bmi_ptr = reinterpret_cast<BITMAPINFOHEADER const *>(&bmi);
+        *bmp = CreateDIBitmap(screen_dc, bmi_ptr, CBM_INIT, bitmap.data(), &src_bmi, DIB_RGB_COLORS);
+        if(*bmp == nullptr) {
+            return WIN32_LAST_ERROR("CreateDIBitmap");
+        }
+
         return S_OK;
     }
 

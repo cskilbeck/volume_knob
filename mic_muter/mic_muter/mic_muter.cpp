@@ -1,18 +1,13 @@
 //////////////////////////////////////////////////////////////////////
-// Installer
-//      Copy exe, dll to install folder
-//      run it
-// Uninstaller
-//      delete exe, dll
-//      delete install folder
-//      remove HKEY_CURRENT_USER\SOFTWARE\MicMuter
 
 #include "framework.h"
-#include "mic_muter.h"
+
+#include "images/microphone_normal_svg.h"
+#include "images/microphone_mute_svg.h"
 
 #pragma comment(lib, "uxtheme.lib")
 #pragma comment(lib, "comctl32.lib")
-#pragma comment(lib, "..\\lunasvg-2.3.4\\out\\build\\x64-Release\\lunasvg.lib")
+#pragma comment(lib, "Msimg32.lib")
 
 #pragma comment(linker,                                                                                         \
                 "/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0'" \
@@ -41,15 +36,19 @@ namespace chs::mic_muter
 
     bool double_buffered = false;
 
-    HDC bmp_dc;
-    HBITMAP muted_bmp;
-    HBITMAP non_muted_bmp;
+    image muted_image;
+    image normal_image;
 
     int img_size;
 
     uint64 ticks;
 
+    HWND drag_hwnd{ nullptr };
+
     HWND options_dlg{ nullptr };
+
+    // int constexpr drag_idle_stop_seconds = 2;
+    int constexpr drag_idle_stop_seconds = 100;
 
     UINT_PTR constexpr TIMER_ID_WAIT = 101;
     UINT_PTR constexpr TIMER_ID_FADE = 102;
@@ -61,7 +60,9 @@ namespace chs::mic_muter
     uint32 constexpr overlay_window_flags = WS_POPUP;
     uint32 constexpr overlay_window_ex_flags = WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_NOACTIVATE | WS_EX_TRANSPARENT;
 
-    constexpr char window_class_name[] = "mic_muter_FC29A1DC-16DE-4E9A-83E5-2DD9A5E034AA";
+    constexpr char drag_window_class_name[] = "mic_muter_overlay_FC29A1DC-16DE-4E9A-83E5-2DD9A5E034AA";
+    constexpr char overlay_window_class_name[] = "mic_muter_drag_EB5E918E-9B22-40D4-AD8A-6991DD92D360";
+
     constexpr char window_title[] = "MicMuter";
 
     uint32 WM_TASKBARCREATED;
@@ -105,6 +106,33 @@ namespace chs::mic_muter
 
     //////////////////////////////////////////////////////////////////////
 
+    void update_layered_window(int alpha)
+    {
+        BLENDFUNCTION bf{};
+        bf.BlendFlags = 0;
+        bf.BlendOp = AC_SRC_OVER;
+        bf.SourceConstantAlpha = alpha;
+        bf.AlphaFormat = AC_SRC_ALPHA;
+
+        image *img = mic_muted ? &muted_image : &normal_image;
+
+        RECT rc;
+        GetWindowRect(main_hwnd, &rc);
+
+        SIZE sz{ img_size, img_size };
+        POINT pt_dst{ rc.left, rc.top };
+        POINT pt_src{ 0, 0 };
+
+        HDC screen_dc = GetDC(nullptr);
+        DEFER(ReleaseDC(nullptr, screen_dc));
+
+        if(!UpdateLayeredWindow(main_hwnd, screen_dc, &pt_dst, &sz, img->dc, &pt_src, RGB_BLACK, &bf, ULW_ALPHA)) {
+            WIN32_LAST_ERROR("UpdateLayeredWindow");
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
     void draw_image(HWND hWnd, HDC hdc)
     {
         LOG_DEBUG("PAINT!");
@@ -117,22 +145,16 @@ namespace chs::mic_muter
         HPAINTBUFFER hBufferedPaint = nullptr;
         if(double_buffered) {
             HDC hdcMem;
-            hBufferedPaint = BeginBufferedPaint(hdc, &rc, BPBF_COMPOSITED, nullptr, &hdcMem);
+            hBufferedPaint = BeginBufferedPaint(hdc, &rc, BPBF_COMPATIBLEBITMAP, nullptr, &hdcMem);
             if(hBufferedPaint != nullptr) {
                 hdc = hdcMem;
             }
         }
 
+        image *img = mic_muted ? &muted_image : &normal_image;
         FillRect(hdc, &rc, (HBRUSH)GetStockObject(BLACK_BRUSH));
-
-        HBITMAP old_bmp = SelectBitmap(bmp_dc, mic_muted ? muted_bmp : non_muted_bmp);
-        if(w != img_size || h != img_size) {
-            SetStretchBltMode(hdc, HALFTONE);
-            StretchBlt(hdc, 0, 0, w, h, bmp_dc, 0, 0, img_size, img_size, SRCPAINT);
-        } else {
-            BitBlt(hdc, 0, 0, w, h, bmp_dc, 0, 0, SRCPAINT);
-        }
-        SelectBitmap(bmp_dc, old_bmp);
+        SetStretchBltMode(hdc, HALFTONE);
+        StretchBlt(hdc, 0, 0, w, h, img->dc, 0, 0, img_size, img_size, SRCCOPY);
 
         if(hBufferedPaint) {
             BufferedPaintMakeOpaque(hBufferedPaint, nullptr);
@@ -149,7 +171,7 @@ namespace chs::mic_muter
             ShowWindow(main_hwnd, SW_SHOW);
             int fade_after = settings_t::fadeout_after_ms[s.fadeout_time_ms];
             if(fade_after > 0) {
-                SetLayeredWindowAttributes(main_hwnd, RGB_BLACK, 255, LWA_ALPHA | LWA_COLORKEY);
+                update_layered_window(255);
                 SetTimer(main_hwnd, TIMER_ID_WAIT, fade_after, nullptr);
             } else if(fade_after == 0) {
                 ticks = GetTickCount64();
@@ -165,27 +187,26 @@ namespace chs::mic_muter
 
     void start_move_overlay()
     {
+        LOG_DEBUG("start_move_overlay");
+
+        KillTimer(main_hwnd, TIMER_ID_FADE);
+        KillTimer(main_hwnd, TIMER_ID_WAIT);
+
         RECT client_rect;
         GetClientRect(main_hwnd, &client_rect);
-
-        SetLayeredWindowAttributes(main_hwnd, RGB_BLACK, 255, LWA_ALPHA | LWA_COLORKEY);
-        SetWindowLong(main_hwnd, GWL_STYLE, drag_window_flags);
-        SetWindowLong(main_hwnd, GWL_EXSTYLE, drag_window_ex_flags);
 
         AdjustWindowRectEx(&client_rect, drag_window_flags, false, drag_window_ex_flags);
         int width = client_rect.right - client_rect.left;
         int height = client_rect.bottom - client_rect.top;
         ClientToScreen(main_hwnd, (LPPOINT)(&client_rect.left));
 
-        KillTimer(main_hwnd, TIMER_ID_FADE);
-        KillTimer(main_hwnd, TIMER_ID_WAIT);
+        ShowWindow(main_hwnd, SW_HIDE);
 
-        SetWindowPos(main_hwnd, nullptr, client_rect.left, client_rect.top, width, height,
-                     SWP_SHOWWINDOW | SWP_FRAMECHANGED);
-        SetActiveWindow(main_hwnd);
-        SetForegroundWindow(main_hwnd);
-
-        SetTimer(main_hwnd, TIMER_ID_DRAG, 2 * 1000, nullptr);
+        SetWindowPos(drag_hwnd, nullptr, client_rect.left, client_rect.top, width, height, SWP_SHOWWINDOW);
+        InvalidateRect(drag_hwnd, nullptr, true);
+        SetActiveWindow(drag_hwnd);
+        SetForegroundWindow(drag_hwnd);
+        SetTimer(main_hwnd, TIMER_ID_DRAG, drag_idle_stop_seconds * 1000, nullptr);
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -195,9 +216,11 @@ namespace chs::mic_muter
     {
         KillTimer(main_hwnd, TIMER_ID_DRAG);
 
+        ShowWindow(drag_hwnd, SW_HIDE);
+
         // get final size
         RECT client_rect;
-        GetClientRect(main_hwnd, &client_rect);
+        GetClientRect(drag_hwnd, &client_rect);
         img_size = client_rect.right - client_rect.left;
 
         // get window caption/border offset
@@ -205,28 +228,19 @@ namespace chs::mic_muter
         int x_offset = -client_rect.left;
         int y_offset = -client_rect.top;
 
-        // reload the bitmaps at the right size
-        DeleteObject(muted_bmp);
-        DeleteObject(non_muted_bmp);
-
-        util::load_bitmap(ID_IMG_MUTED, &muted_bmp, img_size, img_size);
-        util::load_bitmap(ID_IMG_NOT_MUTED, &non_muted_bmp, img_size, img_size);
+        muted_image.create_from_svg(microphone_mute_svg, img_size, img_size);
+        normal_image.create_from_svg(microphone_normal_svg, img_size, img_size);
 
         // new window position
         RECT window_rect;
-        GetWindowRect(main_hwnd, &window_rect);
+        GetWindowRect(drag_hwnd, &window_rect);
         window_rect.left += x_offset;
         window_rect.top += y_offset;
 
         // new window style
-        SetWindowLong(main_hwnd, GWL_STYLE | WS_VISIBLE, overlay_window_flags);
-        SetWindowLong(main_hwnd, GWL_EXSTYLE, overlay_window_ex_flags);
 
         // new window position
-        SetWindowPos(main_hwnd, nullptr, window_rect.left, window_rect.top, img_size, img_size,
-                     SWP_SHOWWINDOW | SWP_DRAWFRAME | SWP_FRAMECHANGED);
-
-        LOG_INFO("STOP_MOVE_OVERLAY");
+        SetWindowPos(main_hwnd, nullptr, window_rect.left, window_rect.top, img_size, img_size, SWP_SHOWWINDOW);
 
         do_fadeout();
     }
@@ -270,7 +284,7 @@ namespace chs::mic_muter
 
     //////////////////////////////////////////////////////////////////////
 
-    LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+    LRESULT CALLBACK drag_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
         switch(message) {
 
@@ -281,53 +295,12 @@ namespace chs::mic_muter
             break;
         }
 
-        case WM_CREATE: {
-
-            // Make BLACK the transparency color and use 25% alpha
-            SetLayeredWindowAttributes(hWnd, RGB_BLACK, 64, LWA_ALPHA | LWA_COLORKEY);
-
-            HMONITOR hMonitor = MonitorFromPoint({ 0, 0 }, MONITOR_DEFAULTTOPRIMARY);
-            MONITORINFO mi = { sizeof(mi) };
-            GetMonitorInfo(hMonitor, &mi);
-
-            img_size = (mi.rcMonitor.right - mi.rcMonitor.left) * 5 / 100;
-
-            POINT const pt = { mi.rcMonitor.right - img_size * 2, mi.rcMonitor.bottom - img_size * 2 };
-
-            RECT rc{ pt.x, pt.y, pt.x + img_size, pt.y + img_size };
-
-            if(settings.overlay_position.left != settings.overlay_position.right) {
-                rc = settings.overlay_position;
-                img_size = rc.right - rc.left;
-            }
-
-            SetWindowPos(hWnd, HWND_TOPMOST, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, 0);
-
-            bmp_dc = CreateCompatibleDC(nullptr);
-
-            util::load_bitmap(ID_IMG_MUTED, &muted_bmp, img_size, img_size);
-            util::load_bitmap(ID_IMG_NOT_MUTED, &non_muted_bmp, img_size, img_size);
-
-            main_hwnd = hWnd;
-
-            audio.Attach(new(std::nothrow) audio_controller());
-
-            mic_mute_hook = SetWindowsHookEx(WH_KEYBOARD_LL, mic_mute_hook_function, hInst, 0);
-
-            audio->init();
-
-            audio->get_mic_info(&mic_attached, &mic_muted);
-
-            notify_icon.load();
-            notify_icon.update(mic_attached, mic_muted);
-
-            // check here if they want the overlay to be shown based on mute status
-            PostMessage(hWnd, WM_APP_SHOW_OVERLAY, 0, 0);
+        case WM_CREATE:
+            drag_hwnd = hWnd;
             break;
-        }
 
         case WM_MOVING:
-            SetTimer(main_hwnd, TIMER_ID_DRAG, 2 * 1000, nullptr);
+            SetTimer(main_hwnd, TIMER_ID_DRAG, drag_idle_stop_seconds * 1000, nullptr);
             break;
 
         case WM_SIZING: {
@@ -362,7 +335,7 @@ namespace chs::mic_muter
             }
             AdjustWindowRectEx(r, drag_window_flags, false, drag_window_ex_flags);
             InvalidateRect(hWnd, nullptr, false);
-            SetTimer(main_hwnd, TIMER_ID_DRAG, 2 * 1000, nullptr);
+            SetTimer(main_hwnd, TIMER_ID_DRAG, drag_idle_stop_seconds * 1000, nullptr);
             return 1;
         }
 
@@ -386,12 +359,88 @@ namespace chs::mic_muter
             return hits[left | (right << 1) | (top << 2) | (bottom << 3)];
         }
 
+        case WM_ACTIVATE:
+            if(wParam == WA_INACTIVE) {
+                stop_move_overlay();
+            }
+            break;
+
+        case WM_ERASEBKGND:
+            break;
+
+        case WM_PAINT: {
+            PAINTSTRUCT ps;
+            HDC hdc = BeginPaint(hWnd, &ps);
+            if(!is_overlay_position_mode()) {
+                draw_image(hWnd, hdc);
+            }
+            EndPaint(hWnd, &ps);
+        } break;
+
+        default:
+            return DefWindowProc(hWnd, message, wParam, lParam);
+        }
+        return 0;
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
+    LRESULT CALLBACK overlay_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+    {
+        switch(message) {
+
+        case WM_GETMINMAXINFO: {
+            MINMAXINFO *mmi = reinterpret_cast<MINMAXINFO *>(lParam);
+            mmi->ptMinTrackSize.x = GetSystemMetrics(SM_CXSIZEFRAME) * 8;
+            mmi->ptMinTrackSize.y = GetSystemMetrics(SM_CYSIZEFRAME) * 8;
+            break;
+        }
+
+        case WM_CREATE: {
+
+            // Make BLACK the transparency color and use 25% alpha
+            // SetLayeredWindowAttributes(hWnd, RGB_BLACK, 0, LWA_ALPHA | LWA_COLORKEY);
+
+            HMONITOR hMonitor = MonitorFromPoint({ 0, 0 }, MONITOR_DEFAULTTOPRIMARY);
+            MONITORINFO mi = { sizeof(mi) };
+            GetMonitorInfo(hMonitor, &mi);
+
+            img_size = (mi.rcMonitor.right - mi.rcMonitor.left) * 5 / 100;
+
+            POINT const pt = { mi.rcMonitor.right - img_size * 2, mi.rcMonitor.bottom - img_size * 2 };
+
+            RECT rc{ pt.x, pt.y, pt.x + img_size, pt.y + img_size };
+
+            if(settings.overlay_position.left != settings.overlay_position.right) {
+                rc = settings.overlay_position;
+                img_size = rc.right - rc.left;
+            }
+
+            SetWindowPos(hWnd, HWND_TOPMOST, rc.left, rc.top, img_size, img_size, 0);
+
+            main_hwnd = hWnd;
+
+            audio.Attach(new(std::nothrow) audio_controller());
+
+            mic_mute_hook = SetWindowsHookEx(WH_KEYBOARD_LL, mic_mute_hook_function, hInst, 0);
+
+            audio->init();
+
+            audio->get_mic_info(&mic_attached, &mic_muted);
+
+            notify_icon.load();
+            notify_icon.update(mic_attached, mic_muted);
+
+            // check here if they want the overlay to be shown based on mute status
+            PostMessage(hWnd, WM_APP_SHOW_OVERLAY, 0, 0);
+            break;
+        }
+
         case WM_DESTROY:
             notify_icon.destroy();
             UnhookWindowsHookEx(mic_mute_hook);
-            DeleteObject(muted_bmp);
-            DeleteObject(non_muted_bmp);
-            DeleteDC(bmp_dc);
+            muted_image.destroy();
+            normal_image.destroy();
             if(double_buffered) {
                 BufferedPaintUnInit();
             }
@@ -403,12 +452,6 @@ namespace chs::mic_muter
 
         case WM_COMMAND:
             handle_menu_option(LOWORD(wParam));
-            break;
-
-        case WM_ACTIVATE:
-            if(wParam == WA_INACTIVE && is_overlay_position_mode()) {
-                stop_move_overlay();
-            }
             break;
 
         case WM_TIMER: {
@@ -427,9 +470,7 @@ namespace chs::mic_muter
                 break;
 
             case TIMER_ID_FADE: {
-
                 auto &s = mic_muted ? settings.mute_overlay : settings.unmute_overlay;
-
                 uint64 now = GetTickCount64();
                 float elapsed = static_cast<float>(now - ticks);
                 float duration = static_cast<float>(settings_t::fadeout_over_ms[s.fadeout_speed_ms]);
@@ -438,8 +479,7 @@ namespace chs::mic_muter
                 float d = std::min(1.0f, elapsed / duration);
                 int window_alpha = 255 - static_cast<int>(d * alpha_range);
                 if(window_alpha > 1) {
-                    SetLayeredWindowAttributes(hWnd, RGB_BLACK, std::min(255, window_alpha), LWA_ALPHA | LWA_COLORKEY);
-                    ShowWindow(hWnd, SW_SHOW);
+                    update_layered_window(window_alpha);
                 } else {
                     ShowWindow(hWnd, SW_HIDE);
                 }
@@ -451,16 +491,6 @@ namespace chs::mic_muter
             break;
         }
 
-        case WM_ERASEBKGND:
-            break;
-
-        case WM_PAINT: {
-            PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hWnd, &ps);
-            draw_image(hWnd, hdc);
-            EndPaint(hWnd, &ps);
-        } break;
-
         case WM_APP_NOTIFICATION_ICON:
             switch(LOWORD(lParam)) {
             case NIN_SELECT:
@@ -471,6 +501,7 @@ namespace chs::mic_muter
             break;
 
         case WM_APP_SHOW_OVERLAY: {
+            LOG_DEBUG("WM_APP_SHOW_OVERLAY");
             audio->get_mic_info(&mic_attached, &mic_muted);
             notify_icon.update(mic_attached, mic_muted);
             KillTimer(hWnd, TIMER_ID_WAIT);
@@ -479,9 +510,8 @@ namespace chs::mic_muter
                 ShowWindow(hWnd, SW_HIDE);
             } else {
 
-                HDC dc = GetDC(hWnd);
-                draw_image(hWnd, dc);
-                ReleaseDC(hWnd, dc);
+                ShowWindow(hWnd, SW_SHOW);
+                update_layered_window(255);
                 do_fadeout();
             }
             break;
@@ -514,26 +544,43 @@ namespace chs::mic_muter
     HRESULT init_window()
     {
         double_buffered = SUCCEEDED(BufferedPaintInit());
+        // double_buffered = FALSE;
 
         WNDCLASSEX wcex = { sizeof(wcex) };
         wcex.style = CS_HREDRAW | CS_VREDRAW;
-        wcex.lpfnWndProc = WndProc;
+        wcex.lpfnWndProc = overlay_wnd_proc;
         wcex.hInstance = hInst;
         wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
         wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-        wcex.lpszClassName = window_class_name;
+        wcex.lpszClassName = overlay_window_class_name;
 
         if(RegisterClassEx(&wcex) == 0) {
             return WIN32_LAST_ERROR(GetLastError());
         }
 
-        DWORD const style = overlay_window_flags;
-        DWORD const ex_style = overlay_window_ex_flags;
-        CreateWindowEx(ex_style, window_class_name, window_title, style, 0, 0, 0, 0, nullptr, nullptr, hInst, nullptr);
+        wcex.lpfnWndProc = drag_wnd_proc;
+        wcex.lpszClassName = drag_window_class_name;
+
+        if(RegisterClassEx(&wcex) == 0) {
+            return WIN32_LAST_ERROR(GetLastError());
+        }
+
+        CreateWindowEx(overlay_window_ex_flags, overlay_window_class_name, window_title, overlay_window_flags, 0, 0, 0,
+                       0, nullptr, nullptr, hInst, nullptr);
 
         if(main_hwnd == nullptr) {
             return WIN32_LAST_ERROR(GetLastError());
         }
+
+        CreateWindowEx(drag_window_ex_flags, drag_window_class_name, window_title, drag_window_flags, 0, 0, 0, 0,
+                       nullptr, nullptr, hInst, nullptr);
+
+        // main_hwnd is set in WM_CREATE
+
+        if(drag_hwnd == nullptr) {
+            return WIN32_LAST_ERROR(GetLastError());
+        }
+
         return S_OK;
     }
 
@@ -551,7 +598,7 @@ namespace chs::mic_muter
         DEFER(CloseHandle(single_instance_mutex));
 
         if(GetLastError() == ERROR_ALREADY_EXISTS) {
-            HWND hwnd = FindWindow(window_class_name, window_title);
+            HWND hwnd = FindWindow(drag_window_class_name, window_title);
             if(hwnd != nullptr) {
                 PostMessage(hwnd, WM_APP_SHOW_OVERLAY, 0, 0);
             }
@@ -578,6 +625,11 @@ namespace chs::mic_muter
         SetProcessDPIAware();
 
         WM_TASKBARCREATED = RegisterWindowMessage("TaskbarCreated");
+
+        img_size = settings.overlay_position.right - settings.overlay_position.left;
+
+        muted_image.create_from_svg(microphone_mute_svg, img_size, img_size);
+        normal_image.create_from_svg(microphone_normal_svg, img_size, img_size);
 
         HR(init_window());
 

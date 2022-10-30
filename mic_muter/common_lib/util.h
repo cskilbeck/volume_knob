@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../lunasvg-2.3.4/include/lunasvg.h"
+
 namespace chs
 {
     using uint8 = uint8_t;
@@ -18,6 +20,9 @@ namespace chs
     {
         HRESULT load_resource_binary(std::vector<byte> &buffer, uintptr_t const id, LPSTR const type = RT_RCDATA);
         HRESULT load_bitmap(uintptr_t const id, HBITMAP *bmp, uint32 width = 0, uint32 height = 0);
+
+        HRESULT svg_to_bitmap(char const *svg, int width, int height, HBITMAP *bmp);
+
         bool console_set_ansi_enabled(bool const enabled);
         std::string windows_error_text(DWORD err);
 
