@@ -241,6 +241,7 @@
       <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">ProgramDatabase</DebugInformationFormat>
       <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
     </ClCompile>
+    <ClCompile Include="image.cpp" />
     <ClCompile Include="mic_muter.cpp" />
     <ClCompile Include="notification_icon.cpp" />
     <ClCompile Include="options_dlg.cpp" />

@@ -59,6 +59,9 @@
     <ClCompile Include="options_dlg.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="image.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Image Include="small.ico">
