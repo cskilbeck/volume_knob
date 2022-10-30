@@ -38,6 +38,8 @@
 
 #include "resource.h"
 
+#include "../lunasvg-2.3.4/include/lunasvg.h"
+
 #include "mic_muter.h"
 #include "../common_lib/ansi.h"
 #include "../common_lib/logger.h"

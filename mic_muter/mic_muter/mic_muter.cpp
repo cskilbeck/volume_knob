@@ -12,6 +12,7 @@
 
 #pragma comment(lib, "uxtheme.lib")
 #pragma comment(lib, "comctl32.lib")
+#pragma comment(lib, "..\\lunasvg-2.3.4\\out\\build\\x64-Release\\lunasvg.lib")
 
 #pragma comment(linker,                                                                                         \
                 "/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0'" \
