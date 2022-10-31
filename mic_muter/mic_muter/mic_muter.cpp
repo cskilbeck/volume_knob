@@ -4,6 +4,7 @@
 
 #include "images/microphone_normal_svg.h"
 #include "images/microphone_mute_svg.h"
+#include "images/microphone_base_svg.h"
 
 #pragma comment(lib, "uxtheme.lib")
 #pragma comment(lib, "comctl32.lib")
@@ -19,33 +20,7 @@ namespace chs::mic_muter
 {
     LOG_CONTEXT("mic_muter");
 
-    //////////////////////////////////////////////////////////////////////
-
-    HINSTANCE hInst;
-
     DWORD constexpr RGB_BLACK = RGB(0, 0, 0);
-
-    ComPtr<audio_controller> audio;
-
-    notification_icon notify_icon;
-
-    settings_t settings;
-
-    bool mic_muted;
-    bool mic_attached;
-
-    bool double_buffered = false;
-
-    image muted_image;
-    image normal_image;
-
-    int img_size;
-
-    uint64 ticks;
-
-    HWND drag_hwnd{ nullptr };
-
-    HWND options_dlg{ nullptr };
 
     // int constexpr drag_idle_stop_seconds = 2;
     int constexpr drag_idle_stop_seconds = 100;
@@ -64,6 +39,31 @@ namespace chs::mic_muter
     constexpr char overlay_window_class_name[] = "mic_muter_drag_EB5E918E-9B22-40D4-AD8A-6991DD92D360";
 
     constexpr char window_title[] = "MicMuter";
+
+    //////////////////////////////////////////////////////////////////////
+
+    HINSTANCE hInst;
+
+    HWND drag_hwnd;
+    HWND options_dlg;
+
+    bool double_buffered;
+
+    int overlay_size;
+
+    ComPtr<audio_controller> audio;
+
+    notification_icon notify_icon;
+
+    settings_t settings;
+
+    bool mic_muted;
+    bool mic_attached;
+
+    image muted_image;
+    image normal_image;
+
+    uint64 fade_ticks;
 
     uint32 WM_TASKBARCREATED;
 
@@ -119,7 +119,7 @@ namespace chs::mic_muter
         RECT rc;
         GetWindowRect(main_hwnd, &rc);
 
-        SIZE sz{ img_size, img_size };
+        SIZE sz{ overlay_size, overlay_size };
         POINT pt_dst{ rc.left, rc.top };
         POINT pt_src{ 0, 0 };
 
@@ -154,7 +154,7 @@ namespace chs::mic_muter
         image *img = mic_muted ? &muted_image : &normal_image;
         FillRect(hdc, &rc, (HBRUSH)GetStockObject(BLACK_BRUSH));
         SetStretchBltMode(hdc, HALFTONE);
-        StretchBlt(hdc, 0, 0, w, h, img->dc, 0, 0, img_size, img_size, SRCCOPY);
+        StretchBlt(hdc, 0, 0, w, h, img->dc, 0, 0, overlay_size, overlay_size, SRCCOPY);
 
         if(hBufferedPaint) {
             BufferedPaintMakeOpaque(hBufferedPaint, nullptr);
@@ -174,7 +174,7 @@ namespace chs::mic_muter
             if(fade_after > 0) {
                 SetTimer(main_hwnd, TIMER_ID_WAIT, fade_after, nullptr);
             } else if(fade_after == 0) {
-                ticks = GetTickCount64();
+                fade_ticks = GetTickCount64();
                 SetTimer(main_hwnd, TIMER_ID_FADE, 16, nullptr);
             } else {
                 // -1 == fadeout never
@@ -223,15 +223,15 @@ namespace chs::mic_muter
         // get final size
         RECT client_rect;
         GetClientRect(drag_hwnd, &client_rect);
-        img_size = client_rect.right - client_rect.left;
+        overlay_size = client_rect.right - client_rect.left;
 
         // get window caption/border offset
         AdjustWindowRectEx(&client_rect, drag_window_flags, false, drag_window_ex_flags);
         int x_offset = -client_rect.left;
         int y_offset = -client_rect.top;
 
-        muted_image.create_from_svg(microphone_mute_svg, img_size, img_size);
-        normal_image.create_from_svg(microphone_normal_svg, img_size, img_size);
+        muted_image.create_from_svg(microphone_mute_svg, overlay_size, overlay_size);
+        normal_image.create_from_svg(microphone_normal_svg, overlay_size, overlay_size);
 
         // new window position
         RECT window_rect;
@@ -242,7 +242,7 @@ namespace chs::mic_muter
         // new window style
 
         // new window position
-        SetWindowPos(main_hwnd, nullptr, window_rect.left, window_rect.top, img_size, img_size, SWP_SHOWWINDOW);
+        SetWindowPos(main_hwnd, nullptr, window_rect.left, window_rect.top, overlay_size, overlay_size, SWP_SHOWWINDOW);
 
         do_fadeout();
     }
@@ -400,25 +400,22 @@ namespace chs::mic_muter
 
         case WM_CREATE: {
 
-            // Make BLACK the transparency color and use 25% alpha
-            // SetLayeredWindowAttributes(hWnd, RGB_BLACK, 0, LWA_ALPHA | LWA_COLORKEY);
-
             HMONITOR hMonitor = MonitorFromPoint({ 0, 0 }, MONITOR_DEFAULTTOPRIMARY);
             MONITORINFO mi = { sizeof(mi) };
             GetMonitorInfo(hMonitor, &mi);
 
-            img_size = (mi.rcMonitor.right - mi.rcMonitor.left) * 5 / 100;
+            overlay_size = (mi.rcMonitor.right - mi.rcMonitor.left) * 5 / 100;
 
-            POINT const pt = { mi.rcMonitor.right - img_size * 2, mi.rcMonitor.bottom - img_size * 2 };
+            POINT const pt = { mi.rcMonitor.right - overlay_size * 2, mi.rcMonitor.bottom - overlay_size * 2 };
 
-            RECT rc{ pt.x, pt.y, pt.x + img_size, pt.y + img_size };
+            RECT rc{ pt.x, pt.y, pt.x + overlay_size, pt.y + overlay_size };
 
             if(settings.overlay_position.left != settings.overlay_position.right) {
                 rc = settings.overlay_position;
-                img_size = rc.right - rc.left;
+                overlay_size = rc.right - rc.left;
             }
 
-            SetWindowPos(hWnd, HWND_TOPMOST, rc.left, rc.top, img_size, img_size, 0);
+            SetWindowPos(hWnd, HWND_TOPMOST, rc.left, rc.top, overlay_size, overlay_size, 0);
 
             main_hwnd = hWnd;
 
@@ -467,14 +464,14 @@ namespace chs::mic_muter
 
             case TIMER_ID_WAIT:
                 KillTimer(hWnd, TIMER_ID_WAIT);
-                ticks = GetTickCount64();
+                fade_ticks = GetTickCount64();
                 SetTimer(hWnd, TIMER_ID_FADE, 16, nullptr);
                 break;
 
             case TIMER_ID_FADE: {
                 auto &s = mic_muted ? settings.mute_overlay : settings.unmute_overlay;
                 uint64 now = GetTickCount64();
-                float elapsed = static_cast<float>(now - ticks);
+                float elapsed = static_cast<float>(now - fade_ticks);
                 float duration = static_cast<float>(settings_t::fadeout_over_ms[s.fadeout_speed_ms]);
                 int target_alpha = settings_t::fadeout_to_alpha[s.fadeout_to_percent];
                 int alpha_range = 255 - target_alpha;
@@ -628,10 +625,10 @@ namespace chs::mic_muter
 
         WM_TASKBARCREATED = RegisterWindowMessage("TaskbarCreated");
 
-        img_size = settings.overlay_position.right - settings.overlay_position.left;
+        overlay_size = settings.overlay_position.right - settings.overlay_position.left;
 
-        muted_image.create_from_svg(microphone_mute_svg, img_size, img_size);
-        normal_image.create_from_svg(microphone_normal_svg, img_size, img_size);
+        muted_image.create_from_svg(microphone_mute_svg, overlay_size, overlay_size);
+        normal_image.create_from_svg(microphone_normal_svg, overlay_size, overlay_size);
 
         HR(init_window());
 

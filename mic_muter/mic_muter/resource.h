@@ -35,6 +35,7 @@
 #define IDC_COMBO_FADEOUT_TO_MUTE       1019
 #define IDC_COMBO_FADEOUT_SPEED_UNMUTE  1020
 #define IDC_COMBO_FADEOUT_TO_UNMUTE     1021
+#define IDC_SLIDER1                     1022
 #define ID_POPUP_QUIT                   32771
 #define ID_POPUP_ETC                    32772
 #define ID_POPUP_OPTIONS                32773
@@ -95,7 +96,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        141
 #define _APS_NEXT_COMMAND_VALUE         32833
-#define _APS_NEXT_CONTROL_VALUE         1017
+#define _APS_NEXT_CONTROL_VALUE         1023
 #define _APS_NEXT_SYMED_VALUE           112
 #endif
 #endif

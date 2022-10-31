@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="SVG">
+      <UniqueIdentifier>{c1f8dbf1-4f00-426f-8185-a05941071c9f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -70,19 +73,13 @@
     <Image Include="images\microphone_mute.ico">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="images\microphone_normal.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
     <Image Include="mic_muter.ico">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="images\microphone_mute.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="images\microphone_normal.png">
-      <Filter>Resource Files</Filter>
-    </Image>
     <Image Include="images\microphone_missing.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="images\microphone_normal.ico">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>
@@ -92,8 +89,14 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="images\rcdata1.bin">
-      <Filter>Resource Files</Filter>
-    </None>
+    <CustomBuild Include="images\microphone_mute.svg">
+      <Filter>SVG</Filter>
+    </CustomBuild>
+    <CustomBuild Include="images\microphone_normal.svg">
+      <Filter>SVG</Filter>
+    </CustomBuild>
+    <CustomBuild Include="images\microphone_base.svg">
+      <Filter>SVG</Filter>
+    </CustomBuild>
   </ItemGroup>
 </Project>

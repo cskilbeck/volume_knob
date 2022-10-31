@@ -276,17 +276,17 @@ namespace chs::util
             return E_FAIL;
         }
 
-        int w = bitmap.width();
-        int h = (int)bitmap.height();
+        width = static_cast<int>(bitmap.width());
+        height = static_cast<int>(bitmap.height());
 
         BITMAPV5HEADER bmi{};
         bmi.bV5Size = sizeof(BITMAPV5HEADER);
-        bmi.bV5Width = w;
-        bmi.bV5Height = -h;
+        bmi.bV5Width = width;
+        bmi.bV5Height = -height;
         bmi.bV5Planes = 1;
         bmi.bV5BitCount = 32;
         bmi.bV5Compression = BI_BITFIELDS;
-        bmi.bV5SizeImage = bitmap.stride() * bitmap.height();
+        bmi.bV5SizeImage = bitmap.stride() * height;
         bmi.bV5RedMask = 0x00ff0000;
         bmi.bV5GreenMask = 0x0000ff00;
         bmi.bV5BlueMask = 0x000000ff;
@@ -296,8 +296,8 @@ namespace chs::util
 
         BITMAPINFO src_bmi{};
         src_bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-        src_bmi.bmiHeader.biWidth = w;
-        src_bmi.bmiHeader.biHeight = -h;
+        src_bmi.bmiHeader.biWidth = width;
+        src_bmi.bmiHeader.biHeight = -height;
         src_bmi.bmiHeader.biPlanes = 1;
         src_bmi.bmiHeader.biBitCount = 32;
         src_bmi.bmiHeader.biCompression = BI_RGB;
