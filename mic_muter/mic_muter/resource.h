@@ -17,6 +17,8 @@
 #define IDI_ICON_MIC_MUTE               134
 #define IDR_MENU_POPUP                  135
 #define IDI_ICON_MIC_MISSING            140
+#define IDD_DIALOG_OPTIONS_OVERLAY      141
+#define IDD_DIALOG_OPTIONS              142
 #define IDC_SLIDER2                     1001
 #define IDC_CHECK_RUN_AT_LOGIN          1003
 #define IDC_CHECK_SHOW_WHEN_MUTED       1004
@@ -36,6 +38,12 @@
 #define IDC_COMBO_FADEOUT_SPEED_UNMUTE  1020
 #define IDC_COMBO_FADEOUT_TO_UNMUTE     1021
 #define IDC_SLIDER1                     1022
+#define IDC_COMBO_FADEOUT_AFTER         1023
+#define IDC_COMBO_FADEOUT_TO            1024
+#define IDC_COMBO_FADEOUT_SPEED         1025
+#define IDC_CHECK_OVERLAY_ENABLE        1026
+#define IDC_OPTIONS_TAB_CTRL            1037
+#define IDC_STATIC_OPTIONS_OVERLAY_IMAGE 1038
 #define ID_POPUP_QUIT                   32771
 #define ID_POPUP_ETC                    32772
 #define ID_POPUP_OPTIONS                32773
@@ -94,9 +102,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        141
+#define _APS_NEXT_RESOURCE_VALUE        143
 #define _APS_NEXT_COMMAND_VALUE         32833
-#define _APS_NEXT_CONTROL_VALUE         1023
+#define _APS_NEXT_CONTROL_VALUE         1039
 #define _APS_NEXT_SYMED_VALUE           112
 #endif
 #endif

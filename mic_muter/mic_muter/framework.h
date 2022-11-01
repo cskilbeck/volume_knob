@@ -11,6 +11,7 @@
 
 #include <windows.h>
 #include <windowsx.h>
+#include <commctrl.h>
 #include <shellapi.h>
 #include <Uxtheme.h>
 #include <wrl/client.h>

@@ -5,7 +5,7 @@
 //////////////////////////////////////////////////////////////////////
 
 HOOKDLL_API HHOOK mic_mute_hook;
-HOOKDLL_API HWND main_hwnd;
+HOOKDLL_API HWND overlay_hwnd;
 
 //////////////////////////////////////////////////////////////////////
 
@@ -24,7 +24,7 @@ HOOKDLL_API LRESULT CALLBACK mic_mute_hook_function(int nCode, WPARAM wParam, LP
     DWORD const flags = data->flags;
     LOG_DEBUG("CODE: {}, wParam: {}, KEY: {}, FLAGS: {}", nCode, wParam, key, flags);
     if(nCode == HC_ACTION && wParam == WM_KEYDOWN && key == VK_F19) {
-        PostMessage(main_hwnd, WM_APP_HOTKEY_PRESSED, 0, 0);
+        PostMessage(overlay_hwnd, WM_APP_HOTKEY_PRESSED, 0, 0);
         return 1;
     }
     return CallNextHookEx(mic_mute_hook, nCode, wParam, lParam);

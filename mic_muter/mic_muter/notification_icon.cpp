@@ -26,7 +26,7 @@ namespace chs::mic_muter
         HR(LoadIconMetric(GetModuleHandle(nullptr), MAKEINTRESOURCEW(IDI_ICON_MIC_MISSING), LIM_SMALL, &missing_icon));
 
         NOTIFYICONDATA nid = { sizeof(nid) };
-        nid.hWnd = main_hwnd;
+        nid.hWnd = overlay_hwnd;
         nid.uFlags = NIF_GUID | NIF_MESSAGE;
         nid.guidItem = __uuidof(icon_guid);
         nid.uCallbackMessage = WM_APP_NOTIFICATION_ICON;
@@ -46,7 +46,7 @@ namespace chs::mic_muter
     HRESULT notification_icon::update(bool attached, bool muted)
     {
         NOTIFYICONDATA nid = { sizeof(nid) };
-        nid.hWnd = main_hwnd;
+        nid.hWnd = overlay_hwnd;
         if(!attached) {
             nid.hIcon = missing_icon;
         } else if(muted) {
@@ -67,7 +67,7 @@ namespace chs::mic_muter
     HRESULT notification_icon::destroy()
     {
         NOTIFYICONDATA nid = { sizeof(nid) };
-        nid.hWnd = main_hwnd;
+        nid.hWnd = overlay_hwnd;
         nid.uFlags = NIF_GUID | NIF_MESSAGE;
         nid.uCallbackMessage = WM_APP_NOTIFICATION_ICON;
         nid.guidItem = __uuidof(icon_guid);

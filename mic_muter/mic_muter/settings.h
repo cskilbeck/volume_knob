@@ -33,10 +33,10 @@ namespace chs::mic_muter
         };
 
         static constexpr char const *fadeout_after_ms_names[]{
-            "straight away",
-            "after 1 second",
-            "after 5 seconds",
-            "after 10 seconds",
+            "Straight away",
+            "After 1 second",
+            "After 5 seconds",
+            "After 10 seconds",
             "never"
         };
 
@@ -97,14 +97,37 @@ namespace chs::mic_muter
             byte fadeout_speed_ms{ fadeout_speed_medium };
 
             byte fadeout_to_percent{ fadeout_to_25_percent };
+
+            char const *name{ nullptr };
+
+            overlay_setting(char const *n) : name(n)
+            {
+            }
         };
 
         RECT overlay_position;
 
-        overlay_setting mute_overlay;
-        overlay_setting unmute_overlay;
+        enum overlay_page : int
+        {
+            page_muted = 0,
+            page_unmuted = 1,
+            page_disconnected = 2,
+
+            num_overlay_pages = 3
+        };
+
+        overlay_setting mute_overlay{ "Muted" };
+        overlay_setting unmute_overlay{ "Unmuted" };
+        overlay_setting disconnected_overlay{ "Disconnected" };
+
+        static overlay_setting *overlay_settings[num_overlay_pages];
+
+        static int get_overlay_index(bool muted, bool attached);
+        static overlay_setting *get_overlay_setting(bool muted, bool attached);
 
         bool run_at_startup{ true };
+
+        HRESULT save_run_at_startup();
 
         //////////////////////////////////////////////////////////////////////
 
@@ -118,47 +141,30 @@ namespace chs::mic_muter
             LOG_CONTEXT("settings.save");
 
             RECT rc;
-            GetClientRect(main_hwnd, &rc);
-            MapWindowPoints(main_hwnd, nullptr, reinterpret_cast<LPPOINT>(&rc), 2);
+            GetClientRect(overlay_hwnd, &rc);
+            MapWindowPoints(overlay_hwnd, nullptr, reinterpret_cast<LPPOINT>(&rc), 2);
             overlay_position = rc;
 
             SETTINGS_SAVE_VALUE(run_at_startup);
+            SETTINGS_SAVE_VALUE(overlay_position);
+
             SETTINGS_SAVE_VALUE(mute_overlay.enabled);
             SETTINGS_SAVE_VALUE(mute_overlay.fadeout_time_ms);
             SETTINGS_SAVE_VALUE(mute_overlay.fadeout_speed_ms);
             SETTINGS_SAVE_VALUE(mute_overlay.fadeout_to_percent);
+
             SETTINGS_SAVE_VALUE(unmute_overlay.enabled);
             SETTINGS_SAVE_VALUE(unmute_overlay.fadeout_time_ms);
             SETTINGS_SAVE_VALUE(unmute_overlay.fadeout_speed_ms);
             SETTINGS_SAVE_VALUE(unmute_overlay.fadeout_to_percent);
-            SETTINGS_SAVE_VALUE(overlay_position);
 
-#if !defined(_DEBUG)
-            HKEY key;
-            char const *run_key = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run";
-            LSTATUS status = RegCreateKey(HKEY_CURRENT_USER, run_key, &key);
-            if(status != ERROR_SUCCESS) {
-                return WIN32_ERROR(status, "RegCreateKey");
-            }
-            DEFER(RegCloseKey(key));
+            SETTINGS_SAVE_VALUE(disconnected_overlay.enabled);
+            SETTINGS_SAVE_VALUE(disconnected_overlay.fadeout_time_ms);
+            SETTINGS_SAVE_VALUE(disconnected_overlay.fadeout_speed_ms);
+            SETTINGS_SAVE_VALUE(disconnected_overlay.fadeout_to_percent);
 
-            if(run_at_startup) {
-                char filename[MAX_PATH * 2];
-                DWORD len = GetModuleFileName(GetModuleHandle(nullptr), filename, _countof(filename));
-                if(len == 0 || len == _countof(filename)) {
-                    return WIN32_LAST_ERROR("GetModuleFileName");
-                }
-                status = RegSetValueEx(key, "MicMuter", 0, REG_SZ, reinterpret_cast<BYTE const *>(filename), len);
-                if(status != ERROR_SUCCESS) {
-                    return WIN32_ERROR(status, "RegSetValueEx");
-                }
-            } else {
-                status = RegDeleteValue(key, "MicMuter");
-                if(status != ERROR_SUCCESS && status != ERROR_FILE_NOT_FOUND) {
-                    return WIN32_ERROR(status, "RegDeleteValue");
-                }
-            }
-#endif
+            HR(save_run_at_startup());
+
             return S_OK;
         }
 
@@ -169,15 +175,23 @@ namespace chs::mic_muter
             LOG_CONTEXT("settings.load");
 
             SETTINGS_LOAD_VALUE(run_at_startup);
+            SETTINGS_LOAD_VALUE(overlay_position);
+
             SETTINGS_LOAD_VALUE(mute_overlay.enabled);
             SETTINGS_LOAD_VALUE(mute_overlay.fadeout_time_ms);
             SETTINGS_LOAD_VALUE(mute_overlay.fadeout_speed_ms);
             SETTINGS_LOAD_VALUE(mute_overlay.fadeout_to_percent);
+
             SETTINGS_LOAD_VALUE(unmute_overlay.enabled);
             SETTINGS_LOAD_VALUE(unmute_overlay.fadeout_time_ms);
             SETTINGS_LOAD_VALUE(unmute_overlay.fadeout_speed_ms);
             SETTINGS_LOAD_VALUE(unmute_overlay.fadeout_to_percent);
-            SETTINGS_LOAD_VALUE(overlay_position);
+
+            SETTINGS_LOAD_VALUE(disconnected_overlay.enabled);
+            SETTINGS_LOAD_VALUE(disconnected_overlay.fadeout_time_ms);
+            SETTINGS_LOAD_VALUE(disconnected_overlay.fadeout_speed_ms);
+            SETTINGS_LOAD_VALUE(disconnected_overlay.fadeout_to_percent);
+
             return S_OK;
         }
     };
