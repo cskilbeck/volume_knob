@@ -16,6 +16,8 @@ namespace chs::mic_muter
 {
     LOG_CONTEXT("mic_muter");
 
+    char const *app_name = "MicMuter";
+
     DWORD constexpr RGB_BLACK = RGB(0, 0, 0);
 
     // int constexpr drag_idle_stop_seconds = 2;
@@ -58,6 +60,8 @@ namespace chs::mic_muter
     uint64 fade_ticks;
 
     uint32 WM_TASKBARCREATED;
+
+    HFONT menu_banner_font;
 
     //////////////////////////////////////////////////////////////////////
 
@@ -115,6 +119,17 @@ namespace chs::mic_muter
         if(!SetMenuItemInfo(hSubMenu, ID_POPUP_MUTE, false, &mi)) {
             return WIN32_LAST_ERROR("SetMenuItemInfo");
         }
+
+        // Banner menuitem
+        mi.fMask = MIIM_FTYPE | MIIM_DATA | MIIM_ID;
+        mi.fType = MFT_OWNERDRAW;
+        mi.wID = ID_POPUP_MICMUTER;
+        mi.dwItemData = reinterpret_cast<ULONG_PTR>(app_name);
+        mi.cch = static_cast<UINT>(strlen(app_name));
+        if(!SetMenuItemInfo(hSubMenu, ID_POPUP_MICMUTER, false, &mi)) {
+            return WIN32_LAST_ERROR("SetMenuItemInfo(2)");
+        }
+
         SetForegroundWindow(hwnd);
         UINT uFlags = TPM_RIGHTBUTTON;
         if(GetSystemMetrics(SM_MENUDROPALIGNMENT) != 0) {
@@ -122,6 +137,7 @@ namespace chs::mic_muter
         } else {
             uFlags |= TPM_LEFTALIGN;
         }
+
         if(!TrackPopupMenuEx(hSubMenu, uFlags, pt.x, pt.y, hwnd, NULL)) {
             return WIN32_LAST_ERROR("TrackPopupMenuEx");
         }
@@ -406,6 +422,26 @@ namespace chs::mic_muter
 
     //////////////////////////////////////////////////////////////////////
 
+    HRESULT create_menu_banner_font()
+    {
+        NONCLIENTMETRICS ncm{ sizeof(NONCLIENTMETRICS) };
+        SystemParametersInfo(SPI_GETNONCLIENTMETRICS, sizeof(NONCLIENTMETRICS), &ncm, false);
+
+        ncm.lfMenuFont.lfWidth = 0;
+        ncm.lfMenuFont.lfHeight *= 125;
+        ncm.lfMenuFont.lfHeight /= 100;
+        ncm.lfMenuFont.lfWeight = FW_BOLD;
+
+        menu_banner_font = CreateFontIndirect(&ncm.lfMenuFont);
+
+        if(menu_banner_font == nullptr) {
+            return WIN32_LAST_ERROR("CreateFont");
+        }
+        return S_OK;
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
     LRESULT CALLBACK overlay_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
         switch(message) {
@@ -451,6 +487,8 @@ namespace chs::mic_muter
             notify_icon.update(mic_attached, mic_muted);
 
             reload_images();
+
+            create_menu_banner_font();
 
             PostMessage(hWnd, WM_APP_SHOW_OVERLAY, 0, 0);
             break;
@@ -546,6 +584,36 @@ namespace chs::mic_muter
         case WM_APP_QUIT_PLEASE:
             DestroyWindow(overlay_hwnd);
             break;
+
+        case WM_MEASUREITEM: {
+            auto mi = reinterpret_cast<LPMEASUREITEMSTRUCT>(lParam);
+            if(mi->itemID == ID_POPUP_MICMUTER) {
+                HDC dc = GetDC(nullptr);
+                HFONT old_font = SelectFont(dc, menu_banner_font);
+                char const *txt = reinterpret_cast<char const *>(mi->itemData);
+                int len = static_cast<int>(strlen(txt));
+                DWORD tx = GetTabbedTextExtent(dc, txt, len, 0, nullptr);
+                SelectFont(dc, old_font);
+                ReleaseDC(nullptr, dc);
+                mi->itemWidth = LOWORD(tx);
+                mi->itemHeight = HIWORD(tx);
+                return TRUE;
+            }
+        } break;
+
+        case WM_DRAWITEM: {
+            auto di = reinterpret_cast<LPDRAWITEMSTRUCT>(lParam);
+            if(di->itemID == ID_POPUP_MICMUTER) {
+                char const *txt = reinterpret_cast<char const *>(di->itemData);
+                int len = static_cast<int>(strlen(txt));
+                HFONT old_font = SelectFont(di->hDC, menu_banner_font);
+                DWORD tx = GetTabbedTextExtent(di->hDC, txt, len, 0, nullptr);
+                int w = LOWORD(tx);
+                int x = (di->rcItem.right - w) / 2;
+                ExtTextOut(di->hDC, di->rcItem.left + x, di->rcItem.top, 0, &di->rcItem, txt, len, nullptr);
+                SelectFont(di->hDC, old_font);
+            }
+        } break;
 
         default:
             if(message == WM_TASKBARCREATED) {
