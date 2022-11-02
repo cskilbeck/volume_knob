@@ -9,7 +9,7 @@ namespace chs::mic_muter
     settings_t settings;
 
     // clang-format off
-    settings_t::overlay_setting *settings_t::overlay_settings[num_overlay_pages] =
+    settings_t::overlay_setting *settings_t::overlay_settings[num_overlay_ids] =
     {
         &settings.mute_overlay,
         &settings.unmute_overlay,
@@ -19,23 +19,9 @@ namespace chs::mic_muter
 
     //////////////////////////////////////////////////////////////////////
 
-    int settings_t::get_overlay_index(bool muted, bool attached)
-    {
-        int index = page_disconnected;
-        if(attached) {
-            index = page_unmuted;
-            if(muted) {
-                index = page_muted;
-            }
-        }
-        return index;
-    }
-
-    //////////////////////////////////////////////////////////////////////
-
     settings_t::overlay_setting *settings_t::get_overlay_setting(bool muted, bool attached)
     {
-        return overlay_settings[get_overlay_index(muted, attached)];
+        return overlay_settings[get_overlay_id(muted, attached)];
     }
 
     HRESULT settings_t::save_run_at_startup()

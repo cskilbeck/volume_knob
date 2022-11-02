@@ -2,10 +2,6 @@
 
 #include "framework.h"
 
-#include "images/microphone_normal_svg.h"
-#include "images/microphone_mute_svg.h"
-#include "images/microphone_base_svg.h"
-
 #pragma comment(lib, "uxtheme.lib")
 #pragma comment(lib, "comctl32.lib")
 #pragma comment(lib, "Msimg32.lib")
@@ -57,9 +53,7 @@ namespace chs::mic_muter
     bool mic_muted;
     bool mic_attached;
 
-    image muted_image;
-    image normal_image;
-    image disconnected_image;
+    image overlay_image[num_overlay_ids];
 
     uint64 fade_ticks;
 
@@ -67,24 +61,33 @@ namespace chs::mic_muter
 
     //////////////////////////////////////////////////////////////////////
 
+    int get_overlay_id(bool muted, bool attached)
+    {
+        int index = overlay_id_disconnected;
+        if(attached) {
+            index = overlay_id_unmuted;
+            if(muted) {
+                index = overlay_id_muted;
+            }
+        }
+        return index;
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
     image *get_current_image()
     {
-        image *img = &normal_image;
-        if(!mic_attached) {
-            img = &disconnected_image;
-        } else if(mic_muted) {
-            img = &muted_image;
-        }
-        return img;
+        return &overlay_image[get_overlay_id(mic_muted, mic_attached)];
     }
 
     //////////////////////////////////////////////////////////////////////
 
     HRESULT reload_images()
     {
-        HR(muted_image.create_from_svg(microphone_mute_svg, overlay_size, overlay_size));
-        HR(normal_image.create_from_svg(microphone_normal_svg, overlay_size, overlay_size));
-        HR(disconnected_image.create_from_svg(microphone_base_svg, overlay_size, overlay_size));
+        for(int i = 0; i < num_overlay_ids; ++i) {
+            auto id = static_cast<overlay_id>(i);
+            HR(overlay_image[i].create_from_svg(get_svg(id), overlay_size, overlay_size));
+        }
         return S_OK;
     }
 
@@ -194,7 +197,8 @@ namespace chs::mic_muter
         }
         update_layered_window(255);
         ShowWindow(overlay_hwnd, SW_SHOW);
-        int fade_after = settings_t::fadeout_after_ms[s->fadeout_time_ms];
+        BringWindowToTop(overlay_hwnd);
+        int fade_after = settings_t::fadeout_after_ms[s->fadeout_time];
         if(fade_after > 0) {
             SetTimer(overlay_hwnd, TIMER_ID_WAIT, fade_after, nullptr);
         } else if(fade_after == 0) {
@@ -433,6 +437,8 @@ namespace chs::mic_muter
 
             overlay_hwnd = hWnd;
 
+            settings.save();
+
             audio.Attach(new(std::nothrow) audio_controller());
 
             mic_mute_hook = SetWindowsHookEx(WH_KEYBOARD_LL, mic_mute_hook_function, hInst, 0);
@@ -456,9 +462,9 @@ namespace chs::mic_muter
             notify_icon.destroy();
             UnhookWindowsHookEx(mic_mute_hook);
             mic_mute_hook = nullptr;
-            muted_image.destroy();
-            normal_image.destroy();
-            disconnected_image.destroy();
+            for(auto &img : overlay_image) {
+                img.destroy();
+            }
             if(double_buffered) {
                 BufferedPaintUnInit();
             }
@@ -491,8 +497,8 @@ namespace chs::mic_muter
                 settings_t::overlay_setting *s = settings_t::get_overlay_setting(mic_muted, mic_attached);
                 uint64 now = GetTickCount64();
                 float elapsed = static_cast<float>(now - fade_ticks);
-                float duration = static_cast<float>(settings_t::fadeout_over_ms[s->fadeout_speed_ms]);
-                int target_alpha = settings_t::fadeout_to_alpha[s->fadeout_to_percent];
+                float duration = static_cast<float>(settings_t::fadeout_over_ms[s->fadeout_speed]);
+                int target_alpha = settings_t::fadeout_to_alpha[s->fadeout_to];
                 int alpha_range = 255 - target_alpha;
                 float d = std::min(1.0f, elapsed / duration);
                 int window_alpha = 255 - static_cast<int>(d * alpha_range);
@@ -589,8 +595,6 @@ namespace chs::mic_muter
 
         CreateWindowEx(drag_window_ex_flags, drag_window_class_name, window_title, drag_window_flags, 0, 0, 0, 0,
                        nullptr, nullptr, hInst, nullptr);
-
-        // main_hwnd is set in WM_CREATE
 
         if(drag_hwnd == nullptr) {
             return WIN32_LAST_ERROR(GetLastError());

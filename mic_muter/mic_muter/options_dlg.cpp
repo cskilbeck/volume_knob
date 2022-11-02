@@ -15,6 +15,11 @@ namespace
 
     int constexpr is_muted = 1;
     int constexpr is_attached = 2;
+
+    chs::mic_muter::image overlay_img[chs::mic_muter::num_overlay_ids];
+    int img_w;
+    int img_h;
+    HBRUSH overlay_back_brush;
 }
 
 namespace chs::mic_muter
@@ -28,83 +33,142 @@ namespace chs::mic_muter
 
     //////////////////////////////////////////////////////////////////////
 
-    HWND Ctrl(HWND w, int id)
+    void enable_option_controls(HWND w, settings_t::overlay_setting *s)
     {
-        return GetDlgItem(w, id);
+        bool enable = s->enabled;
+        EnableWindow(GetDlgItem(w, IDC_COMBO_FADEOUT_AFTER), enable);
+
+        enable &= s->fadeout_time != settings_t::fadeout_after::fadeout_never;
+        EnableWindow(GetDlgItem(w, IDC_COMBO_FADEOUT_TO), enable);
+        EnableWindow(GetDlgItem(w, IDC_COMBO_FADEOUT_SPEED), enable);
     }
 
     //////////////////////////////////////////////////////////////////////
 
     void setup_option_controls(HWND w, settings_t::overlay_setting *s)
     {
-        Button_SetCheck(Ctrl(w, IDC_CHECK_OVERLAY_ENABLE), s->enabled);
-        ComboBox_SetCurSel(Ctrl(w, IDC_COMBO_FADEOUT_AFTER), s->fadeout_time_ms);
-        ComboBox_SetCurSel(Ctrl(w, IDC_COMBO_FADEOUT_TO), s->fadeout_to_percent);
-        ComboBox_SetCurSel(Ctrl(w, IDC_COMBO_FADEOUT_SPEED), s->fadeout_speed_ms);
+        Button_SetCheck(GetDlgItem(w, IDC_CHECK_OVERLAY_ENABLE), s->enabled);
+        ComboBox_SetCurSel(GetDlgItem(w, IDC_COMBO_FADEOUT_AFTER), s->fadeout_time);
+        ComboBox_SetCurSel(GetDlgItem(w, IDC_COMBO_FADEOUT_TO), s->fadeout_to);
+        ComboBox_SetCurSel(GetDlgItem(w, IDC_COMBO_FADEOUT_SPEED), s->fadeout_speed);
+        enable_option_controls(w, s);
+        InvalidateRect(GetDlgItem(w, IDC_STATIC_OPTIONS_OVERLAY_IMAGE), nullptr, false);
     }
 
     //////////////////////////////////////////////////////////////////////
 
-    INT_PTR CALLBACK overlay_dlg_proc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lParam)
+    INT_PTR CALLBACK overlay_dlg_proc(HWND dlg, UINT message, WPARAM wParam, LPARAM lParam)
     {
         switch(message) {
         case WM_INITDIALOG: {
-            HWND parent = GetParent(hwndDlg);
+
+            // fill in main dialog info block
+
+            HWND parent = GetParent(dlg);
             dlg_info *info = get_info(parent);
-            info->overlay_dlg = hwndDlg;
+            info->overlay_dlg = dlg;
+
+            // setup position within the tab control
+
             HWND tab_ctrl = GetDlgItem(parent, IDC_OPTIONS_TAB_CTRL);
             RECT rc;
             GetWindowRect(tab_ctrl, &rc);
-            MapWindowPoints(nullptr, parent, (LPPOINT)&rc, 2);
+            MapWindowPoints(nullptr, parent, reinterpret_cast<LPPOINT>(&rc), 2);
             TabCtrl_AdjustRect(tab_ctrl, false, &rc);
-            SetWindowPos(hwndDlg, nullptr, rc.left, rc.top, 0, 0, SWP_NOZORDER | SWP_SHOWWINDOW | SWP_NOSIZE);
-            EnableThemeDialogTexture(hwndDlg, ETDT_ENABLETAB);
-            for(auto const *text : settings.fadeout_after_ms_names) {
-                ComboBox_AddString(Ctrl(hwndDlg, IDC_COMBO_FADEOUT_AFTER), text);
+            SetWindowPos(dlg, nullptr, rc.left, rc.top, 0, 0, SWP_NOZORDER | SWP_SHOWWINDOW | SWP_NOSIZE);
+            EnableThemeDialogTexture(dlg, ETDT_ENABLETAB);
+
+            // add strings to the combo boxes
+
+            for(auto const *text : settings.fadeout_after_names) {
+                ComboBox_AddString(GetDlgItem(dlg, IDC_COMBO_FADEOUT_AFTER), text);
             }
             for(auto const *text : settings.fadeout_to_names) {
-                ComboBox_AddString(Ctrl(hwndDlg, IDC_COMBO_FADEOUT_TO), text);
+                ComboBox_AddString(GetDlgItem(dlg, IDC_COMBO_FADEOUT_TO), text);
             }
             for(auto const *text : settings.fadeout_speed_names) {
-                ComboBox_AddString(Ctrl(hwndDlg, IDC_COMBO_FADEOUT_SPEED), text);
+                ComboBox_AddString(GetDlgItem(dlg, IDC_COMBO_FADEOUT_SPEED), text);
             }
-            setup_option_controls(hwndDlg, settings_t::overlay_settings[info->page]);
+
+            // setup overlay image icon
+
+            RECT img_rect;
+            GetClientRect(GetDlgItem(dlg, IDC_STATIC_OPTIONS_OVERLAY_IMAGE), &img_rect);
+            img_w = img_rect.right - img_rect.left;
+            img_h = img_rect.bottom - img_rect.top;
+
+            for(int i = 0; i < num_overlay_ids; ++i) {
+                auto id = static_cast<overlay_id>(i);
+                overlay_img[i].create_from_svg(get_svg(id), img_w, img_h);
+            }
+
+            HDC dc = GetDC(dlg);
+            overlay_back_brush = CreateSolidBrush(GetBkColor(dc));
+            ReleaseDC(dlg, dc);
+
+            // set up the control values
+
+            setup_option_controls(dlg, settings_t::overlay_settings[info->page]);
+
+            break;
+        }
+
+        case WM_DESTROY:
+            for(auto &img : overlay_img) {
+                img.destroy();
+            }
+            DeleteObject(reinterpret_cast<HGDIOBJ *>(overlay_back_brush));
+            break;
+
+        case WM_DRAWITEM: {
+            LPDRAWITEMSTRUCT d = reinterpret_cast<LPDRAWITEMSTRUCT>(lParam);
+
+            HGDIOBJ old_brush = SelectObject(d->hDC, overlay_back_brush);
+            FillRect(d->hDC, &d->rcItem, overlay_back_brush);
+            SelectObject(d->hDC, old_brush);
+
+            BLENDFUNCTION bf{};
+            bf.BlendOp = AC_SRC_OVER;
+            bf.SourceConstantAlpha = 255;
+            bf.AlphaFormat = AC_SRC_ALPHA;
+
+            dlg_info *info = get_info(GetParent(dlg));
+            int page = std::clamp(info->page, 0, static_cast<int>(num_overlay_ids));
+
+            AlphaBlend(d->hDC, 0, 0, img_w, img_h, overlay_img[page].dc, 0, 0, img_w, img_h, bf);
             break;
         }
 
         case WM_COMMAND: {
-            HWND parent = GetParent(hwndDlg);
+            HWND parent = GetParent(dlg);
             dlg_info *info = get_info(parent);
             settings_t::overlay_setting *s = settings_t::overlay_settings[info->page];
-            bool changed{ false };
+            int action = HIWORD(wParam);
             switch(LOWORD(wParam)) {
+
             case IDC_CHECK_OVERLAY_ENABLE:
-                s->enabled = Button_GetCheck(Ctrl(hwndDlg, IDC_CHECK_OVERLAY_ENABLE));
-                changed = true;
+                s->enabled = Button_GetCheck(GetDlgItem(dlg, IDC_CHECK_OVERLAY_ENABLE));
                 break;
+
             case IDC_COMBO_FADEOUT_AFTER:
-                if(HIWORD(wParam) == CBN_SELCHANGE) {
-                    s->fadeout_time_ms = ComboBox_GetCurSel(Ctrl(hwndDlg, IDC_COMBO_FADEOUT_AFTER));
-                    changed = true;
+                if(action == CBN_SELCHANGE) {
+                    s->fadeout_time = ComboBox_GetCurSel(GetDlgItem(dlg, IDC_COMBO_FADEOUT_AFTER));
                 }
                 break;
+
             case IDC_COMBO_FADEOUT_SPEED:
-                if(HIWORD(wParam) == CBN_SELCHANGE) {
-                    s->fadeout_speed_ms = ComboBox_GetCurSel(Ctrl(hwndDlg, IDC_COMBO_FADEOUT_SPEED));
-                    changed = true;
+                if(action == CBN_SELCHANGE) {
+                    s->fadeout_speed = ComboBox_GetCurSel(GetDlgItem(dlg, IDC_COMBO_FADEOUT_SPEED));
                 }
                 break;
+
             case IDC_COMBO_FADEOUT_TO:
-                if(HIWORD(wParam) == CBN_SELCHANGE) {
-                    s->fadeout_to_percent = ComboBox_GetCurSel(Ctrl(hwndDlg, IDC_COMBO_FADEOUT_TO));
-                    changed = true;
+                if(action == CBN_SELCHANGE) {
+                    s->fadeout_to = ComboBox_GetCurSel(GetDlgItem(dlg, IDC_COMBO_FADEOUT_TO));
                 }
                 break;
             }
-            if(changed) {
-                LOG_INFO("PAGE: {}, enabled: {}, fadeout_time_ms: {}, fadeout_to_percent: {}, fadeout_speed_ms: {}",
-                         info->page, s->enabled, s->fadeout_time_ms, s->fadeout_to_percent, s->fadeout_speed_ms);
-            }
+            enable_option_controls(dlg, s);
             break;
         }
         }
@@ -113,11 +177,11 @@ namespace chs::mic_muter
 
     //////////////////////////////////////////////////////////////////////
 
-    INT_PTR CALLBACK options_dlg_proc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lParam)
+    INT_PTR CALLBACK options_dlg_proc(HWND dlg, UINT message, WPARAM wParam, LPARAM lParam)
     {
         switch(message) {
         case WM_INITDIALOG: {
-            options_dlg = hwndDlg;
+            options_dlg = dlg;
 
             INITCOMMONCONTROLSEX iccex{};
             iccex.dwSize = sizeof(INITCOMMONCONTROLSEX);
@@ -128,7 +192,7 @@ namespace chs::mic_muter
             cancel_settings = settings;
 
             // init the tab control tabs' text
-            HWND tab_ctrl = GetDlgItem(hwndDlg, IDC_OPTIONS_TAB_CTRL);
+            HWND tab_ctrl = GetDlgItem(dlg, IDC_OPTIONS_TAB_CTRL);
             TCITEM tie{};
             tie.mask = TCIF_TEXT;
             int id = 0;
@@ -157,18 +221,18 @@ namespace chs::mic_muter
             // attach some tracking info to the options dialog
             dlg_info *info = new dlg_info;
             info->page = static_cast<int>(lParam);
-            SetWindowLongPtr(hwndDlg, GWLP_USERDATA, (LONG_PTR)info);
+            SetWindowLongPtr(dlg, GWLP_USERDATA, (LONG_PTR)info);
 
-            CreateDialogIndirect(GetModuleHandle(nullptr), dlg_template, hwndDlg, overlay_dlg_proc);
+            CreateDialogIndirect(GetModuleHandle(nullptr), dlg_template, dlg, overlay_dlg_proc);
 
             // show the requested overlay page
             TabCtrl_SetCurSel(tab_ctrl, lParam);
-            Button_SetCheck(Ctrl(hwndDlg, IDC_CHECK_RUN_AT_STARTUP), settings.run_at_startup);
+            Button_SetCheck(GetDlgItem(dlg, IDC_CHECK_RUN_AT_STARTUP), settings.run_at_startup);
             break;
         }
 
         case WM_DESTROY: {
-            dlg_info *info = get_info(hwndDlg);
+            dlg_info *info = get_info(dlg);
             delete info;
             options_dlg = nullptr;
             PostMessage(overlay_hwnd, WM_APP_SHOW_OVERLAY, 0, 0);
@@ -179,28 +243,28 @@ namespace chs::mic_muter
             switch(LOWORD(wParam)) {
             case IDCANCEL:
                 settings = cancel_settings;
-                EndDialog(hwndDlg, IDCANCEL);
+                EndDialog(dlg, IDCANCEL);
                 break;
             case IDOK:
                 settings.save();
-                EndDialog(hwndDlg, IDCANCEL);
+                EndDialog(dlg, IDCANCEL);
                 break;
             case IDC_CHECK_RUN_AT_STARTUP:
-                settings.run_at_startup = Button_GetCheck(Ctrl(hwndDlg, IDC_CHECK_RUN_AT_STARTUP)) != 0;
+                settings.run_at_startup = Button_GetCheck(GetDlgItem(dlg, IDC_CHECK_RUN_AT_STARTUP)) != 0;
                 break;
             }
             break;
 
         case WM_NOTIFY: {
-            LPNMHDR n = (LPNMHDR)lParam;
+            LPNMHDR n = reinterpret_cast<LPNMHDR>(lParam);
             switch(n->idFrom) {
             case IDC_OPTIONS_TAB_CTRL:
                 if(n->code == TCN_SELCHANGE) {
-                    HWND tab_ctrl = GetDlgItem(hwndDlg, IDC_OPTIONS_TAB_CTRL);
+                    HWND tab_ctrl = GetDlgItem(dlg, IDC_OPTIONS_TAB_CTRL);
                     int page = TabCtrl_GetCurSel(tab_ctrl);
                     LOG_DEBUG("page: {}", page);
-                    dlg_info *info = get_info(hwndDlg);
-                    info->page = std::clamp(page, 0, static_cast<int>(settings_t::num_overlay_pages));
+                    dlg_info *info = get_info(dlg);
+                    info->page = std::clamp(page, 0, static_cast<int>(num_overlay_ids));
                     setup_option_controls(info->overlay_dlg, settings_t::overlay_settings[page]);
                 }
                 break;
@@ -216,12 +280,14 @@ namespace chs::mic_muter
     HRESULT show_options_dialog(bool muted, bool attached)
     {
         if(options_dlg != nullptr) {
+            BringWindowToTop(options_dlg);
             SetForegroundWindow(options_dlg);
             SetActiveWindow(options_dlg);
             SwitchToThisWindow(options_dlg, false);
         } else {
-            DialogBoxParam(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDD_DIALOG_OPTIONS), overlay_hwnd,
-                           options_dlg_proc, settings_t::get_overlay_index(muted, attached));
+            LPSTR dlg_template = MAKEINTRESOURCE(IDD_DIALOG_OPTIONS);
+            int page = get_overlay_id(muted, attached);
+            DialogBoxParam(GetModuleHandle(nullptr), dlg_template, overlay_hwnd, options_dlg_proc, page);
         }
         return S_OK;
     }

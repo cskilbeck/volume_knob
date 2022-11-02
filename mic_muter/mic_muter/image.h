@@ -4,6 +4,8 @@
 
 namespace chs::mic_muter
 {
+    char const *get_svg(overlay_id id);
+
     struct image
     {
         LOG_CONTEXT("image");

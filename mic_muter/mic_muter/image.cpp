@@ -4,6 +4,17 @@
 
 //////////////////////////////////////////////////////////////////////
 
+namespace
+{
+
+#include "images/microphone_mute_svg.h"
+#include "images/microphone_normal_svg.h"
+#include "images/microphone_base_svg.h"
+
+    char const *overlay_svg[chs::mic_muter::num_overlay_ids] = { microphone_mute_svg, microphone_normal_svg,
+                                                                 microphone_base_svg };
+}
+
 namespace chs::mic_muter
 {
     //////////////////////////////////////////////////////////////////////
@@ -84,5 +95,13 @@ namespace chs::mic_muter
             DeleteDC(dc);
             dc = nullptr;
         }
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
+    char const *get_svg(overlay_id id)
+    {
+        int index = std::clamp(static_cast<int>(id), 0, static_cast<int>(num_overlay_ids));
+        return overlay_svg[index];
     }
 }

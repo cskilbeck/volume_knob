@@ -5,3 +5,19 @@
 #define WM_APP_NOTIFICATION_ICON (WM_USER + 14)
 #define WM_APP_HOTKEY_PRESSED (WM_USER + 15)
 #define WM_APP_QUIT_PLEASE (WM_USER + 16)    // 0x0410
+
+namespace chs::mic_muter
+{
+    enum overlay_id : int
+    {
+        overlay_id_muted = 0,
+        overlay_id_unmuted = 1,
+        overlay_id_disconnected = 2,
+
+        num_overlay_ids = 3
+    };
+
+    //////////////////////////////////////////////////////////////////////
+
+    int get_overlay_id(bool muted, bool attached);
+}

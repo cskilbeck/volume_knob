@@ -15,7 +15,7 @@ namespace chs::mic_muter
         // clang-format off
 
         // after mute status is changed, wait this long before fading out
-        enum fadeout_time : byte
+        enum fadeout_after : byte
         {
             fadeout_after_0_seconds = 0,
             fadeout_after_1_second = 1,
@@ -32,12 +32,12 @@ namespace chs::mic_muter
             -1
         };
 
-        static constexpr char const *fadeout_after_ms_names[]{
+        static constexpr char const *fadeout_after_names[]{
             "Straight away",
             "After 1 second",
             "After 5 seconds",
             "After 10 seconds",
-            "never"
+            "Never"
         };
 
         // fade out to this alpha
@@ -56,8 +56,8 @@ namespace chs::mic_muter
 
         static constexpr char const *fadeout_to_names[]{
             "Invisible",
-            "Ghostly",
-            "Transparent"
+            "25%",
+            "50%"
         };
 
         // fade out this quickly
@@ -68,6 +68,7 @@ namespace chs::mic_muter
             fadeout_speed_fast = 2,
             fadeout_speed_instantly = 2,
         };
+
         static constexpr int fadeout_over_ms[]{
             3000,
             1000,
@@ -91,12 +92,12 @@ namespace chs::mic_muter
             bool enabled{ true };
 
             // start fading out after this many seconds
-            byte fadeout_time_ms{ fadeout_after_5_seconds };
+            byte fadeout_time{ fadeout_after_5_seconds };
 
             // take this many seconds to fade to final_opacity
-            byte fadeout_speed_ms{ fadeout_speed_medium };
+            byte fadeout_speed{ fadeout_speed_medium };
 
-            byte fadeout_to_percent{ fadeout_to_25_percent };
+            byte fadeout_to{ fadeout_to_25_percent };
 
             char const *name{ nullptr };
 
@@ -107,22 +108,12 @@ namespace chs::mic_muter
 
         RECT overlay_position;
 
-        enum overlay_page : int
-        {
-            page_muted = 0,
-            page_unmuted = 1,
-            page_disconnected = 2,
-
-            num_overlay_pages = 3
-        };
-
         overlay_setting mute_overlay{ "Muted" };
         overlay_setting unmute_overlay{ "Unmuted" };
         overlay_setting disconnected_overlay{ "Disconnected" };
 
-        static overlay_setting *overlay_settings[num_overlay_pages];
+        static overlay_setting *overlay_settings[num_overlay_ids];
 
-        static int get_overlay_index(bool muted, bool attached);
         static overlay_setting *get_overlay_setting(bool muted, bool attached);
 
         bool run_at_startup{ true };
@@ -149,19 +140,19 @@ namespace chs::mic_muter
             SETTINGS_SAVE_VALUE(overlay_position);
 
             SETTINGS_SAVE_VALUE(mute_overlay.enabled);
-            SETTINGS_SAVE_VALUE(mute_overlay.fadeout_time_ms);
-            SETTINGS_SAVE_VALUE(mute_overlay.fadeout_speed_ms);
-            SETTINGS_SAVE_VALUE(mute_overlay.fadeout_to_percent);
+            SETTINGS_SAVE_VALUE(mute_overlay.fadeout_time);
+            SETTINGS_SAVE_VALUE(mute_overlay.fadeout_speed);
+            SETTINGS_SAVE_VALUE(mute_overlay.fadeout_to);
 
             SETTINGS_SAVE_VALUE(unmute_overlay.enabled);
-            SETTINGS_SAVE_VALUE(unmute_overlay.fadeout_time_ms);
-            SETTINGS_SAVE_VALUE(unmute_overlay.fadeout_speed_ms);
-            SETTINGS_SAVE_VALUE(unmute_overlay.fadeout_to_percent);
+            SETTINGS_SAVE_VALUE(unmute_overlay.fadeout_time);
+            SETTINGS_SAVE_VALUE(unmute_overlay.fadeout_speed);
+            SETTINGS_SAVE_VALUE(unmute_overlay.fadeout_to);
 
             SETTINGS_SAVE_VALUE(disconnected_overlay.enabled);
-            SETTINGS_SAVE_VALUE(disconnected_overlay.fadeout_time_ms);
-            SETTINGS_SAVE_VALUE(disconnected_overlay.fadeout_speed_ms);
-            SETTINGS_SAVE_VALUE(disconnected_overlay.fadeout_to_percent);
+            SETTINGS_SAVE_VALUE(disconnected_overlay.fadeout_time);
+            SETTINGS_SAVE_VALUE(disconnected_overlay.fadeout_speed);
+            SETTINGS_SAVE_VALUE(disconnected_overlay.fadeout_to);
 
             HR(save_run_at_startup());
 
@@ -178,19 +169,19 @@ namespace chs::mic_muter
             SETTINGS_LOAD_VALUE(overlay_position);
 
             SETTINGS_LOAD_VALUE(mute_overlay.enabled);
-            SETTINGS_LOAD_VALUE(mute_overlay.fadeout_time_ms);
-            SETTINGS_LOAD_VALUE(mute_overlay.fadeout_speed_ms);
-            SETTINGS_LOAD_VALUE(mute_overlay.fadeout_to_percent);
+            SETTINGS_LOAD_VALUE(mute_overlay.fadeout_time);
+            SETTINGS_LOAD_VALUE(mute_overlay.fadeout_speed);
+            SETTINGS_LOAD_VALUE(mute_overlay.fadeout_to);
 
             SETTINGS_LOAD_VALUE(unmute_overlay.enabled);
-            SETTINGS_LOAD_VALUE(unmute_overlay.fadeout_time_ms);
-            SETTINGS_LOAD_VALUE(unmute_overlay.fadeout_speed_ms);
-            SETTINGS_LOAD_VALUE(unmute_overlay.fadeout_to_percent);
+            SETTINGS_LOAD_VALUE(unmute_overlay.fadeout_time);
+            SETTINGS_LOAD_VALUE(unmute_overlay.fadeout_speed);
+            SETTINGS_LOAD_VALUE(unmute_overlay.fadeout_to);
 
             SETTINGS_LOAD_VALUE(disconnected_overlay.enabled);
-            SETTINGS_LOAD_VALUE(disconnected_overlay.fadeout_time_ms);
-            SETTINGS_LOAD_VALUE(disconnected_overlay.fadeout_speed_ms);
-            SETTINGS_LOAD_VALUE(disconnected_overlay.fadeout_to_percent);
+            SETTINGS_LOAD_VALUE(disconnected_overlay.fadeout_time);
+            SETTINGS_LOAD_VALUE(disconnected_overlay.fadeout_speed);
+            SETTINGS_LOAD_VALUE(disconnected_overlay.fadeout_to);
 
             return S_OK;
         }
