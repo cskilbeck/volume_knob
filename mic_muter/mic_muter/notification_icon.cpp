@@ -21,9 +21,11 @@ namespace chs::mic_muter
 
     HRESULT notification_icon::load()
     {
-        HR(LoadIconMetric(GetModuleHandle(nullptr), MAKEINTRESOURCEW(IDI_ICON_MIC_MUTE), LIM_SMALL, &muted_icon));
-        HR(LoadIconMetric(GetModuleHandle(nullptr), MAKEINTRESOURCEW(IDI_ICON_MIC_NORMAL), LIM_SMALL, &normal_icon));
-        HR(LoadIconMetric(GetModuleHandle(nullptr), MAKEINTRESOURCEW(IDI_ICON_MIC_MISSING), LIM_SMALL, &missing_icon));
+        HMODULE m = GetModuleHandle(nullptr);
+
+        HR(LoadIconMetric(m, MAKEINTRESOURCEW(IDI_ICON_MIC_MUTE), LIM_SMALL, &icon[overlay_id_muted]));
+        HR(LoadIconMetric(m, MAKEINTRESOURCEW(IDI_ICON_MIC_NORMAL), LIM_SMALL, &icon[overlay_id_unmuted]));
+        HR(LoadIconMetric(m, MAKEINTRESOURCEW(IDI_ICON_MIC_MISSING), LIM_SMALL, &icon[overlay_id_disconnected]));
 
         NOTIFYICONDATA nid = { sizeof(nid) };
         nid.hWnd = overlay_hwnd;
@@ -47,13 +49,7 @@ namespace chs::mic_muter
     {
         NOTIFYICONDATA nid = { sizeof(nid) };
         nid.hWnd = overlay_hwnd;
-        if(!attached) {
-            nid.hIcon = missing_icon;
-        } else if(muted) {
-            nid.hIcon = muted_icon;
-        } else {
-            nid.hIcon = normal_icon;
-        }
+        nid.hIcon = icon[get_overlay_id(muted, attached)];
         nid.uFlags = NIF_ICON | NIF_GUID;
         nid.guidItem = __uuidof(icon_guid);
         if(!Shell_NotifyIcon(NIM_MODIFY, &nid)) {

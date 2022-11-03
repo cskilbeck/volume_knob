@@ -7,6 +7,8 @@
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
 
+#define _WIN32_WINNT _WIN32_WINNT_WIN7
+
 #include <windows.h>
 #include <wrl/client.h>
 #include <wincodec.h>

@@ -8,6 +8,8 @@
 
 namespace chs::mic_muter
 {
+    static char constexpr app_name[] = "MicMuter";
+
     enum overlay_id : int
     {
         overlay_id_muted = 0,
@@ -17,7 +19,11 @@ namespace chs::mic_muter
         num_overlay_ids = 3
     };
 
+    int constexpr max_overlay_id = overlay_id_disconnected;
+
     //////////////////////////////////////////////////////////////////////
+
+    char const *get_overlay_name(int overlay_id);
 
     int get_overlay_id(bool muted, bool attached);
 }

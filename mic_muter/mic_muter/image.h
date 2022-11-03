@@ -4,7 +4,7 @@
 
 namespace chs::mic_muter
 {
-    char const *get_svg(overlay_id id);
+    char const *get_overlay_svg(overlay_id id);
 
     struct image
     {
@@ -13,6 +13,8 @@ namespace chs::mic_muter
         HDC dc{ nullptr };
         HGDIOBJ old_bmp{ nullptr };
         HBITMAP bmp{ nullptr };
+        int width{ 0 };
+        int height{ 0 };
 
         //////////////////////////////////////////////////////////////////////
 

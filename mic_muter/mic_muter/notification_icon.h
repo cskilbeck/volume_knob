@@ -8,8 +8,6 @@ namespace chs::mic_muter
         HRESULT update(bool attached, bool muted);
         HRESULT destroy();
 
-        HICON muted_icon;
-        HICON normal_icon;
-        HICON missing_icon;
+        HICON icon[num_overlay_ids];
     };
 }

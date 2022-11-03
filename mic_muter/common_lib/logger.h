@@ -220,41 +220,62 @@ namespace chs::logger
 
     //////////////////////////////////////////////////////////////////////
 
-    template <auto context, typename T, class... types>
-    __declspec(noinline) void emit_log_message(level level, T const *msg, const types... args)
+    template <typename T, size_t N> void get_time_info(T (&buffer)[N], bool with_ansi)
     {
         using L = log_util<T>;
 
+        struct tm time_info;
+        time_t t;
+        time(&t);
+        gmtime_s(&time_info, &t);
+        if(with_ansi) {
+            L::format_time_ansi(buffer, N, time_info);
+        } else {
+            L::format_time(buffer, N, time_info);
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
+    template <typename T, class... types>
+    __declspec(noinline) void emit_log_message(log_context const &context, level level, T const *msg,
+                                               const types... args)
+    {
+        using L = log_util<T>;
+
+        T time_buffer[80];
+        get_time_info(time_buffer, log_to_stdout);
+
+        if(log_to_stdout) {
+            L::console_write(L::format_line_ansi(time_buffer, level, context, msg, args...).c_str());
+        } else {
+            L::debug_write(L::format_line(time_buffer, level, context, msg, args...).c_str());
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
+    template <auto context, typename T, class... types>
+    __declspec(noinline) void write_log_message(level level, T const *msg, const types... args)
+    {
         if(level > log_level) {
             return;
         }
 
         level = std::clamp(level, level::min, level::max);
 
-        T time_buffer[80];
-        time_t t;
-        time(&t);
-        struct tm timeinfo;
-        gmtime_s(&timeinfo, &t);
-
-        if(log_to_stdout) {
-            L::format_time_ansi(time_buffer, _countof(time_buffer), timeinfo);
-            L::console_write(L::format_line_ansi(time_buffer, level, context, msg, args...).c_str());
-        } else {
-            L::format_time(time_buffer, _countof(time_buffer), timeinfo);
-            L::debug_write(L::format_line(time_buffer, level, context, msg, args...).c_str());
-        }
+        emit_log_message(context, level, msg, std::forward<const types>(args)...);
     }
 
 }    // namespace chs::logger
 
 //////////////////////////////////////////////////////////////////////
 
-#define LOG_EMIT_MESSAGE(_level, _msg, ...)                                                                   \
-    do {                                                                                                      \
-        if(chs::logger::log_level >= chs::logger::level::_level) {                                            \
-            chs::logger::emit_log_message<log_active_context>(chs::logger::level::_level, _msg, __VA_ARGS__); \
-        }                                                                                                     \
+#define LOG_EMIT_MESSAGE(_level, _msg, ...)                                                                    \
+    do {                                                                                                       \
+        if(chs::logger::log_level >= chs::logger::level::_level) {                                             \
+            chs::logger::write_log_message<log_active_context>(chs::logger::level::_level, _msg, __VA_ARGS__); \
+        }                                                                                                      \
     } while(false)
 
 

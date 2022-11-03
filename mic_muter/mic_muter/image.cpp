@@ -62,6 +62,8 @@ namespace chs::mic_muter
         if(bmp == nullptr) {
             return WIN32_LAST_ERROR("CreateDIBitmap");
         }
+        width = w;
+        height = h;
         dc = CreateCompatibleDC(nullptr);
         old_bmp = SelectObject(dc, bmp);
         return S_OK;
@@ -74,6 +76,8 @@ namespace chs::mic_muter
         destroy();
 
         HR(util::svg_to_bitmap(svg, w, h, &bmp));
+        width = w;
+        height = h;
         dc = CreateCompatibleDC(nullptr);
         old_bmp = SelectObject(dc, bmp);
         return S_OK;
@@ -99,9 +103,9 @@ namespace chs::mic_muter
 
     //////////////////////////////////////////////////////////////////////
 
-    char const *get_svg(overlay_id id)
+    char const *get_overlay_svg(overlay_id id)
     {
-        int index = std::clamp(static_cast<int>(id), 0, static_cast<int>(num_overlay_ids));
+        int index = std::clamp(static_cast<int>(id), 0, max_overlay_id);
         return overlay_svg[index];
     }
 }

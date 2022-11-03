@@ -3,18 +3,6 @@
 namespace chs::mic_muter
 {
     // ----------------------------------------------------------------------
-
-    audio_controller::audio_controller() : endpoint_registered(false), volume_registered(false), ref_count(1)
-    {
-    }
-
-    // ----------------------------------------------------------------------
-
-    audio_controller::~audio_controller()
-    {
-    }
-
-    // ----------------------------------------------------------------------
     //  Call when the app is done with this object before calling release.
     //  This detaches from the endpoint and releases all audio service references.
     // ----------------------------------------------------------------------

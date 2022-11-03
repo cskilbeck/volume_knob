@@ -26,8 +26,6 @@ namespace chs
         bool console_set_ansi_enabled(bool const enabled);
         std::string windows_error_text(DWORD err);
 
-        BOOL UnadjustWindowRectEx(LPRECT prc, DWORD dwStyle, BOOL fMenu, DWORD dwExStyle);
-
         template <typename T> HRESULT registry_write(char const *key_name, char const *name, T f, uint32 size = 0);
         template <typename T> HRESULT registry_read(char const *key_name, char const *name, T *f);
 

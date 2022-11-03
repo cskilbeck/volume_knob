@@ -2,28 +2,20 @@
 
 namespace chs::mic_muter
 {
-    enum class microphone_state
-    {
-        normal,
-        muted,
-        missing
-    };
-
     class audio_controller : IMMNotificationClient, IAudioEndpointVolumeCallback
     {
         LOG_CONTEXT("audio");
 
-    private:
-        bool endpoint_registered;
-        bool volume_registered;
+        bool endpoint_registered{ false };
+        bool volume_registered{ false };
         ComPtr<IMMDeviceEnumerator> enumerator;
         ComPtr<IMMDevice> audio_endpoint;
         ComPtr<IAudioEndpointVolume> volume_control;
         std::mutex endpoint_mutex;
 
-        long ref_count;
+        long ref_count{ 1 };
 
-        ~audio_controller();    // refcounted object... make the destructor private
+        ~audio_controller() = default;    // refcounted object... make the destructor private
 
         HRESULT attach_to_default_endpoint();
         void detach_from_endpoint();
@@ -53,12 +45,10 @@ namespace chs::mic_muter
         IFACEMETHODIMP OnDeviceRemoved(LPCWSTR pwstrDeviceId);
         IFACEMETHODIMP OnDefaultDeviceChanged(EDataFlow flow, ERole role, LPCWSTR pwstrDefaultDeviceId);
         IFACEMETHODIMP OnNotify(PAUDIO_VOLUME_NOTIFICATION_DATA pNotify);
-        IFACEMETHODIMP QueryInterface(const IID &iid, void **ppUnk);
-
-        microphone_state current_mic_state;
+        IFACEMETHODIMP QueryInterface(REFIID iid, void **ppUnk);
 
     public:
-        audio_controller();
+        audio_controller() = default;
 
         HRESULT init();
         void Dispose();
@@ -67,8 +57,6 @@ namespace chs::mic_muter
         HRESULT get_mic_info(bool *present, bool *muted);
 
         HRESULT toggle_mute();
-
-        microphone_state current_state() const;
 
         // IUnknown
         IFACEMETHODIMP_(ULONG) AddRef();

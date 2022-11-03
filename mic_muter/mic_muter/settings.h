@@ -84,8 +84,7 @@ namespace chs::mic_muter
         };
         // clang-format on
 
-        // need one each of these for mute/unmute
-
+        // need one of these for each state
         struct overlay_setting
         {
             // show it or don't
@@ -98,25 +97,15 @@ namespace chs::mic_muter
             byte fadeout_speed{ fadeout_speed_medium };
 
             byte fadeout_to{ fadeout_to_25_percent };
-
-            char const *name{ nullptr };
-
-            overlay_setting(char const *n) : name(n)
-            {
-            }
         };
+
+        overlay_setting overlay[num_overlay_ids];
 
         RECT overlay_position;
 
-        overlay_setting mute_overlay{ "Muted" };
-        overlay_setting unmute_overlay{ "Unmuted" };
-        overlay_setting disconnected_overlay{ "Disconnected" };
-
-        static overlay_setting *overlay_settings[num_overlay_ids];
-
-        static overlay_setting *get_overlay_setting(bool muted, bool attached);
-
         bool run_at_startup{ true };
+
+        overlay_setting *get_overlay_setting(bool muted, bool attached);
 
         HRESULT save_run_at_startup();
 
@@ -139,20 +128,20 @@ namespace chs::mic_muter
             SETTINGS_SAVE_VALUE(run_at_startup);
             SETTINGS_SAVE_VALUE(overlay_position);
 
-            SETTINGS_SAVE_VALUE(mute_overlay.enabled);
-            SETTINGS_SAVE_VALUE(mute_overlay.fadeout_time);
-            SETTINGS_SAVE_VALUE(mute_overlay.fadeout_speed);
-            SETTINGS_SAVE_VALUE(mute_overlay.fadeout_to);
+            SETTINGS_SAVE_VALUE(overlay[overlay_id_muted].enabled);
+            SETTINGS_SAVE_VALUE(overlay[overlay_id_muted].fadeout_time);
+            SETTINGS_SAVE_VALUE(overlay[overlay_id_muted].fadeout_speed);
+            SETTINGS_SAVE_VALUE(overlay[overlay_id_muted].fadeout_to);
 
-            SETTINGS_SAVE_VALUE(unmute_overlay.enabled);
-            SETTINGS_SAVE_VALUE(unmute_overlay.fadeout_time);
-            SETTINGS_SAVE_VALUE(unmute_overlay.fadeout_speed);
-            SETTINGS_SAVE_VALUE(unmute_overlay.fadeout_to);
+            SETTINGS_SAVE_VALUE(overlay[overlay_id_unmuted].enabled);
+            SETTINGS_SAVE_VALUE(overlay[overlay_id_unmuted].fadeout_time);
+            SETTINGS_SAVE_VALUE(overlay[overlay_id_unmuted].fadeout_speed);
+            SETTINGS_SAVE_VALUE(overlay[overlay_id_unmuted].fadeout_to);
 
-            SETTINGS_SAVE_VALUE(disconnected_overlay.enabled);
-            SETTINGS_SAVE_VALUE(disconnected_overlay.fadeout_time);
-            SETTINGS_SAVE_VALUE(disconnected_overlay.fadeout_speed);
-            SETTINGS_SAVE_VALUE(disconnected_overlay.fadeout_to);
+            SETTINGS_SAVE_VALUE(overlay[overlay_id_disconnected].enabled);
+            SETTINGS_SAVE_VALUE(overlay[overlay_id_disconnected].fadeout_time);
+            SETTINGS_SAVE_VALUE(overlay[overlay_id_disconnected].fadeout_speed);
+            SETTINGS_SAVE_VALUE(overlay[overlay_id_disconnected].fadeout_to);
 
             HR(save_run_at_startup());
 
@@ -168,20 +157,20 @@ namespace chs::mic_muter
             SETTINGS_LOAD_VALUE(run_at_startup);
             SETTINGS_LOAD_VALUE(overlay_position);
 
-            SETTINGS_LOAD_VALUE(mute_overlay.enabled);
-            SETTINGS_LOAD_VALUE(mute_overlay.fadeout_time);
-            SETTINGS_LOAD_VALUE(mute_overlay.fadeout_speed);
-            SETTINGS_LOAD_VALUE(mute_overlay.fadeout_to);
+            SETTINGS_LOAD_VALUE(overlay[overlay_id_muted].enabled);
+            SETTINGS_LOAD_VALUE(overlay[overlay_id_muted].fadeout_time);
+            SETTINGS_LOAD_VALUE(overlay[overlay_id_muted].fadeout_speed);
+            SETTINGS_LOAD_VALUE(overlay[overlay_id_muted].fadeout_to);
 
-            SETTINGS_LOAD_VALUE(unmute_overlay.enabled);
-            SETTINGS_LOAD_VALUE(unmute_overlay.fadeout_time);
-            SETTINGS_LOAD_VALUE(unmute_overlay.fadeout_speed);
-            SETTINGS_LOAD_VALUE(unmute_overlay.fadeout_to);
+            SETTINGS_LOAD_VALUE(overlay[overlay_id_unmuted].enabled);
+            SETTINGS_LOAD_VALUE(overlay[overlay_id_unmuted].fadeout_time);
+            SETTINGS_LOAD_VALUE(overlay[overlay_id_unmuted].fadeout_speed);
+            SETTINGS_LOAD_VALUE(overlay[overlay_id_unmuted].fadeout_to);
 
-            SETTINGS_LOAD_VALUE(disconnected_overlay.enabled);
-            SETTINGS_LOAD_VALUE(disconnected_overlay.fadeout_time);
-            SETTINGS_LOAD_VALUE(disconnected_overlay.fadeout_speed);
-            SETTINGS_LOAD_VALUE(disconnected_overlay.fadeout_to);
+            SETTINGS_LOAD_VALUE(overlay[overlay_id_disconnected].enabled);
+            SETTINGS_LOAD_VALUE(overlay[overlay_id_disconnected].fadeout_time);
+            SETTINGS_LOAD_VALUE(overlay[overlay_id_disconnected].fadeout_speed);
+            SETTINGS_LOAD_VALUE(overlay[overlay_id_disconnected].fadeout_to);
 
             return S_OK;
         }
