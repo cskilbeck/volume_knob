@@ -446,8 +446,9 @@ namespace
                 HMONITOR hMonitor = MonitorFromPoint({ 0, 0 }, MONITOR_DEFAULTTOPRIMARY);
                 MONITORINFO mi = { sizeof(mi) };
                 GetMonitorInfo(hMonitor, &mi);
-                overlay_size = (mi.rcMonitor.right - mi.rcMonitor.left) * 10 / 100;
-                POINT const pt = { (mi.rcMonitor.right - overlay_size) / 2, (mi.rcMonitor.bottom - overlay_size) / 2 };
+                overlay_size = (mi.rcMonitor.right - mi.rcMonitor.left) * 15 / 100;
+                int offset = (overlay_size * 115) / 100;
+                POINT const pt = { mi.rcMonitor.right - offset, mi.rcMonitor.bottom - offset };
                 rc = { pt.x, pt.y, pt.x + overlay_size, pt.y + overlay_size };
             } else {
                 rc = settings.overlay_position;
