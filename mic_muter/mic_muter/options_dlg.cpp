@@ -207,13 +207,15 @@ namespace
 
     void enable_hotkey_controls(HWND dlg, bool enable)
     {
-        LOG_DEBUG("enable_hotkey_controls({})", enable);
-        EnableWindow(GetDlgItem(dlg, IDC_CHECK_ALT), enable);
-        EnableWindow(GetDlgItem(dlg, IDC_CHECK_CTRL), enable);
-        EnableWindow(GetDlgItem(dlg, IDC_CHECK_SHIFT), enable);
-        EnableWindow(GetDlgItem(dlg, IDC_CHECK_WINKEY), enable);
-        EnableWindow(GetDlgItem(dlg, IDC_COMBO_HOTKEY), enable);
-        UpdateWindow(dlg);
+        int show = enable ? SW_HIDE : SW_SHOW;
+        int hide = enable ? SW_SHOW : SW_HIDE;
+        ShowWindow(GetDlgItem(dlg, IDC_CHECK_ALT), hide);
+        ShowWindow(GetDlgItem(dlg, IDC_CHECK_CTRL), hide);
+        ShowWindow(GetDlgItem(dlg, IDC_CHECK_SHIFT), hide);
+        ShowWindow(GetDlgItem(dlg, IDC_CHECK_WINKEY), hide);
+        ShowWindow(GetDlgItem(dlg, IDC_COMBO_HOTKEY), hide);
+        ShowWindow(GetDlgItem(dlg, IDC_STATIC_HOTKEY_MESSAGE), show);
+        SetWindowText(GetDlgItem(dlg, IDC_BUTTON_CHOOSE_HOTKEY), enable ? "Scan" : "Cancel");
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -223,12 +225,8 @@ namespace
         switch(message) {
         case WM_INITDIALOG: {
 
+            // keyboard hook sends messages to this dialog, needs to know where it is
             options_dlg = dlg;
-
-            INITCOMMONCONTROLSEX iccex{};
-            iccex.dwSize = sizeof(INITCOMMONCONTROLSEX);
-            iccex.dwICC = ICC_TAB_CLASSES;
-            InitCommonControlsEx(&iccex);
 
             // if dialog is cancelled, go back to these settings
             old_settings = settings;
@@ -288,8 +286,7 @@ namespace
         case WM_ACTIVATE:
             if(wParam == WA_INACTIVE) {
                 hotkey_scanning = false;
-                enable_hotkey_controls(dlg, true);
-                ShowWindow(GetDlgItem(dlg, IDC_STATIC_HOTKEY_MESSAGE), SW_HIDE);
+                enable_hotkey_controls(dlg, !hotkey_scanning);
             }
             break;
 
@@ -311,9 +308,8 @@ namespace
                 settings.run_at_startup = Button_GetCheck(GetDlgItem(dlg, IDC_CHECK_RUN_AT_STARTUP)) != 0;
                 break;
             case IDC_BUTTON_CHOOSE_HOTKEY:
-                ShowWindow(GetDlgItem(dlg, IDC_STATIC_HOTKEY_MESSAGE), SW_SHOW);
-                enable_hotkey_controls(dlg, false);
-                hotkey_scanning = true;
+                hotkey_scanning = !hotkey_scanning;
+                enable_hotkey_controls(dlg, !hotkey_scanning);
                 break;
             case IDC_COMBO_HOTKEY: {
                 HWND combo = GetDlgItem(dlg, IDC_COMBO_HOTKEY);
