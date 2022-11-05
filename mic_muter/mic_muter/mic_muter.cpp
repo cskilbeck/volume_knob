@@ -6,7 +6,7 @@
 
 namespace chs::mic_muter
 {
-    static char const *overlay_names[num_overlay_ids] = { "Muted", "Unmuted", "Disconnected" };
+    static char const *overlay_names[mic_muter::num_overlay_ids] = { "Muted", "Unmuted", "Disconnected" };
 
     int get_overlay_id(bool muted, bool attached)
     {
@@ -43,14 +43,7 @@ namespace
     using mic_muter::overlay_id;
     using mic_muter::settings_t;
 
-    using mic_muter::num_overlay_ids;
-
-    using mic_muter::app_name;
     using mic_muter::settings;
-
-    using mic_muter::get_overlay_id;
-    using mic_muter::get_overlay_name;
-    using mic_muter::show_options_dialog;
 
     int constexpr drag_idle_stop_seconds = 3;
 
@@ -80,7 +73,7 @@ namespace
     bool mic_muted;
     bool mic_attached;
 
-    image overlay_image[num_overlay_ids];
+    image overlay_image[mic_muter::num_overlay_ids];
 
     uint64_t fade_ticks;
 
@@ -92,14 +85,14 @@ namespace
 
     image *get_current_image()
     {
-        return &overlay_image[get_overlay_id(mic_muted, mic_attached)];
+        return &overlay_image[mic_muter::get_overlay_id(mic_muted, mic_attached)];
     }
 
     //////////////////////////////////////////////////////////////////////
 
     HRESULT reload_images()
     {
-        for(int i = 0; i < num_overlay_ids; ++i) {
+        for(int i = 0; i < mic_muter::num_overlay_ids; ++i) {
             auto id = static_cast<overlay_id>(i);
             HR(overlay_image[i].create_from_svg(get_overlay_svg(id), overlay_size, overlay_size));
         }
@@ -108,11 +101,26 @@ namespace
 
     //////////////////////////////////////////////////////////////////////
 
+    HRESULT create_menu_banner_font()
+    {
+        NONCLIENTMETRICS ncm{ sizeof(NONCLIENTMETRICS) };
+        SystemParametersInfo(SPI_GETNONCLIENTMETRICS, sizeof(NONCLIENTMETRICS), &ncm, false);
+
+        ncm.lfMenuFont.lfWidth = 0;
+        ncm.lfMenuFont.lfHeight = (ncm.lfMenuFont.lfHeight * 125) / 100;
+        ncm.lfMenuFont.lfWeight = FW_BOLD;
+
+        menu_banner_font = CreateFontIndirect(&ncm.lfMenuFont);
+        if(menu_banner_font == nullptr) {
+            return WIN32_LAST_ERROR("CreateFont");
+        }
+        return S_OK;
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
     HRESULT show_context_menu(HWND hwnd, POINT const &pt)
     {
-        bool present{ true };
-        bool muted{ false };
-        HR(audio->get_mic_info(&present, &muted));
         HMENU hMenu = LoadMenu(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDR_MENU_POPUP));
         if(hMenu == nullptr) {
             return WIN32_LAST_ERROR("LoadMenu");
@@ -125,9 +133,9 @@ namespace
 
         MENUITEMINFO mi{ sizeof(MENUITEMINFO) };
         mi.fMask = MIIM_STATE | MIIM_STRING;
-        mi.fState = present ? MFS_ENABLED : MFS_DISABLED;
-        mi.dwTypeData = const_cast<LPSTR>(muted ? "Unmute" : "Mute");
-        if(!SetMenuItemInfo(hSubMenu, ID_POPUP_MUTE, false, &mi)) {
+        mi.fState = mic_attached ? MFS_ENABLED : MFS_DISABLED;
+        mi.dwTypeData = const_cast<LPSTR>(mic_muted ? "Unmute" : "Mute");
+        if(!SetMenuItemInfo(hSubMenu, ID_POPUP_TOGGLE_MUTE, false, &mi)) {
             return WIN32_LAST_ERROR("SetMenuItemInfo");
         }
 
@@ -135,19 +143,20 @@ namespace
         mi.fMask = MIIM_FTYPE | MIIM_DATA | MIIM_ID;
         mi.fType = MFT_OWNERDRAW;
         mi.wID = ID_POPUP_MICMUTER;
-        mi.dwItemData = reinterpret_cast<ULONG_PTR>(app_name);
-        mi.cch = static_cast<UINT>(strlen(app_name));
+        mi.dwItemData = reinterpret_cast<ULONG_PTR>(mic_muter::app_name);
+        mi.cch = static_cast<UINT>(strlen(mic_muter::app_name));
         if(!SetMenuItemInfo(hSubMenu, ID_POPUP_MICMUTER, false, &mi)) {
             return WIN32_LAST_ERROR("SetMenuItemInfo(2)");
         }
 
-        SetForegroundWindow(hwnd);
         UINT uFlags = TPM_RIGHTBUTTON;
         if(GetSystemMetrics(SM_MENUDROPALIGNMENT) != 0) {
             uFlags |= TPM_RIGHTALIGN;
         } else {
             uFlags |= TPM_LEFTALIGN;
         }
+
+        SetForegroundWindow(hwnd);
 
         if(!TrackPopupMenuEx(hSubMenu, uFlags, pt.x, pt.y, hwnd, NULL)) {
             return WIN32_LAST_ERROR("TrackPopupMenuEx");
@@ -162,7 +171,7 @@ namespace
         BLENDFUNCTION bf{};
         bf.BlendFlags = 0;
         bf.BlendOp = AC_SRC_OVER;
-        bf.SourceConstantAlpha = alpha;
+        bf.SourceConstantAlpha = static_cast<BYTE>(alpha);
         bf.AlphaFormat = AC_SRC_ALPHA;
 
         image *img = get_current_image();
@@ -211,17 +220,21 @@ namespace
     {
         KillTimer(overlay_hwnd, TIMER_ID_WAIT);
         KillTimer(overlay_hwnd, TIMER_ID_FADE);
-        int overlay_id = get_overlay_id(mic_muted, mic_attached);
-        settings_t::overlay_setting *s = &settings.overlay[overlay_id];
-        LOG_INFO("do_fadeout({})", get_overlay_name(overlay_id));
-        if(!s->enabled) {
+
+        int overlay_id = mic_muter::get_overlay_id(mic_muted, mic_attached);
+        settings_t::overlay_setting const &overlay_setting = settings.overlay[overlay_id];
+
+        if(!overlay_setting.enabled) {
             ShowWindow(overlay_hwnd, SW_HIDE);
             return;
         }
+
         update_layered_window(255);
         ShowWindow(overlay_hwnd, SW_SHOW);
         BringWindowToTop(overlay_hwnd);
-        int fade_after = settings_t::fadeout_after_ms[s->fadeout_time];
+
+        int fade_after = settings_t::fadeout_after_ms[overlay_setting.fadeout_time];
+
         if(fade_after > 0) {
             SetTimer(overlay_hwnd, TIMER_ID_WAIT, fade_after, nullptr);
         } else if(fade_after == 0) {
@@ -235,8 +248,6 @@ namespace
 
     void start_move_overlay()
     {
-        LOG_DEBUG("start_move_overlay");
-
         KillTimer(overlay_hwnd, TIMER_ID_FADE);
         KillTimer(overlay_hwnd, TIMER_ID_WAIT);
 
@@ -293,15 +304,15 @@ namespace
             PostMessage(overlay_hwnd, WM_APP_QUIT_PLEASE, 0, 0);
             break;
 
-        case ID_POPUP_ABOUTMICMUTER:
-            show_options_dialog(mic_muted, mic_attached);
+        case ID_POPUP_SHOW_OPTIONS:
+            mic_muter::show_options_dialog(mic_muted, mic_attached);
             break;
 
-        case ID_POPUP_MUTE:
+        case ID_POPUP_TOGGLE_MUTE:
             audio->toggle_mute();
             break;
 
-        case ID_OVERLAY_POSITION:
+        case ID_POPUP_MOVE_OVERLAY:
             start_move_overlay();
             break;
         }
@@ -314,9 +325,18 @@ namespace
         switch(message) {
 
         case WM_GETMINMAXINFO: {
+
+            HMONITOR hMonitor = MonitorFromPoint({ 0, 0 }, MONITOR_DEFAULTTOPRIMARY);
+            MONITORINFO mi = { sizeof(mi) };
+            GetMonitorInfo(hMonitor, &mi);
+
+            int max_size = std::min(mi.rcWork.right - mi.rcWork.left, mi.rcWork.bottom - mi.rcWork.top) * 80 / 100;
+
+            int min_size = GetSystemMetrics(SM_CXSIZEFRAME) * 8;
+
             MINMAXINFO *mmi = reinterpret_cast<MINMAXINFO *>(lParam);
-            mmi->ptMinTrackSize.x = GetSystemMetrics(SM_CXSIZEFRAME) * 8;
-            mmi->ptMinTrackSize.y = GetSystemMetrics(SM_CYSIZEFRAME) * 8;
+            mmi->ptMinTrackSize = { min_size, min_size };
+            mmi->ptMaxTrackSize = { max_size, max_size };
             break;
         }
 
@@ -330,7 +350,9 @@ namespace
 
         case WM_SIZING: {
 
+            // force it to be square
             RECT *r = reinterpret_cast<RECT *>(lParam);
+
             int w = r->right - r->left;
             int h = r->bottom - r->top;
 
@@ -360,6 +382,7 @@ namespace
             return 1;
         }
 
+        // resizing without a window border
         case WM_NCHITTEST: {
             LRESULT const hits[] = { HTCAPTION, HTLEFT,        HTRIGHT,       HTLEFT,
                                      HTTOP,     HTTOPLEFT,     HTTOPRIGHT,    HTTOPLEFT,
@@ -371,7 +394,7 @@ namespace
             GetClientRect(hWnd, &rc);
             int const width = rc.right - rc.left;
             int const height = rc.bottom - rc.top;
-            int const x_border = GetSystemMetrics(SM_CXSIZEFRAME) * 2;    // double because internal only
+            int const x_border = GetSystemMetrics(SM_CXSIZEFRAME) * 2;
             int const y_border = GetSystemMetrics(SM_CYSIZEFRAME) * 2;
             int const left = std::abs(p.x) < x_border;
             int const right = std::abs(p.x - width) < x_border;
@@ -404,24 +427,6 @@ namespace
 
     //////////////////////////////////////////////////////////////////////
 
-    HRESULT create_menu_banner_font()
-    {
-        NONCLIENTMETRICS ncm{ sizeof(NONCLIENTMETRICS) };
-        SystemParametersInfo(SPI_GETNONCLIENTMETRICS, sizeof(NONCLIENTMETRICS), &ncm, false);
-
-        ncm.lfMenuFont.lfWidth = 0;
-        ncm.lfMenuFont.lfHeight = (ncm.lfMenuFont.lfHeight * 125) / 100;
-        ncm.lfMenuFont.lfWeight = FW_BOLD;
-
-        menu_banner_font = CreateFontIndirect(&ncm.lfMenuFont);
-        if(menu_banner_font == nullptr) {
-            return WIN32_LAST_ERROR("CreateFont");
-        }
-        return S_OK;
-    }
-
-    //////////////////////////////////////////////////////////////////////
-
     LRESULT CALLBACK overlay_wnd_proc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
         switch(message) {
@@ -447,6 +452,8 @@ namespace
             } else {
                 rc = settings.overlay_position;
                 overlay_size = rc.right - rc.left;
+                hotkey_modifiers = settings.modifiers;
+                hotkey_keycode = settings.hotkey;
             }
 
             SetWindowPos(hWnd, HWND_TOPMOST, rc.left, rc.top, overlay_size, overlay_size, 0);
@@ -509,7 +516,7 @@ namespace
                 break;
 
             case TIMER_ID_FADE: {
-                auto *s = &settings.overlay[get_overlay_id(mic_muted, mic_attached)];
+                auto *s = &settings.overlay[mic_muter::get_overlay_id(mic_muted, mic_attached)];
                 uint64 now = GetTickCount64();
                 float elapsed = static_cast<float>(now - fade_ticks);
                 float duration = static_cast<float>(settings_t::fadeout_over_ms[s->fadeout_speed]);
@@ -613,32 +620,32 @@ namespace
         wcex.lpfnWndProc = overlay_wnd_proc;
         wcex.hInstance = GetModuleHandle(nullptr);
         wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
-        wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+        wcex.hbrBackground = GetStockBrush(NULL_BRUSH);
         wcex.lpszClassName = overlay_window_class_name;
 
         if(RegisterClassEx(&wcex) == 0) {
-            return WIN32_LAST_ERROR(GetLastError());
+            return WIN32_LAST_ERROR("RegisterClassEx(overlay)");
         }
 
         wcex.lpfnWndProc = drag_wnd_proc;
         wcex.lpszClassName = drag_window_class_name;
 
         if(RegisterClassEx(&wcex) == 0) {
-            return WIN32_LAST_ERROR(GetLastError());
+            return WIN32_LAST_ERROR("RegisterClassEx(drag)");
         }
 
-        CreateWindowEx(overlay_window_ex_flags, overlay_window_class_name, app_name, overlay_window_flags, 0, 0, 0, 0,
-                       nullptr, nullptr, GetModuleHandle(nullptr), nullptr);
+        CreateWindowEx(overlay_window_ex_flags, overlay_window_class_name, mic_muter::app_name, overlay_window_flags, 0,
+                       0, 0, 0, nullptr, nullptr, GetModuleHandle(nullptr), nullptr);
 
         if(overlay_hwnd == nullptr) {
-            return WIN32_LAST_ERROR(GetLastError());
+            return WIN32_LAST_ERROR("CreateWindowEx(overlay)");
         }
 
-        CreateWindowEx(drag_window_ex_flags, drag_window_class_name, app_name, drag_window_flags, 0, 0, 0, 0, nullptr,
-                       nullptr, GetModuleHandle(nullptr), nullptr);
+        CreateWindowEx(drag_window_ex_flags, drag_window_class_name, mic_muter::app_name, drag_window_flags, 0, 0, 0, 0,
+                       nullptr, nullptr, GetModuleHandle(nullptr), nullptr);
 
         if(drag_hwnd == nullptr) {
-            return WIN32_LAST_ERROR(GetLastError());
+            return WIN32_LAST_ERROR("CreateWindowEx(drag)");
         }
 
         return S_OK;
@@ -657,7 +664,7 @@ namespace
         DEFER(CloseHandle(single_instance_mutex));
 
         if(GetLastError() == ERROR_ALREADY_EXISTS) {
-            HWND hwnd = FindWindow(drag_window_class_name, app_name);
+            HWND hwnd = FindWindow(drag_window_class_name, mic_muter::app_name);
             if(hwnd != nullptr) {
                 PostMessage(hwnd, WM_APP_SHOW_OVERLAY, 0, 0);
             }

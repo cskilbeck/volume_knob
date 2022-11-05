@@ -72,36 +72,6 @@ ShowUnInstDetails show
 
 ######################################################################
 
-Section "MicMuter" SEC01
-  SetOutPath "$INSTDIR"
-  SetOverwrite ifnewer
-  File "..\bin\x64\Release\${APP_EXE}"
-  File "..\bin\x64\Release\mic_muter_dll.dll"
-  CreateDirectory "$SMPROGRAMS\MicMuter"
-  CreateShortCut "$SMPROGRAMS\MicMuter\MicMuter.lnk" "$INSTDIR\${APP_EXE}"
-SectionEnd
-
-######################################################################
-
-Section -AdditionalIcons
-  CreateShortCut "$SMPROGRAMS\MicMuter\Uninstall.lnk" "$INSTDIR\uninst.exe"
-SectionEnd
-
-######################################################################
-
-Section -Post
-  WriteUninstaller "$INSTDIR\uninst.exe"
-  WriteRegStr HKCU "${PRODUCT_DIR_REGKEY}" "" "$INSTDIR\${APP_EXE}"
-  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayName" "$(^Name)"
-  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "UninstallString" "$INSTDIR\uninst.exe"
-  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayIcon" "$INSTDIR\${APP_EXE}"
-  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayVersion" "${PRODUCT_VERSION}"
-  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "URLInfoAbout" "${PRODUCT_WEB_SITE}"
-  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
-SectionEnd
-
-######################################################################
-
 LangString termMsg ${LANG_ENGLISH} "Installer cannot stop running ${PRODUCT_NAME}.$\nDo you want to terminate process?"
 LangString stopMsg ${LANG_ENGLISH} "Stopping ${PRODUCT_NAME} Application"
 
@@ -135,6 +105,37 @@ LangString stopMsg ${LANG_ENGLISH} "Stopping ${PRODUCT_NAME} Application"
  
 !macroend
  
+######################################################################
+
+Section "MicMuter" SEC01
+  !insertmacro TerminateApp
+  SetOutPath "$INSTDIR"
+  SetOverwrite ifnewer
+  File "..\bin\x64\Release\${APP_EXE}"
+  File "..\bin\x64\Release\mic_muter_dll.dll"
+  CreateDirectory "$SMPROGRAMS\MicMuter"
+  CreateShortCut "$SMPROGRAMS\MicMuter\MicMuter.lnk" "$INSTDIR\${APP_EXE}"
+SectionEnd
+
+######################################################################
+
+Section -AdditionalIcons
+  CreateShortCut "$SMPROGRAMS\MicMuter\Uninstall.lnk" "$INSTDIR\uninst.exe"
+SectionEnd
+
+######################################################################
+
+Section -Post
+  WriteUninstaller "$INSTDIR\uninst.exe"
+  WriteRegStr HKCU "${PRODUCT_DIR_REGKEY}" "" "$INSTDIR\${APP_EXE}"
+  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayName" "$(^Name)"
+  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "UninstallString" "$INSTDIR\uninst.exe"
+  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayIcon" "$INSTDIR\${APP_EXE}"
+  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayVersion" "${PRODUCT_VERSION}"
+  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "URLInfoAbout" "${PRODUCT_WEB_SITE}"
+  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+SectionEnd
+
 ######################################################################
 
 Function un.onUninstSuccess

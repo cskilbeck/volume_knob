@@ -84,96 +84,41 @@ namespace chs::mic_muter
         };
         // clang-format on
 
-        // need one of these for each state
+        // need one of these for each state (muted, unmuted, disconnected)
         struct overlay_setting
         {
             // show it or don't
-            bool enabled{ true };
+            bool enabled;
 
             // start fading out after this many seconds
-            byte fadeout_time{ fadeout_after_5_seconds };
+            byte fadeout_time;
 
             // take this many seconds to fade to final_opacity
-            byte fadeout_speed{ fadeout_speed_medium };
+            byte fadeout_speed;
 
-            byte fadeout_to{ fadeout_to_25_percent };
+            // fade to this opacity
+            byte fadeout_to;
         };
 
-        overlay_setting overlay[num_overlay_ids];
+        overlay_setting overlay[num_overlay_ids]{
+            { true, fadeout_after_5_seconds, fadeout_speed_slow, fadeout_to_50_percent },
+            { true, fadeout_after_1_second, fadeout_speed_fast, fadeout_to_25_percent },
+            { true, fadeout_after_0_seconds, fadeout_speed_medium, fadeout_to_invisible }
+        };
 
         RECT overlay_position;
 
         bool run_at_startup{ true };
 
+        byte hotkey{ VK_CAPITAL };
+        byte modifiers{ keymod_ctrl };
+
         overlay_setting *get_overlay_setting(bool muted, bool attached);
 
         HRESULT save_run_at_startup();
 
-        //////////////////////////////////////////////////////////////////////
-
-#define SETTINGS_SAVE_VALUE(x) HR(chs::util::registry_write("SOFTWARE\\MicMuter", #x, x))
-#define SETTINGS_LOAD_VALUE(x) HR(chs::util::registry_read("SOFTWARE\\MicMuter", #x, &x))
-
-        //////////////////////////////////////////////////////////////////////
-
-        HRESULT save()
-        {
-            LOG_CONTEXT("settings.save");
-
-            RECT rc;
-            GetClientRect(overlay_hwnd, &rc);
-            MapWindowPoints(overlay_hwnd, nullptr, reinterpret_cast<LPPOINT>(&rc), 2);
-            overlay_position = rc;
-
-            SETTINGS_SAVE_VALUE(run_at_startup);
-            SETTINGS_SAVE_VALUE(overlay_position);
-
-            SETTINGS_SAVE_VALUE(overlay[overlay_id_muted].enabled);
-            SETTINGS_SAVE_VALUE(overlay[overlay_id_muted].fadeout_time);
-            SETTINGS_SAVE_VALUE(overlay[overlay_id_muted].fadeout_speed);
-            SETTINGS_SAVE_VALUE(overlay[overlay_id_muted].fadeout_to);
-
-            SETTINGS_SAVE_VALUE(overlay[overlay_id_unmuted].enabled);
-            SETTINGS_SAVE_VALUE(overlay[overlay_id_unmuted].fadeout_time);
-            SETTINGS_SAVE_VALUE(overlay[overlay_id_unmuted].fadeout_speed);
-            SETTINGS_SAVE_VALUE(overlay[overlay_id_unmuted].fadeout_to);
-
-            SETTINGS_SAVE_VALUE(overlay[overlay_id_disconnected].enabled);
-            SETTINGS_SAVE_VALUE(overlay[overlay_id_disconnected].fadeout_time);
-            SETTINGS_SAVE_VALUE(overlay[overlay_id_disconnected].fadeout_speed);
-            SETTINGS_SAVE_VALUE(overlay[overlay_id_disconnected].fadeout_to);
-
-            HR(save_run_at_startup());
-
-            return S_OK;
-        }
-
-        //////////////////////////////////////////////////////////////////////
-
-        HRESULT load()
-        {
-            LOG_CONTEXT("settings.load");
-
-            SETTINGS_LOAD_VALUE(run_at_startup);
-            SETTINGS_LOAD_VALUE(overlay_position);
-
-            SETTINGS_LOAD_VALUE(overlay[overlay_id_muted].enabled);
-            SETTINGS_LOAD_VALUE(overlay[overlay_id_muted].fadeout_time);
-            SETTINGS_LOAD_VALUE(overlay[overlay_id_muted].fadeout_speed);
-            SETTINGS_LOAD_VALUE(overlay[overlay_id_muted].fadeout_to);
-
-            SETTINGS_LOAD_VALUE(overlay[overlay_id_unmuted].enabled);
-            SETTINGS_LOAD_VALUE(overlay[overlay_id_unmuted].fadeout_time);
-            SETTINGS_LOAD_VALUE(overlay[overlay_id_unmuted].fadeout_speed);
-            SETTINGS_LOAD_VALUE(overlay[overlay_id_unmuted].fadeout_to);
-
-            SETTINGS_LOAD_VALUE(overlay[overlay_id_disconnected].enabled);
-            SETTINGS_LOAD_VALUE(overlay[overlay_id_disconnected].fadeout_time);
-            SETTINGS_LOAD_VALUE(overlay[overlay_id_disconnected].fadeout_speed);
-            SETTINGS_LOAD_VALUE(overlay[overlay_id_disconnected].fadeout_to);
-
-            return S_OK;
-        }
+        HRESULT save();
+        HRESULT load();
     };
 
     extern settings_t settings;

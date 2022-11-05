@@ -2,6 +2,11 @@
 
 //////////////////////////////////////////////////////////////////////
 
+#define SETTINGS_SAVE_VALUE(x) HR(chs::util::registry_write("SOFTWARE\\MicMuter", #x, x))
+#define SETTINGS_LOAD_VALUE(x) HR(chs::util::registry_read("SOFTWARE\\MicMuter", #x, &x))
+
+//////////////////////////////////////////////////////////////////////
+
 namespace chs::mic_muter
 {
     //////////////////////////////////////////////////////////////////////
@@ -14,6 +19,69 @@ namespace chs::mic_muter
     {
         return &overlay[get_overlay_id(muted, attached)];
     }
+
+    //////////////////////////////////////////////////////////////////////
+
+    HRESULT settings_t::save()
+    {
+        RECT rc;
+        GetClientRect(overlay_hwnd, &rc);
+        MapWindowPoints(overlay_hwnd, nullptr, reinterpret_cast<LPPOINT>(&rc), 2);
+        overlay_position = rc;
+
+        SETTINGS_SAVE_VALUE(run_at_startup);
+        SETTINGS_SAVE_VALUE(overlay_position);
+        SETTINGS_SAVE_VALUE(hotkey);
+        SETTINGS_SAVE_VALUE(modifiers);
+
+        SETTINGS_SAVE_VALUE(overlay[overlay_id_muted].enabled);
+        SETTINGS_SAVE_VALUE(overlay[overlay_id_muted].fadeout_time);
+        SETTINGS_SAVE_VALUE(overlay[overlay_id_muted].fadeout_speed);
+        SETTINGS_SAVE_VALUE(overlay[overlay_id_muted].fadeout_to);
+
+        SETTINGS_SAVE_VALUE(overlay[overlay_id_unmuted].enabled);
+        SETTINGS_SAVE_VALUE(overlay[overlay_id_unmuted].fadeout_time);
+        SETTINGS_SAVE_VALUE(overlay[overlay_id_unmuted].fadeout_speed);
+        SETTINGS_SAVE_VALUE(overlay[overlay_id_unmuted].fadeout_to);
+
+        SETTINGS_SAVE_VALUE(overlay[overlay_id_disconnected].enabled);
+        SETTINGS_SAVE_VALUE(overlay[overlay_id_disconnected].fadeout_time);
+        SETTINGS_SAVE_VALUE(overlay[overlay_id_disconnected].fadeout_speed);
+        SETTINGS_SAVE_VALUE(overlay[overlay_id_disconnected].fadeout_to);
+
+        HR(save_run_at_startup());
+
+        return S_OK;
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
+    HRESULT settings_t::load()
+    {
+        SETTINGS_LOAD_VALUE(run_at_startup);
+        SETTINGS_LOAD_VALUE(overlay_position);
+        SETTINGS_LOAD_VALUE(hotkey);
+        SETTINGS_LOAD_VALUE(modifiers);
+
+        SETTINGS_LOAD_VALUE(overlay[overlay_id_muted].enabled);
+        SETTINGS_LOAD_VALUE(overlay[overlay_id_muted].fadeout_time);
+        SETTINGS_LOAD_VALUE(overlay[overlay_id_muted].fadeout_speed);
+        SETTINGS_LOAD_VALUE(overlay[overlay_id_muted].fadeout_to);
+
+        SETTINGS_LOAD_VALUE(overlay[overlay_id_unmuted].enabled);
+        SETTINGS_LOAD_VALUE(overlay[overlay_id_unmuted].fadeout_time);
+        SETTINGS_LOAD_VALUE(overlay[overlay_id_unmuted].fadeout_speed);
+        SETTINGS_LOAD_VALUE(overlay[overlay_id_unmuted].fadeout_to);
+
+        SETTINGS_LOAD_VALUE(overlay[overlay_id_disconnected].enabled);
+        SETTINGS_LOAD_VALUE(overlay[overlay_id_disconnected].fadeout_time);
+        SETTINGS_LOAD_VALUE(overlay[overlay_id_disconnected].fadeout_speed);
+        SETTINGS_LOAD_VALUE(overlay[overlay_id_disconnected].fadeout_to);
+
+        return S_OK;
+    }
+
+    //////////////////////////////////////////////////////////////////////
 
     HRESULT settings_t::save_run_at_startup()
     {

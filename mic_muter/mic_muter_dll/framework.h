@@ -22,6 +22,8 @@
 
 //////////////////////////////////////////////////////////////////////
 
+#pragma warning(disable : 4100)
+
 #include "../common_lib/ansi.h"
 #include "../common_lib/logger.h"
 #include "../common_lib/util.h"

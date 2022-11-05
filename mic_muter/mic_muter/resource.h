@@ -5,7 +5,6 @@
 #define IDC_MYICON                      2
 #define IDD_MICMUTER_DIALOG             102
 #define IDS_APP_TITLE                   103
-#define IDD_ABOUTBOX                    103
 #define IDM_ABOUT                       104
 #define IDI_MICMUTER                    107
 #define IDC_MICMUTER                    109
@@ -29,14 +28,6 @@
 #define IDC_SLIDER7                     1009
 #define IDC_STATIC_OVERLAY_POS          1012
 #define IDC_CHECK_RUN_AT_STARTUP        1013
-#define IDC_CHECK_OVERLAY_ENABLE_MUTE   1014
-#define IDC_CHECK_OVERLAY_ENABLE_UNMUTE 1015
-#define IDC_COMBO_FADEOUT_AFTER_MUTE    1016
-#define IDC_COMBO_FADEOUT_AFTER_UNMUTE  1017
-#define IDC_COMBO_FADEOUT_SPEED_MUTE    1018
-#define IDC_COMBO_FADEOUT_TO_MUTE       1019
-#define IDC_COMBO_FADEOUT_SPEED_UNMUTE  1020
-#define IDC_COMBO_FADEOUT_TO_UNMUTE     1021
 #define IDC_SLIDER1                     1022
 #define IDC_COMBO_FADEOUT_AFTER         1023
 #define IDC_COMBO_FADEOUT_TO            1024
@@ -44,6 +35,14 @@
 #define IDC_CHECK_OVERLAY_ENABLE        1026
 #define IDC_OPTIONS_TAB_CTRL            1037
 #define IDC_STATIC_OPTIONS_OVERLAY_IMAGE 1038
+#define IDC_BUTTON_CHOOSE_HOTKEY        1043
+#define IDC_COMBO_HOTKEY                1046
+#define IDC_CHECK_CTRL                  1047
+#define IDC_CHECK_ALT                   1048
+#define IDC_CHECK_SHIFT                 1049
+#define IDC_CHECK4                      1050
+#define IDC_CHECK_WINKEY                1050
+#define IDC_STATIC_HOTKEY_MESSAGE       1051
 #define ID_POPUP_QUIT                   32771
 #define ID_POPUP_ETC                    32772
 #define ID_POPUP_OPTIONS                32773
@@ -95,6 +94,10 @@
 #define ID_FADESPEED_MEDIUM_UNMUTED     32830
 #define ID_FADESPEED_FAST_UNMUTED       32831
 #define ID_FADESPEED_IMMEDIATE_UNMUTED  32832
+#define ID_POPUP_SHOW_OPTIONS           32833
+#define ID_POPUP_TOGGLE_MUTE            32834
+#define ID_MOVE_OVERLAY                 32835
+#define ID_POPUP_MOVE_OVERLAY           32836
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -103,8 +106,8 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        143
-#define _APS_NEXT_COMMAND_VALUE         32833
-#define _APS_NEXT_CONTROL_VALUE         1039
+#define _APS_NEXT_COMMAND_VALUE         32837
+#define _APS_NEXT_CONTROL_VALUE         1052
 #define _APS_NEXT_SYMED_VALUE           112
 #endif
 #endif

@@ -37,12 +37,16 @@
 
 //////////////////////////////////////////////////////////////////////
 
+#pragma warning(disable : 4100)
+
 #include "resource.h"
 
 #include "mic_muter.h"
 #include "../common_lib/ansi.h"
 #include "../common_lib/logger.h"
 #include "../common_lib/util.h"
+
+#include "hotkey.h"
 
 #include "../mic_muter_dll/hook.h"
 

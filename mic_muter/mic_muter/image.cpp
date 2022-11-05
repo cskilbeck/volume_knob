@@ -47,8 +47,7 @@ namespace chs::mic_muter
         src_bmi.bmiHeader.biBitCount = 32;
         src_bmi.bmiHeader.biCompression = BI_RGB;
 
-        HDC dc = GetDC(nullptr);
-        DEFER(ReleaseDC(nullptr, dc));
+        dc = CreateCompatibleDC(nullptr);
 
         uint32 *buffer = new uint32[img_size];
 
@@ -64,7 +63,6 @@ namespace chs::mic_muter
         }
         width = w;
         height = h;
-        dc = CreateCompatibleDC(nullptr);
         old_bmp = SelectObject(dc, bmp);
         return S_OK;
     }
