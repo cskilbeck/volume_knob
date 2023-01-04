@@ -13,6 +13,7 @@
 !define PRODUCT_VERSION "v1.0"
 !define PRODUCT_PUBLISHER "Tiny Little Things"
 !define PRODUCT_WEB_SITE "http://www.skilbeck.com"
+!define PLATFORM "Win32"
 
 !define APP_EXE "MicMuter.exe"
 
@@ -64,7 +65,7 @@
 
 RequestExecutionLevel user
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
-OutFile "output\${PRODUCT_NAME}_x64_${PRODUCT_VERSION}.exe"
+OutFile "output\${PRODUCT_NAME}_${PLATFORM}_${PRODUCT_VERSION}.exe"
 InstallDir "$LOCALAPPDATA\MicMuter"
 InstallDirRegKey HKCU "${PRODUCT_DIR_REGKEY}" ""
 ShowInstDetails show
@@ -111,8 +112,8 @@ Section "MicMuter" SEC01
   !insertmacro TerminateApp
   SetOutPath "$INSTDIR"
   SetOverwrite ifnewer
-  File "..\bin\x64\Release\${APP_EXE}"
-  File "..\bin\x64\Release\mic_muter_dll.dll"
+  File "..\bin\${PLATFORM}\Release\${APP_EXE}"
+  File "..\bin\${PLATFORM}\Release\mic_muter_dll.dll"
   CreateDirectory "$SMPROGRAMS\MicMuter"
   CreateShortCut "$SMPROGRAMS\MicMuter\MicMuter.lnk" "$INSTDIR\${APP_EXE}"
 SectionEnd
