@@ -62,6 +62,11 @@ SBIT(ROTB_BIT, ROTB_PORT, ROTB_PIN);
 
 //////////////////////////////////////////////////////////////////////
 
+#define MEDIA_KEY(x) ((x) | 0x8000)
+#define NORMAL_KEY(x) (x)
+
+//////////////////////////////////////////////////////////////////////
+
 void hard_fault()
 {
     while(1) {
@@ -358,7 +363,7 @@ void main()
         // delay counter for knob triple-click
         if(TF1 == 1) {
             TF1 = 0;
-            if(t1_count < 200) {
+            if(t1_count < 50) {
                 t1_count += 1;
             } else {
                 clicks = 0;
@@ -377,17 +382,15 @@ void main()
             direction = 0;
         }
 
-        // queue up some keypresses if something happened
+        // check for triple-click
         if(pressed) {
-            do_press(KEY_F19);
-
-            // check for triple-click
-            if(t1_count < 200) {
+            if(t1_count < 50) {
                 clicks += 1;
                 if(clicks == 2) {
                     vol_direction = 2 - vol_direction;
                     turn_value = (int8)vol_direction - 1;
                     write_flash_data(0, 1, &vol_direction);
+                    pressed = false;
                 }
             }
             TL1 = 0;
@@ -396,16 +399,24 @@ void main()
             t1_count = 0;
         }
 
-        if(direction == turn_value) {
-            do_press(KEY_MEDIA_VOLUMEUP | 0x8000);
+        // queue up some keypresses if something happened
+        if(pressed) {
+
+            do_press(MEDIA_KEY(KEY_MEDIA_MUTE));
         }
 
-        else if(direction == -turn_value) {
-            do_press(KEY_MEDIA_VOLUMEDOWN | 0x8000);
+        if(direction == turn_value) {
+
+            do_press(MEDIA_KEY(KEY_MEDIA_VOLUMEUP));
+
+        } else if(direction == -turn_value) {
+
+            do_press(MEDIA_KEY(KEY_MEDIA_VOLUMEDOWN));
         }
 
         // send key on/off to usb hid if there are some waiting to be sent
         if(usb_idle == 3 && !queue_empty()) {
+
             usb_set_keystate(queue_get());
         }
         led_update();
