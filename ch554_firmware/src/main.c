@@ -324,7 +324,20 @@ void main()
     // for debouncing the button
     bool button_state = false;
 
+    uint8_t flash = 0;
+
     while(1) {
+
+        if(!usb_active) {
+            if(TF2 == 1) {
+                TL2 = 0;
+                TH2 = 0;
+                TF2 = 0;
+                flash += 1;
+                LED_BIT = (flash >> 4) & 1;
+            }
+            continue;
+        }
 
         // read/debounce the button
         bool pressed = false;

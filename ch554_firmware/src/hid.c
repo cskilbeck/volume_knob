@@ -88,6 +88,7 @@ uint8_t UsbConfig;
 __code uint8_t const *pDescr;
 
 volatile __idata uint8_t usb_idle = 3;
+volatile __idata uint8_t usb_active = 0;
 
 //////////////////////////////////////////////////////////////////////
 
@@ -329,6 +330,8 @@ void usb_isr(void) __interrupt(INT_NO_USB)
 
             // should be this much, anything else seems to be an error
             if(USB_RX_LEN == (sizeof(USB_SETUP_REQ))) {
+
+                usb_active = 1;
 
                 // how much it wants, capped at 127
                 SetupLen = UsbSetupBuf->wLengthL;
