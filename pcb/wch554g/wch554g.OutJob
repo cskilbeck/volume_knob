@@ -231,11 +231,11 @@ ShowComponentParameters2=1
 GlobalBookmarks2=0
 PDFACompliance2=Disabled
 PDFVersion2=Default
-OutputFilePath3=U:\dev\hid_kbd\pcb\wch554g\Outputs\2023-11-22\
+OutputFilePath3=U:\dev\hid_kbd\pcb\wch554g\Outputs\2023-11-22_V2\
 ReleaseManaged3=0
 OutputBasePath3=Outputs\
-OutputPathMedia3==CurrentDate
-OutputPathMediaValue3==CurrentDate
+OutputPathMedia3==CurrentDate+_+'V' + VERSION
+OutputPathMediaValue3==CurrentDate+_+'V' + VERSION
 OutputPathOutputer3=
 OutputPathOutputerPrefix3=
 OutputPathOutputerValue3=
@@ -285,7 +285,7 @@ WmvQuality4=80
 [GeneratedFilesSettings]
 RelativeOutputPath2=Outputs\2022-06-05\wch554g.PDF
 OpenOutputs2=0
-RelativeOutputPath3=U:\dev\hid_kbd\pcb\wch554g\Outputs\2023-11-22\
+RelativeOutputPath3=U:\dev\hid_kbd\pcb\wch554g\Outputs\2023-11-22_V2\
 OpenOutputs3=0
 AddToProject3=0
 TimestampFolder3=0

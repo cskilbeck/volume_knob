@@ -173,6 +173,10 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=YGULDPEW
 
+[Parameter1]
+Name=VERSION
+Value=2
+
 [Configuration1]
 Name=Sources
 ParameterCount=0
