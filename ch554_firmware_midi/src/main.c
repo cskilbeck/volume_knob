@@ -1,11 +1,4 @@
-/********************************** (C) COPYRIGHT *******************************
- * File Name		: main.c
- * Author			: Zhiyuan Wan
- * License			: MIT
- * Version			: V1.0
- * Date				: 2018/03/27
- * Description		: USB-MIDI
- *******************************************************************************/
+//////////////////////////////////////////////////////////////////////
 
 #include <stdint.h>
 #include <stdio.h>
@@ -14,6 +7,62 @@
 #include <ch554.h>
 #include <ch554_usb.h>
 #include <debug.h>
+
+//////////////////////////////////////////////////////////////////////
+// BOOTLOADER admin
+
+typedef void (*BOOTLOADER)(void);
+#define bootloader554 ((BOOTLOADER)0x3800)    // CH551/2/3/4
+#define bootloader559 ((BOOTLOADER)0xF400)    // CH558/9
+
+#define BOOTLOADER_DELAY 0x300    // about 3 seconds
+
+//////////////////////////////////////////////////////////////////////
+// GPIO
+
+#define PORT1 0x90
+#define PORT3 0xB0
+
+#define UART_TX_PORT PORT3
+#define UART_TX_PIN 0
+
+#define UART_RX_PORT PORT3
+#define UART_RX_PIN 1
+
+#define ROTA_PORT PORT3
+#define ROTA_PIN 3
+
+#define ROTB_PORT PORT3
+#define ROTB_PIN 4
+
+#define BTN_PORT PORT3
+#define BTN_PIN 2
+
+#define LED_PORT PORT1
+#define LED_PIN 6
+
+SBIT(BTN_BIT, BTN_PORT, BTN_PIN);
+SBIT(LED_BIT, LED_PORT, LED_PIN);
+SBIT(ROTA_BIT, ROTA_PORT, ROTA_PIN);
+SBIT(ROTB_BIT, ROTB_PORT, ROTB_PIN);
+
+//////////////////////////////////////////////////////////////////////
+// Rotary Encoder
+
+uint8 vol_direction;
+int8 turn_value;
+
+#define CLOCKWISE 2
+#define ANTI_CLOCKWISE 0
+
+// Define ROTARY_DIRECTION as CLOCKWISE for one kind of encoders, ANTI_CLOCKWISE for
+// the other ones (some are reversed). This sets the default rotation (after first
+// flash), reverse by triple-clicking the knob
+
+#define ROTARY_DIRECTION (CLOCKWISE)
+// #define ROTARY_DIRECTION (ANTI_CLOCKWISE)
+
+//////////////////////////////////////////////////////////////////////
 
 enum midi_code_index
 {
@@ -35,26 +84,31 @@ enum midi_code_index
     mci_single_byte = 0xF,         // 1            Single Byte
 };
 
-__xdata __at(0x0000) uint8_t Ep0Buffer[DEFAULT_ENDP0_SIZE];     // endpoint0 OUT & IN buffer，Must be an even address
-__xdata __at(0x0040) uint8_t Ep1Buffer[DEFAULT_ENDP1_SIZE];     // endpoint1 upload buffer
-__xdata __at(0x0080) uint8_t Ep2Buffer[2 * MAX_PACKET_SIZE];    // endpoint2 IN & OUT buffer, Must be an even address
+//////////////////////////////////////////////////////////////////////
 
+__xdata __at(0x0000) uint8 Ep0Buffer[DEFAULT_ENDP0_SIZE];     // endpoint0 OUT & IN buffer，Must be an even address
+__xdata __at(0x0040) uint8 Ep1Buffer[DEFAULT_ENDP1_SIZE];     // endpoint1 upload buffer
+__xdata __at(0x0080) uint8 Ep2Buffer[2 * MAX_PACKET_SIZE];    // endpoint2 IN & OUT buffer, Must be an even address
+
+//////////////////////////////////////////////////////////////////////
 // VID = 16D0, PID = 1317
 
 #define USB_VID 0x16D0
 #define USB_PID 0x1317
 
-uint16_t SetupLen;
-uint8_t SetupReq;
-uint8_t UsbConfig;
-const uint8_t *pDescr;    // USB descriptor to send
+//////////////////////////////////////////////////////////////////////
+
+uint16 SetupLen;
+uint8 SetupReq;
+uint8 UsbConfig;
+const uint8 *pDescr;    // USB descriptor to send
 
 #define UsbSetupBuf ((PUSB_SETUP_REQ)Ep0Buffer)
 
 #define USB_DESC_TYPE_DEVICE 0x01
 
 // Device descriptor
-__code uint8_t DevDesc[] = {
+__code uint8 DevDesc[] = {
     0x12,                  // length
     0x01,                  // USB_DESC_TYPE_DEVICE
     0x10,                  // USB v2.01 LOW BCD
@@ -75,7 +129,7 @@ __code uint8_t DevDesc[] = {
     0x01                   // num configurations
 };
 
-__code uint8_t CfgDesc[] = {
+__code uint8 CfgDesc[] = {
 
     // Configuration descriptor (two interfaces)
     0x09, 0x02, sizeof(CfgDesc) & 0xff, sizeof(CfgDesc) >> 8, 0x02, 0x01, 0x00, 0x80, 0x32,
@@ -126,19 +180,13 @@ unsigned char __code product_string[] = {
 unsigned char __code manufacturer_string[] = { 0x26, 0x03, 'T', 0,   'i', 0,   'n', 0,   'y', 0,   ' ', 0,   'L', 0,   'i', 0,   't', 0,   't',
                                                0,    'l',  0,   'e', 0,   ' ', 0,   'T', 0,   'h', 0,   'i', 0,   'n', 0,   'g', 0,   's', 0 };
 
-#define MIDI_REV_LEN 64                          // MIDI receive buffer size
-__idata uint8_t midi_in_buffer[MIDI_REV_LEN];    // MIDI receive buffer
+#define MIDI_REV_LEN 64                        // MIDI receive buffer size
+__idata uint8 midi_in_buffer[MIDI_REV_LEN];    // MIDI receive buffer
 
-volatile __idata uint8_t ep2_recv_len = 0;    // # received by USB endpoint
-volatile __idata uint8_t ep2_busy = 0;        // upload endpoint busy flag
+volatile __idata uint8 ep2_recv_len = 0;    // # received by USB endpoint
+volatile __idata uint8 ep2_busy = 0;        // upload endpoint busy flag
 
-/*******************************************************************************
- * Function Name  : USBDeviceCfg()
- * Description	: USB Device mode configuration
- * Input		  : None
- * Output		 : None
- * Return		 : None
- *******************************************************************************/
+//////////////////////////////////////////////////////////////////////
 
 void USBDeviceCfg()
 {
@@ -154,13 +202,9 @@ void USBDeviceCfg()
     UDEV_CTRL = bUD_PD_DIS;         // Disable DP/DM pull-down resistor
     UDEV_CTRL |= bUD_PORT_EN;       // Enable physical port
 }
-/*******************************************************************************
- * Function Name  : USBDeviceIntCfg()
- * Description	: USB Device mode interrupt initialization
- * Input		  : None
- * Output		 : None
- * Return		 : None
- *******************************************************************************/
+
+//////////////////////////////////////////////////////////////////////
+
 void USBDeviceIntCfg()
 {
     USB_INT_EN |= bUIE_SUSPEND;     // Make the device hang up and interrupt
@@ -170,70 +214,28 @@ void USBDeviceIntCfg()
     IE_USB = 1;                     // Enable USB interrupt
     EA = 1;                         // Enable interrupts
 }
-/*******************************************************************************
- * Function Name    : USBDeviceEndPointCfg()
- * Description	    : USB device mode endpoint configuration
- *                  : simulation compatible HID device,
- *                  : in addition to the control transmission of endpoint 0, also includes endpoint 2 batch up and down
- * Input		    : None
- * Output		    : None
- * Return		    : None
- *******************************************************************************/
+
+//////////////////////////////////////////////////////////////////////
+
 void USBDeviceEndPointCfg()
 {
-    UEP1_DMA = (uint16_t)Ep1Buffer;    // Point point 1 Send data transmission address
-    UEP2_DMA = (uint16_t)Ep2Buffer;    // Writer 2 in data transmission address
-    UEP2_3_MOD = 0xCC;                 // Endpoint 2/3 Single Single Single Receiving Fail
+    UEP1_DMA = (uint16)Ep1Buffer;    // Point point 1 Send data transmission address
+    UEP2_DMA = (uint16)Ep2Buffer;    // Writer 2 in data transmission address
+    UEP2_3_MOD = 0xCC;               // Endpoint 2/3 Single Single Single Receiving Fail
     UEP2_CTRL =
         bUEP_AUTO_TOG | UEP_T_RES_NAK | UEP_R_RES_ACK;    // Writing 2 automatically flip the synchronous flag position, IN transaction returns NAK, out of ACK
 
     UEP1_CTRL = bUEP_AUTO_TOG | UEP_T_RES_NAK;    // Point 1 automatically flip the synchronization flag bit, IN transaction returns NAK
-    UEP0_DMA = (uint16_t)Ep0Buffer;               // Point 0 data transmission address
+    UEP0_DMA = (uint16)Ep0Buffer;                 // Point 0 data transmission address
     UEP4_1_MOD = 0X40;                            // Point point 1 upload the buffer area; endpoint 0 single 64 bytes receiving and receiving buffer
     UEP0_CTRL = UEP_R_RES_ACK | UEP_T_RES_NAK;    // Flip manually, out of OUT transaction back to ACK, IN transaction returns Nak
 }
 
-void putnibble(uint8_t n)
-{
-    if(n > 9) {
-        n += 'A' - 10;
-    } else {
-        n += '0';
-    }
-    putchar(n);
-}
-
-void putstr(char *p)
-{
-    while(*p != 0) {
-        putchar(*p++);
-    }
-}
-
-void puthex(uint8_t b)
-{
-    putnibble(b >> 4);
-    putnibble(b & 0xf);
-}
-
-void hexdump(char *msg, uint8_t *p, uint8_t n)
-{
-    putstr(msg);
-    putchar(':');
-    while(n-- != 0) {
-        puthex(*p++);
-    }
-    putchar('\n');
-}
-
-/*******************************************************************************
- * Function Name  : DeviceInterrupt()
- * Description	: CH55XUSB interrupt processing function
- *******************************************************************************/
+//////////////////////////////////////////////////////////////////////
 
 void DeviceInterrupt(void) __interrupt(INT_NO_USB)    // USB interrupt service program, use the register group 1
 {
-    uint16_t len;
+    uint16 len;
 
     if(UIF_TRANSFER) {
 
@@ -260,7 +262,7 @@ void DeviceInterrupt(void) __interrupt(INT_NO_USB)    // USB interrupt service p
         case UIS_TOKEN_SETUP | 0:
             len = USB_RX_LEN;
             if(len == (sizeof(USB_SETUP_REQ))) {
-                SetupLen = ((uint16_t)UsbSetupBuf->wLengthH << 8) | (UsbSetupBuf->wLengthL);
+                SetupLen = ((uint16)UsbSetupBuf->wLengthH << 8) | (UsbSetupBuf->wLengthL);
                 len = 0;    // The default is success and upload 0 length
 
                 SetupReq = UsbSetupBuf->bRequest;
@@ -339,7 +341,7 @@ void DeviceInterrupt(void) __interrupt(INT_NO_USB)    // USB interrupt service p
                     case USB_CLEAR_FEATURE:                                               // Clear Feature
                         if((UsbSetupBuf->bRequestType & 0x1F) == USB_REQ_RECIP_DEVICE)    // Device
                         {
-                            if((((uint16_t)UsbSetupBuf->wValueH << 8) | UsbSetupBuf->wValueL) == 0x01) {
+                            if((((uint16)UsbSetupBuf->wValueH << 8) | UsbSetupBuf->wValueL) == 0x01) {
                                 if(CfgDesc[7] & 0x20) {
                                     // wake
                                 } else {
@@ -380,7 +382,7 @@ void DeviceInterrupt(void) __interrupt(INT_NO_USB)    // USB interrupt service p
                     case USB_SET_FEATURE:                                                 // Set Feature
                         if((UsbSetupBuf->bRequestType & 0x1F) == USB_REQ_RECIP_DEVICE)    // Device
                         {
-                            if((((uint16_t)UsbSetupBuf->wValueH << 8) | UsbSetupBuf->wValueL) == 0x01) {
+                            if((((uint16)UsbSetupBuf->wValueH << 8) | UsbSetupBuf->wValueL) == 0x01) {
                                 if(CfgDesc[7] & 0x20) {
                                     // Dormant
                                     while(XBUS_AUX & bUART0_TX) {
@@ -401,8 +403,8 @@ void DeviceInterrupt(void) __interrupt(INT_NO_USB)    // USB interrupt service p
                             }
                         } else if((UsbSetupBuf->bRequestType & 0x1F) == USB_REQ_RECIP_ENDP)    // Set the endpoint
                         {
-                            if((((uint16_t)UsbSetupBuf->wValueH << 8) | UsbSetupBuf->wValueL) == 0x00) {
-                                switch(((uint16_t)UsbSetupBuf->wIndexH << 8) | UsbSetupBuf->wIndexL) {
+                            if((((uint16)UsbSetupBuf->wValueH << 8) | UsbSetupBuf->wValueL) == 0x00) {
+                                switch(((uint16)UsbSetupBuf->wIndexH << 8) | UsbSetupBuf->wIndexL) {
                                 case 0x83:
                                     UEP3_CTRL = UEP3_CTRL & (~bUEP_T_TOG) | UEP_T_RES_STALL;    // Set endpoint 3 IN STALL
                                     break;
@@ -530,118 +532,142 @@ void DeviceInterrupt(void) __interrupt(INT_NO_USB)    // USB interrupt service p
 
 //////////////////////////////////////////////////////////////////////
 
-bool in_sysex = false;
-uint8_t sysex_buffer[16];
-uint8_t sysex_length = 0;
+#define MIDI_MANUFACTURER_ID 0x36    // Cheetah Marketing, defunct
+#define MIDI_FAMILTY_CODE_LOW 0x55
+#define MIDI_FAMILTY_CODE_HIGH 0x44
+#define MIDI_MODEL_NUMBER_LOW 0x33
+#define MIDI_MODEL_NUMBER_HIGH 0x22
+#define MIDI_VERSION_0 0x11
+#define MIDI_VERSION_1 0x12
+#define MIDI_VERSION_2 0x13
+#define MIDI_VERSION_3 0x14
 
-typedef enum
+//////////////////////////////////////////////////////////////////////
+
+uint8 const identity_request_2[] = { 0xF0, 0x7E };
+// channel in between, we ignore it
+uint8 const identity_request_3[] = { 0x06, 0x01, 0xF7 };
+
+#define IDENTITY_REQUEST_LENGTH (sizeof(identity_request_2) + 1 + sizeof(identity_request_3))
+
+uint8 const identity_response[] = { 0xF0,
+                                    0x7E,
+                                    0x00,
+                                    0x06,
+                                    0x02,
+                                    MIDI_MANUFACTURER_ID,
+                                    MIDI_FAMILTY_CODE_LOW,
+                                    MIDI_FAMILTY_CODE_HIGH,
+                                    MIDI_MODEL_NUMBER_LOW,
+                                    MIDI_MODEL_NUMBER_HIGH,
+                                    MIDI_VERSION_0,
+                                    MIDI_VERSION_1,
+                                    MIDI_VERSION_2,
+                                    MIDI_VERSION_3,
+                                    0xF7 };
+
+//////////////////////////////////////////////////////////////////////
+
+uint8 *sysex_send_ptr;
+uint8 sysex_send_sent = 0;
+uint8 sysex_send_remain = 0;
+
+bool sysex_send_update()
 {
-    sysex_end = 0,
-    sysex_more = 1
-} sysex_continue;
-
-uint8_t packet_offset = 0;
-
-void add_sysex(uint8_t length, sysex_continue done)
-{
-    if(length <= (sizeof(sysex_buffer) - sysex_length)) {
-        memcpy(sysex_buffer + sysex_length, midi_in_buffer + packet_offset + 1, length);
-        sysex_length += length;
+    uint8 r = sysex_send_remain;
+    if(r == 0) {
+        return false;
     }
-    if(done == sysex_end) {
-        if(sysex_length == 11 && sysex_buffer[0] == 0xF0 && sysex_buffer[1] == 0x7F && sysex_buffer[10] == 0xF7) {
-            uint8_t top_bits = sysex_buffer[9];
-            for(uint8_t i = 2; i < 9; ++i) {
-                top_bits <<= 1;
-                sysex_buffer[i] |= top_bits & 0x80;
-            }
+    if(r > 3) {
+        r = 3;
+    }
+    uint8 cmd = mci_sysex_start;
+    if(r < 3 || sysex_send_remain <= 3) {
+        cmd = mci_sysex_end_1 + r - 1;
+    }
+    Ep2Buffer[MAX_PACKET_SIZE] = cmd;
+    memcpy(Ep2Buffer + MAX_PACKET_SIZE + 1, sysex_send_ptr, r);
+    if(r < 3) {
+        memset(Ep2Buffer + MAX_PACKET_SIZE + 1 + r, 0, 3 - r);
+    }
+    UEP2_T_LEN = 4;
+    UEP2_CTRL = UEP2_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK;    // Answer ACK
+    ep2_busy = 1;
+    hexdump("send", Ep2Buffer + MAX_PACKET_SIZE, 4);
+    sysex_send_sent += r;
+    sysex_send_ptr += r;
+    sysex_send_remain -= r;
+    return true;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+bool sysex_send(uint8 *data, uint8 length)
+{
+    if(sysex_send_remain != 0) {
+        return false;
+    }
+    if(length < 4) {
+        return false;
+    }
+    sysex_send_remain = length;
+    sysex_send_ptr = data;
+    return true;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+uint8 sysex_recv_buffer[16];
+uint8 sysex_recv_length = 0;
+uint8 sysex_recv_packet_offset = 0;
+
+void sysex_parse_add(uint8 length)
+{
+    if(length > (sizeof(sysex_recv_buffer) - sysex_recv_length)) {
+        sysex_recv_length = 0;
+    } else {
+        memcpy(sysex_recv_buffer + sysex_recv_length, midi_in_buffer + sysex_recv_packet_offset + 1, length);
+        sysex_recv_length += length;
+        if(sysex_recv_buffer[sysex_recv_length - 1] == 0xF7) {
+            hexdump("sysex", sysex_recv_buffer, sysex_recv_length);
+            sysex_recv_length = 0;
+            sysex_send(identity_response, sizeof(identity_response));
         }
-        hexdump("all", sysex_buffer + 2, 7);
-        sysex_length = 0;
     }
 }
 
-void process_midi_packet(uint8_t length)
+//////////////////////////////////////////////////////////////////////
+
+void process_midi_packet(uint8 length)
 {
-    packet_offset = 0;
-    while(packet_offset < length) {
+    sysex_recv_packet_offset = 0;
 
-        hexdump("id", midi_in_buffer + packet_offset, 1);
+    while(sysex_recv_packet_offset < length) {
 
-        switch(midi_in_buffer[packet_offset]) {
+        uint8 cmd = midi_in_buffer[sysex_recv_packet_offset];
+
+        switch(cmd) {
 
         case mci_sysex_start:
-            add_sysex(3, sysex_more);
+        case mci_sysex_end_3:
+            sysex_parse_add(3);
             break;
 
         case mci_sysex_end_1:
-            add_sysex(1, sysex_end);
+            sysex_parse_add(1);
             break;
-
         case mci_sysex_end_2:
-            add_sysex(2, sysex_end);
-            break;
-
-        case mci_sysex_end_3:
-            add_sysex(3, sysex_end);
+            sysex_parse_add(2);
             break;
 
         default:
-            sysex_length = 0;
+            sysex_recv_length = 0;
+            sysex_recv_packet_offset = length;
             break;
         }
-        packet_offset += 4;
+        sysex_recv_packet_offset += 4;
     }
 }
-
-//////////////////////////////////////////////////////////////////////
-// MAIN
-
-//////////////////////////////////////////////////////////////////////
-
-typedef int8_t int8;
-typedef int16_t int16;
-typedef uint8_t uint8;
-typedef uint16_t uint16;
-
-#define PORT1 0x90
-#define PORT3 0xB0
-
-#define UART_TX_PORT PORT3
-#define UART_TX_PIN 0
-
-#define UART_RX_PORT PORT3
-#define UART_RX_PIN 1
-
-#define ROTA_PORT PORT3
-#define ROTA_PIN 3
-
-#define ROTB_PORT PORT3
-#define ROTB_PIN 4
-
-#define BTN_PORT PORT3
-#define BTN_PIN 2
-
-#define LED_PORT PORT1
-#define LED_PIN 6
-
-SBIT(BTN_BIT, BTN_PORT, BTN_PIN);
-SBIT(LED_BIT, LED_PORT, LED_PIN);
-SBIT(ROTA_BIT, ROTA_PORT, ROTA_PIN);
-SBIT(ROTB_BIT, ROTB_PORT, ROTB_PIN);
-
-#define CLOCKWISE 2
-#define ANTI_CLOCKWISE 0
-
-uint8 vol_direction;
-int8 turn_value;
-
-// Define ROTARY_DIRECTION as CLOCKWISE for one kind of encoders, ANTI_CLOCKWISE for
-// the other ones (some are reversed). This sets the default rotation (after first
-// flash), reverse by triple-clicking the knob
-
-#define ROTARY_DIRECTION (CLOCKWISE)
-// #define ROTARY_DIRECTION (ANTI_CLOCKWISE)
 
 //////////////////////////////////////////////////////////////////////
 // rotary encoder reader
@@ -695,15 +721,6 @@ int8 read_encoder()
     }
     return 0;
 }
-
-//////////////////////////////////////////////////////////////////////
-// BOOTLOADER admin
-
-typedef void (*BOOTLOADER)(void);
-#define bootloader554 ((BOOTLOADER)0x3800)    // CH551/2/3/4
-#define bootloader559 ((BOOTLOADER)0xF400)    // CH558/9
-
-#define BOOTLOADER_DELAY 0x300    // about 3 seconds
 
 //////////////////////////////////////////////////////////////////////
 // Flash LED before jumping to bootloader
@@ -779,7 +796,8 @@ void write_flash_data(uint8 flash_addr, uint8 len, uint8 *data)
     GLOBAL_CFG &= ~bDATA_WE;
 }
 
-// Main function
+//////////////////////////////////////////////////////////////////////
+
 int main()
 {
     uint16_t press_time = 0;
@@ -899,34 +917,35 @@ int main()
             }
 
             if(!ep2_busy) {
-                if(pressed) {
-                    Ep2Buffer[MAX_PACKET_SIZE + 0] = 0x0B;
-                    Ep2Buffer[MAX_PACKET_SIZE + 1] = 0xB0;
-                    Ep2Buffer[MAX_PACKET_SIZE + 2] = 0x03;
-                    Ep2Buffer[MAX_PACKET_SIZE + 3] = 0x01;
-                    UEP2_T_LEN = 4;
-                    UEP2_CTRL = UEP2_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK;    // Answer ACK
-                    ep2_busy = 1;
-                    LED_BIT = !LED_BIT;
-                }
-                if(direction == turn_value) {
-                    Ep2Buffer[MAX_PACKET_SIZE + 0] = 0x0B;
-                    Ep2Buffer[MAX_PACKET_SIZE + 1] = 0xB0;
-                    Ep2Buffer[MAX_PACKET_SIZE + 2] = 0x04;
-                    Ep2Buffer[MAX_PACKET_SIZE + 3] = 0x01;
-                    UEP2_T_LEN = 4;
-                    UEP2_CTRL = UEP2_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK;    // Answer ACK
-                    ep2_busy = 1;
-                    LED_BIT = !LED_BIT;
-                } else if(direction == -turn_value) {
-                    Ep2Buffer[MAX_PACKET_SIZE + 0] = 0x0B;
-                    Ep2Buffer[MAX_PACKET_SIZE + 1] = 0xB0;
-                    Ep2Buffer[MAX_PACKET_SIZE + 2] = 0x05;
-                    Ep2Buffer[MAX_PACKET_SIZE + 3] = 0x01;
-                    UEP2_T_LEN = 4;
-                    UEP2_CTRL = UEP2_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK;    // Answer ACK
-                    ep2_busy = 1;
-                    LED_BIT = !LED_BIT;
+                if(!sysex_send_update()) {
+                    if(pressed) {
+                        Ep2Buffer[MAX_PACKET_SIZE + 0] = 0x0B;
+                        Ep2Buffer[MAX_PACKET_SIZE + 1] = 0xB0;
+                        Ep2Buffer[MAX_PACKET_SIZE + 2] = 0x03;
+                        Ep2Buffer[MAX_PACKET_SIZE + 3] = 0x01;
+                        UEP2_T_LEN = 4;
+                        UEP2_CTRL = UEP2_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK;    // Answer ACK
+                        ep2_busy = 1;
+                        LED_BIT = !LED_BIT;
+                    } else if(direction == turn_value) {
+                        Ep2Buffer[MAX_PACKET_SIZE + 0] = 0x0B;
+                        Ep2Buffer[MAX_PACKET_SIZE + 1] = 0xB0;
+                        Ep2Buffer[MAX_PACKET_SIZE + 2] = 0x04;
+                        Ep2Buffer[MAX_PACKET_SIZE + 3] = 0x01;
+                        UEP2_T_LEN = 4;
+                        UEP2_CTRL = UEP2_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK;    // Answer ACK
+                        ep2_busy = 1;
+                        LED_BIT = !LED_BIT;
+                    } else if(direction == -turn_value) {
+                        Ep2Buffer[MAX_PACKET_SIZE + 0] = 0x0B;
+                        Ep2Buffer[MAX_PACKET_SIZE + 1] = 0xB0;
+                        Ep2Buffer[MAX_PACKET_SIZE + 2] = 0x05;
+                        Ep2Buffer[MAX_PACKET_SIZE + 3] = 0x01;
+                        UEP2_T_LEN = 4;
+                        UEP2_CTRL = UEP2_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK;    // Answer ACK
+                        ep2_busy = 1;
+                        LED_BIT = !LED_BIT;
+                    }
                 }
             }
         }

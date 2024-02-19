@@ -310,3 +310,45 @@ void WDT_Feed(uint8_t tim)
 {
     WDOG_COUNT = tim;    // See the door dog counter assignment
 }
+
+
+//////////////////////////////////////////////////////////////////////
+
+void putnibble(uint8 n)
+{
+    if(n > 9) {
+        n += 'A' - 10;
+    } else {
+        n += '0';
+    }
+    putchar(n);
+}
+
+//////////////////////////////////////////////////////////////////////
+
+void putstr(char *p)
+{
+    while(*p != 0) {
+        putchar(*p++);
+    }
+}
+
+//////////////////////////////////////////////////////////////////////
+
+void puthex(uint8 b)
+{
+    putnibble(b >> 4);
+    putnibble(b & 0xf);
+}
+
+//////////////////////////////////////////////////////////////////////
+
+void hexdump(char *msg, uint8 *p, uint8 n)
+{
+    putstr(msg);
+    putchar(':');
+    while(n-- != 0) {
+        puthex(*p++);
+    }
+    putchar('\n');
+}

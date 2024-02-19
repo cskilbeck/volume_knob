@@ -1,6 +1,15 @@
-﻿#pragma once
+﻿//////////////////////////////////////////////////////////////////////
+
+#pragma once
 
 #include <stdint.h>
+
+typedef int8_t int8;
+typedef int16_t int16;
+typedef uint8_t uint8;
+typedef uint16_t uint16;
+
+//////////////////////////////////////////////////////////////////////
 
 #ifndef UART0_BUAD
 #define UART0_BUAD 115200
@@ -9,6 +18,8 @@
 #ifndef UART1_BAUD
 #define UART1_BUAD 115200
 #endif
+
+//////////////////////////////////////////////////////////////////////
 
 void CfgFsys();    // CH554 clock selection and configuration
 
@@ -24,8 +35,10 @@ void UART1_Init();                        //
 uint8_t UART1_Get_Byte();                 // UART1 query method receives a byte
 void UART1_Send_Byte(uint8_t Senddat);    // uart1 Send a byte
 
-// void putchar(char data);
-// char getchar();
-
 void WDT_Mode_Select(uint8_t Mode);    // watchdog settings
 void WDT_Feed(uint8_t TIM);            //  feed the watchdog
+
+void putnibble(uint8 n);
+void putstr(char *p);
+void puthex(uint8 b);
+void hexdump(char *msg, uint8 *p, uint8 n);
