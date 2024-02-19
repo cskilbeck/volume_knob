@@ -25,7 +25,7 @@ DEP_FILES = $(SOURCES:%.c=$(OBJ)%.d)
 REL_FILES = $(SOURCES:%.c=$(OBJ)%.rel)
 
 $(OBJ)%.rel : $(SRC)%.c
-	$(CC) -c $(CFLAGS) -Wp,-MMD,-MT$(OBJ)$(basename $(@F)).rel,-MF$(OBJ)$(basename $(@F)).d $<
+	$(CC) -c $(CFLAGS) -Wp,-MMD,-MT$@,-MF$(OBJ)$*.d $<
 
 $(TARGET).ihx: $(REL_FILES) $(C_FILES)
 	$(CC) $(REL_FILES) $(LFLAGS) -o $(TARGET).ihx
