@@ -119,12 +119,12 @@ void mDelayuS(uint16_t n)    // 以uS为单位延时
 
 /*******************************************************************************
  * Function Name  : mDelayms(UNIT16 n)
- * Description    : ms延时函数
+ * Description    : msDelay function
  * Input          : UNIT16 n
  * Output         : None
  * Return         : None
  *******************************************************************************/
-void mDelaymS(uint16_t n)    // 以mS为单位延时
+void mDelaymS(uint16_t n)    // Delay in the unit of MS
 {
     while(n) {
 #ifdef DELAY_MS_HW
@@ -177,7 +177,7 @@ void init_uart0()
 
     TMOD = TMOD & ~bT1_GATE & ~bT1_CT & ~MASK_T1_MOD | bT1_M1;    // 0X20，Timer1 As an 8 -bit automatic load timer
     T2MOD = T2MOD | bTMR_CLK | bT1_CLK;                           // Timer1 Clock selection
-    TH1 = 0 - x;                                                  // 12MHz Crystal, buad/12 For actual need to set the baud rate
+    TH1 = 0 - x;                                                  // 12MHz Crystal, baud/12 For actual need to set the baud rate
     TR1 = 1;                                                      // Start the timer 1
     TI = 1;
     REN = 1;    // Serial 0 receive enable

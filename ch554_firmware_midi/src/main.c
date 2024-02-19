@@ -4,9 +4,7 @@
  * License			: MIT
  * Version			: V1.0
  * Date				: 2018/03/27
- * Description		: CH55X is a USB-MIDI bridge.
- * 						Using UAAAC-MIDI protocol.
- * 						This example is a simple loop return device.
+ * Description		: USB-MIDI
  *******************************************************************************/
 
 #include <stdint.h>
@@ -21,9 +19,13 @@ __xdata __at(0x0000) uint8_t Ep0Buffer[DEFAULT_ENDP0_SIZE];     // endpoint0 OUT
 __xdata __at(0x0040) uint8_t Ep1Buffer[DEFAULT_ENDP1_SIZE];     // endpoint1 upload buffer
 __xdata __at(0x0080) uint8_t Ep2Buffer[2 * MAX_PACKET_SIZE];    // endpoint2 IN & OUT buffer, Must be an even address
 
+// VID = 16D0, PID = 1317
+
+#define USB_VID 0x16D0
+#define USB_PID 0x1317
+
 uint16_t SetupLen;
 uint8_t SetupReq;
-// uint8_t Count;
 uint8_t UsbConfig;
 const uint8_t *pDescr;        // USBConfiguration flags
 USB_SETUP_REQ SetupReqBuf;    // temporary storage Setup Buffer
@@ -42,10 +44,10 @@ __code uint8_t DevDesc[] = {
     0x00,                  // device subclass
     0x00,                  // device protocol
     DEFAULT_ENDP0_SIZE,    // Define it in interface level
-    0x86,                  // USB_VID (low)
-    0x1a,                  // USB_VID (high)
-    0x22,                  // USB_PID (low)
-    0x57,                  // USB_PID (high)
+    USB_VID & 0xff,        // USB_VID (low)
+    USB_VID >> 8,          // USB_VID (high)
+    USB_PID & 0xff,        // USB_PID (low)
+    USB_PID >> 8,          // USB_PID (high)
     0x00,                  // device rel LOW BCD
     0x01,                  // device rel HIGH BCD
     0x01,                  // manufacturer string id
@@ -105,14 +107,10 @@ unsigned char __code product_string[] = {
 unsigned char __code manufacturer_string[] = { 0x26, 0x03, 'T', 0,   'i', 0,   'n', 0,   'y', 0,   ' ', 0,   'L', 0,   'i', 0,   't', 0,   't',
                                                0,    'l',  0,   'e', 0,   ' ', 0,   'T', 0,   'h', 0,   'i', 0,   'n', 0,   'g', 0,   's', 0 };
 
-#define MIDI_REV_LEN 64                            // Serial port receive buffer size
-__idata uint8_t Receive_Midi_Buf[MIDI_REV_LEN];    // Serial port receive buffer
-volatile __idata uint8_t Midi_Input_Point = 0;     // Circular buffer write pointer, bus reset needs to be initialized to 0
-volatile __idata uint8_t Midi_Output_Point = 0;    // The circular buffer takes out the pointer and needs to be initialized to 0 for bus reset.
-volatile __idata uint8_t MidiByteCount = 0;        // The number of bytes remaining in the current buffer to be fetched
-volatile __idata uint8_t USBByteCount = 0;         // Represents data received by the USB endpoint
-volatile __idata uint8_t USBBufOutPoint = 0;       // Get data pointer
-volatile __idata uint8_t UpPoint2_Busy = 0;        // Whether the upload endpoint is busy flag
+#define MIDI_REV_LEN 64                            // MIDI receive buffer size
+__idata uint8_t Receive_Midi_Buf[MIDI_REV_LEN];    // MIDI receive buffer
+volatile __idata uint8_t USBByteCount = 0;         // # received by USB endpoint
+volatile __idata uint8_t UpPoint2_Busy = 0;        // upload endpoint busy flag
 
 /*******************************************************************************
  * Function Name  : USBDeviceCfg()
@@ -165,9 +163,9 @@ void USBDeviceEndPointCfg()
     UEP2_DMA = (uint16_t)Ep2Buffer;    // Writer 2 in data transmission address
     UEP2_3_MOD = 0xCC;                 // Endpoint 2/3 Single Single Single Receiving Fail
     UEP2_CTRL =
-        bUEP_AUTO_TOG | UEP_T_RES_NAK | UEP_R_RES_ACK;    // Writing 2 automatically flip the synchronous logo position, IN transaction returns NAK, out of ACK
+        bUEP_AUTO_TOG | UEP_T_RES_NAK | UEP_R_RES_ACK;    // Writing 2 automatically flip the synchronous flag position, IN transaction returns NAK, out of ACK
 
-    UEP1_CTRL = bUEP_AUTO_TOG | UEP_T_RES_NAK;    // Point 1 automatically flip the synchronization logo bit, IN transaction returns NAK
+    UEP1_CTRL = bUEP_AUTO_TOG | UEP_T_RES_NAK;    // Point 1 automatically flip the synchronization flag bit, IN transaction returns NAK
     UEP0_DMA = (uint16_t)Ep0Buffer;               // Point 0 data transmission address
     UEP4_1_MOD = 0X40;                            // Point point 1 upload the buffer area; endpoint 0 single 64 bytes receiving and receiving buffer
     UEP0_CTRL = UEP_R_RES_ACK | UEP_T_RES_NAK;    // Flip manually, out of OUT transaction back to ACK, IN transaction returns Nak
@@ -212,29 +210,30 @@ void hexdump(uint8_t *p, uint8_t n)
 void DeviceInterrupt(void) __interrupt(INT_NO_USB)    // USB interrupt service program, use the register group 1
 {
     uint16_t len;
-    if(UIF_TRANSFER)    // USB transmission completion logo
-    {
+
+    if(UIF_TRANSFER) {
+
         switch(USB_INT_ST & (MASK_UIS_TOKEN | MASK_UIS_ENDP)) {
-        case UIS_TOKEN_IN | 1:    // endpoint 1# Endpoint interrupt upload
+
+        case UIS_TOKEN_IN | 1:
             UEP1_T_LEN = 0;
-            UEP1_CTRL = UEP1_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_NAK;    // Answer NAK by default
+            UEP1_CTRL = (UEP1_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_NAK;
             break;
-        case UIS_TOKEN_IN | 2:    // endpoint 2# Endpoint batch upload
-        {
-            UEP2_T_LEN = 0;                                             // Be pre -use and sending length must be empty
-            UEP2_CTRL = UEP2_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_NAK;    // Answer NAK by default
-            UpPoint2_Busy = 0;                                          // Clear busy logo
-        } break;
-        case UIS_TOKEN_OUT | 2:    // endpoint 3# Endpoint batch passage
-            if(U_TOG_OK)           // Discarded data packets will be discarded
-            {
+
+        case UIS_TOKEN_IN | 2:
+            UEP2_T_LEN = 0;
+            UEP2_CTRL = (UEP2_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_NAK;
+            UpPoint2_Busy = 0;
+            break;
+
+        case UIS_TOKEN_OUT | 2:
+            if(U_TOG_OK) {
                 USBByteCount = USB_RX_LEN;
-                USBBufOutPoint = 0;                                         // Data pointer reset
-                UEP2_CTRL = UEP2_CTRL & ~MASK_UEP_R_RES | UEP_R_RES_NAK;    // After receiving a package of data, it is nak, the main function is processed, and
-                                                                            // the main function modify the response method
+                UEP2_CTRL = (UEP2_CTRL & ~MASK_UEP_R_RES) | UEP_R_RES_NAK;
             }
             break;
-        case UIS_TOKEN_SETUP | 0:    // SETUPAffairs
+
+        case UIS_TOKEN_SETUP | 0:
             len = USB_RX_LEN;
             if(len == (sizeof(USB_SETUP_REQ))) {
                 SetupLen = ((uint16_t)UsbSetupBuf->wLengthH << 8) | (UsbSetupBuf->wLengthL);
@@ -245,7 +244,7 @@ void DeviceInterrupt(void) __interrupt(INT_NO_USB)    // USB interrupt service p
                     switch(SetupReq) {
 
                     default:
-                        len = 0xFF;    // Command does not support
+                        len = 0xFF;    // unsupported
                         break;
                     }
                 } else    // Standard request
@@ -254,12 +253,12 @@ void DeviceInterrupt(void) __interrupt(INT_NO_USB)    // USB interrupt service p
                     {
                     case USB_GET_DESCRIPTOR:
                         switch(UsbSetupBuf->wValueH) {
-                        case 1:                  // Device descriptor
-                            pDescr = DevDesc;    // Send the device descriptor to the buffer to be sent
+                        case 1:    // Device descriptor
+                            pDescr = DevDesc;
                             len = sizeof(DevDesc);
                             break;
-                        case 2:                  // Configuration descriptor
-                            pDescr = CfgDesc;    // Send the device descriptor to the buffer to be sent
+                        case 2:    // Configuration descriptor
+                            pDescr = CfgDesc;
                             len = sizeof(CfgDesc);
                             break;
                         case 3:
@@ -278,7 +277,7 @@ void DeviceInterrupt(void) __interrupt(INT_NO_USB)    // USB interrupt service p
                             }
                             break;
                         default:
-                            len = 0xff;    // Unwilling commands or errors
+                            len = 0xff;    // unsupported
                             break;
                         }
                         if(SetupLen > len) {
@@ -304,7 +303,7 @@ void DeviceInterrupt(void) __interrupt(INT_NO_USB)    // USB interrupt service p
                     case USB_GET_INTERFACE:
                         break;
                     case USB_CLEAR_FEATURE:                                               // Clear Feature
-                        if((UsbSetupBuf->bRequestType & 0x1F) == USB_REQ_RECIP_DEVICE)    // Removal
+                        if((UsbSetupBuf->bRequestType & 0x1F) == USB_REQ_RECIP_DEVICE)    // Device
                         {
                             if((((uint16_t)UsbSetupBuf->wValueH << 8) | UsbSetupBuf->wValueL) == 0x01) {
                                 if(CfgDesc[7] & 0x20) {
@@ -337,15 +336,15 @@ void DeviceInterrupt(void) __interrupt(INT_NO_USB)    // USB interrupt service p
                                 UEP1_CTRL = UEP1_CTRL & ~(bUEP_R_TOG | MASK_UEP_R_RES) | UEP_R_RES_ACK;
                                 break;
                             default:
-                                len = 0xFF;    // Unswerving endpoint
+                                len = 0xFF;    // unknown endpoint
                                 break;
                             }
                         } else {
-                            len = 0xFF;    // Not the endpoint does not support
+                            len = 0xFF;    // unsupported
                         }
                         break;
                     case USB_SET_FEATURE:                                                 // Set Feature
-                        if((UsbSetupBuf->bRequestType & 0x1F) == USB_REQ_RECIP_DEVICE)    // Setting device
+                        if((UsbSetupBuf->bRequestType & 0x1F) == USB_REQ_RECIP_DEVICE)    // Device
                         {
                             if((((uint16_t)UsbSetupBuf->wValueH << 8) | UsbSetupBuf->wValueL) == 0x01) {
                                 if(CfgDesc[7] & 0x20) {
@@ -436,7 +435,7 @@ void DeviceInterrupt(void) __interrupt(INT_NO_USB)    // USB interrupt service p
                 SetupLen -= len;
                 pDescr += len;
                 UEP0_T_LEN = len;
-                UEP0_CTRL ^= bUEP_T_TOG;    // Synchronous logo flip
+                UEP0_CTRL ^= bUEP_T_TOG;    // Synchronous flag flip
                 break;
             case USB_SET_ADDRESS:
                 USB_DEV_AD = USB_DEV_AD & bUDA_GP_BIT | SetupLen;
@@ -448,34 +447,18 @@ void DeviceInterrupt(void) __interrupt(INT_NO_USB)    // USB interrupt service p
                 break;
             }
             break;
-        case UIS_TOKEN_OUT | 0:    // endpoint0 OUT
-                                   /*
-                                   if(SetupReq ==SET_LINE_CODING)  //Set the serial attribute
-                                   {
-                                       if( U_TOG_OK )
-                                       {
-                                       //	memcpy(LineCoding,UsbSetupBuf,USB_RX_LEN);
-                                       //	Config_Uart1(LineCoding);
-                                           UEP0_T_LEN = 0;
-                                           UEP0_CTRL |= UEP_R_RES_ACK | UEP_T_RES_ACK;  // 准备上传0包
-                                       }
-                                   }
-                                   else
-                                   {
-                                    */
+        case UIS_TOKEN_OUT | 0:
             UEP0_T_LEN = 0;
             UEP0_CTRL |= UEP_R_RES_ACK | UEP_T_RES_ACK;    // State stage, in response to NAK
-            //}
             break;
-
-
 
         default:
             break;
         }
-        UIF_TRANSFER = 0;    // Write 0 empty interrupt
+        UIF_TRANSFER = 0;    // clear interrupt
     }
-    if(UIF_BUS_RST)    // Equipment mode USB bus reset and interrupt
+
+    if(UIF_BUS_RST)    // bus reset
     {
         putstr("reset\n");    // Sleep state
         UEP0_CTRL = UEP_R_RES_ACK | UEP_T_RES_NAK;
@@ -484,12 +467,9 @@ void DeviceInterrupt(void) __interrupt(INT_NO_USB)    // USB interrupt service p
         USB_DEV_AD = 0x00;
         UIF_SUSPEND = 0;
         UIF_TRANSFER = 0;
-        UIF_BUS_RST = 0;          // Clear interruption logo
-        Midi_Input_Point = 0;     // Circle buffer input pointer
-        Midi_Output_Point = 0;    // Reading pointer in the circulating buffer
-        MidiByteCount = 0;        // The remaining number of bytes to be taken in the current buffer
-        USBByteCount = 0;         // The length received by USB endpoint
-        UsbConfig = 0;            // Clear configuration value
+        UIF_BUS_RST = 0;     // Clear interrupt
+        USBByteCount = 0;    // The length received by USB endpoint
+        UsbConfig = 0;       // Clear configuration value
         UpPoint2_Busy = 0;
     }
     if(UIF_SUSPEND)    // USB bus hangs/Wake up
@@ -509,8 +489,8 @@ void DeviceInterrupt(void) __interrupt(INT_NO_USB)    // USB interrupt service p
             SAFE_MOD = 0xAA;
             WAKE_CTRL = 0x00;
         }
-    } else {                  // Unexpected interruption, the impossible situation
-        USB_INT_FG = 0xFF;    // Clear interruption logo
+    } else {                  // Unexpected interrupt, should not happen
+        USB_INT_FG = 0xFF;    // Clear interruption
     }
 }
 
@@ -572,6 +552,26 @@ int main()
         }
     }
 
+    enum midi_code_index
+    {
+        mci_misc_function = 0x0,       // 1, 2 or 3    Miscellaneous function codes
+        mci_cable_event = 0x1,         // 1, 2 or 3    Reserved for future expansion
+        mci_system_common_2 = 0x2,     // 2            Two-byte System Common messages like MTC, SongSelect, etc.
+        mci_system_common_3 = 0x3,     // 3            Three-byte System Common messages like SPP, etc.
+        mci_sysex_start = 0x4,         // 3            SysEx starts or continues
+        mci_sysex_single = 0x5,        // 1            Single-byte System Common Message or SysEx ends with following single byte.
+        mci_sysex_end_2 = 0x6,         // 2            SysEx ends with following two bytes.
+        mci_sysex_end_3 = 0x7,         // 3            SysEx ends with following three bytes.
+        mci_note_off = 0x8,            // 3            Note-off
+        mci_note_on = 0x9,             // 3            Note-on
+        mci_poly_keypress = 0xA,       // 3            Poly-KeyPress
+        mci_control_change = 0xB,      // 3            Control Change
+        mci_program_change = 0xC,      // 2            Program Change
+        mci_channel_pressure = 0xD,    // 2            Channel Pressure
+        mci_pitch_bend = 0xE,          // 3            PitchBend Change
+        mci_single_byte = 0xF,         // 1            Single Byte
+    };
+
     LED_BIT = 0;
 
     bool button_state = false;    // for debouncing the button
@@ -591,6 +591,7 @@ int main()
 
         if(UsbConfig) {
             if(USBByteCount) {
+
                 memcpy(Receive_Midi_Buf, Ep2Buffer, USBByteCount);
                 UEP2_CTRL = (UEP2_CTRL & ~MASK_UEP_R_RES) | UEP_R_RES_ACK;
                 length = USBByteCount;
