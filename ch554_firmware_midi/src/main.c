@@ -22,7 +22,7 @@ enum midi_code_index
     mci_system_common_2 = 0x2,     // 2            Two-byte System Common messages like MTC, SongSelect, etc.
     mci_system_common_3 = 0x3,     // 3            Three-byte System Common messages like SPP, etc.
     mci_sysex_start = 0x4,         // 3            SysEx starts or continues
-    mci_sysex_single = 0x5,        // 1            Single-byte System Common Message or SysEx ends with following single byte.
+    mci_sysex_end_1 = 0x5,         // 1            Single-byte System Common Message or SysEx ends with following single byte.
     mci_sysex_end_2 = 0x6,         // 2            SysEx ends with following two bytes.
     mci_sysex_end_3 = 0x7,         // 3            SysEx ends with following three bytes.
     mci_note_off = 0x8,            // 3            Note-off
@@ -126,11 +126,11 @@ unsigned char __code product_string[] = {
 unsigned char __code manufacturer_string[] = { 0x26, 0x03, 'T', 0,   'i', 0,   'n', 0,   'y', 0,   ' ', 0,   'L', 0,   'i', 0,   't', 0,   't',
                                                0,    'l',  0,   'e', 0,   ' ', 0,   'T', 0,   'h', 0,   'i', 0,   'n', 0,   'g', 0,   's', 0 };
 
-#define MIDI_REV_LEN 64                            // MIDI receive buffer size
-__idata uint8_t Receive_Midi_Buf[MIDI_REV_LEN];    // MIDI receive buffer
+#define MIDI_REV_LEN 64                          // MIDI receive buffer size
+__idata uint8_t midi_in_buffer[MIDI_REV_LEN];    // MIDI receive buffer
 
-volatile __idata uint8_t USBByteCount = 0;     // # received by USB endpoint
-volatile __idata uint8_t UpPoint2_Busy = 0;    // upload endpoint busy flag
+volatile __idata uint8_t ep2_recv_len = 0;    // # received by USB endpoint
+volatile __idata uint8_t ep2_busy = 0;        // upload endpoint busy flag
 
 /*******************************************************************************
  * Function Name  : USBDeviceCfg()
@@ -216,8 +216,10 @@ void puthex(uint8_t b)
     putnibble(b & 0xf);
 }
 
-void hexdump(uint8_t *p, uint8_t n)
+void hexdump(char *msg, uint8_t *p, uint8_t n)
 {
+    putstr(msg);
+    putchar(':');
     while(n-- != 0) {
         puthex(*p++);
     }
@@ -245,12 +247,12 @@ void DeviceInterrupt(void) __interrupt(INT_NO_USB)    // USB interrupt service p
         case UIS_TOKEN_IN | 2:
             UEP2_T_LEN = 0;
             UEP2_CTRL = (UEP2_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_NAK;
-            UpPoint2_Busy = 0;
+            ep2_busy = 0;
             break;
 
         case UIS_TOKEN_OUT | 2:
             if(U_TOG_OK) {
-                USBByteCount = USB_RX_LEN;
+                ep2_recv_len = USB_RX_LEN;
                 UEP2_CTRL = (UEP2_CTRL & ~MASK_UEP_R_RES) | UEP_R_RES_NAK;
             }
             break;
@@ -500,9 +502,9 @@ void DeviceInterrupt(void) __interrupt(INT_NO_USB)    // USB interrupt service p
         UIF_SUSPEND = 0;
         UIF_TRANSFER = 0;
         UIF_BUS_RST = 0;     // Clear interrupt
-        USBByteCount = 0;    // The length received by USB endpoint
+        ep2_recv_len = 0;    // The length received by USB endpoint
         UsbConfig = 0;       // Clear configuration value
-        UpPoint2_Busy = 0;
+        ep2_busy = 0;
     }
     if(UIF_SUSPEND)    // USB bus hangs/Wake up
     {
@@ -527,25 +529,261 @@ void DeviceInterrupt(void) __interrupt(INT_NO_USB)    // USB interrupt service p
 }
 
 //////////////////////////////////////////////////////////////////////
+
+bool in_sysex = false;
+uint8_t sysex_buffer[16];
+uint8_t sysex_length = 0;
+
+typedef enum
+{
+    sysex_end = 0,
+    sysex_more = 1
+} sysex_continue;
+
+uint8_t packet_offset = 0;
+
+void add_sysex(uint8_t length, sysex_continue done)
+{
+    if(length <= (sizeof(sysex_buffer) - sysex_length)) {
+        memcpy(sysex_buffer + sysex_length, midi_in_buffer + packet_offset + 1, length);
+        sysex_length += length;
+    }
+    if(done == sysex_end) {
+        if(sysex_length == 11 && sysex_buffer[0] == 0xF0 && sysex_buffer[1] == 0x7F && sysex_buffer[10] == 0xF7) {
+            uint8_t top_bits = sysex_buffer[9];
+            for(uint8_t i = 2; i < 9; ++i) {
+                top_bits <<= 1;
+                sysex_buffer[i] |= top_bits & 0x80;
+            }
+        }
+        hexdump("all", sysex_buffer + 2, 7);
+        sysex_length = 0;
+    }
+}
+
+void process_midi_packet(uint8_t length)
+{
+    packet_offset = 0;
+    while(packet_offset < length) {
+
+        hexdump("id", midi_in_buffer + packet_offset, 1);
+
+        switch(midi_in_buffer[packet_offset]) {
+
+        case mci_sysex_start:
+            add_sysex(3, sysex_more);
+            break;
+
+        case mci_sysex_end_1:
+            add_sysex(1, sysex_end);
+            break;
+
+        case mci_sysex_end_2:
+            add_sysex(2, sysex_end);
+            break;
+
+        case mci_sysex_end_3:
+            add_sysex(3, sysex_end);
+            break;
+
+        default:
+            sysex_length = 0;
+            break;
+        }
+        packet_offset += 4;
+    }
+}
+
+//////////////////////////////////////////////////////////////////////
 // MAIN
+
+//////////////////////////////////////////////////////////////////////
+
+typedef int8_t int8;
+typedef int16_t int16;
+typedef uint8_t uint8;
+typedef uint16_t uint16;
 
 #define PORT1 0x90
 #define PORT3 0xB0
 
+#define UART_TX_PORT PORT3
+#define UART_TX_PIN 0
+
+#define UART_RX_PORT PORT3
+#define UART_RX_PIN 1
+
+#define ROTA_PORT PORT3
+#define ROTA_PIN 3
+
+#define ROTB_PORT PORT3
+#define ROTB_PIN 4
+
 #define BTN_PORT PORT3
-#define BTN_PIN 3
+#define BTN_PIN 2
 
 #define LED_PORT PORT1
 #define LED_PIN 6
 
 SBIT(BTN_BIT, BTN_PORT, BTN_PIN);
 SBIT(LED_BIT, LED_PORT, LED_PIN);
+SBIT(ROTA_BIT, ROTA_PORT, ROTA_PIN);
+SBIT(ROTB_BIT, ROTB_PORT, ROTB_PIN);
+
+#define CLOCKWISE 2
+#define ANTI_CLOCKWISE 0
+
+uint8 vol_direction;
+int8 turn_value;
+
+// Define ROTARY_DIRECTION as CLOCKWISE for one kind of encoders, ANTI_CLOCKWISE for
+// the other ones (some are reversed). This sets the default rotation (after first
+// flash), reverse by triple-clicking the knob
+
+#define ROTARY_DIRECTION (CLOCKWISE)
+// #define ROTARY_DIRECTION (ANTI_CLOCKWISE)
+
+//////////////////////////////////////////////////////////////////////
+// rotary encoder reader
+
+// odd # of bits set (1 or 3) means it's valid
+
+// 0  00 00 0
+// 1  00 01 1
+// 2  00 10 1
+// 3  00 11 0
+// 4  01 00 1
+// 5  01 01 0
+// 6  01 10 0
+// 7  01 11 1
+// 8  10 00 1
+// 9  10 01 0
+// A  10 10 0
+// B  10 11 1
+// C  11 00 0
+// D  11 01 1
+// E  11 10 1
+// F  11 11 0
+
+uint8 const encoder_valid_bits[16] = { 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0 };
+
+uint8 encoder_state = 0;
+uint8 encoder_store = 0;
+
+int8 read_encoder()
+{
+    uint8 a = 0;
+    if(!ROTA_BIT) {
+        a |= 1;
+    }
+    if(!ROTB_BIT) {
+        a |= 2;
+    }
+
+    encoder_state <<= 2;
+    encoder_state |= a;
+    encoder_state &= 0xf;
+
+    if(encoder_valid_bits[encoder_state] != 0) {
+        encoder_store = (encoder_store << 4) | encoder_state;
+        switch(encoder_store) {
+        case 0xe8:
+            return 1;
+        case 0x2b:
+            return -1;
+        }
+    }
+    return 0;
+}
+
+//////////////////////////////////////////////////////////////////////
+// BOOTLOADER admin
+
+typedef void (*BOOTLOADER)(void);
+#define bootloader554 ((BOOTLOADER)0x3800)    // CH551/2/3/4
+#define bootloader559 ((BOOTLOADER)0xF400)    // CH558/9
+
+#define BOOTLOADER_DELAY 0x300    // about 3 seconds
+
+//////////////////////////////////////////////////////////////////////
+// Flash LED before jumping to bootloader
+
+void bootloader_led_flash(int8_t n)
+{
+    LED_BIT = 0;
+    for(int8_t i = 0; i < n; ++i) {
+        TF2 = 0;
+        TH2 = 0;
+        TL2 = 120;
+        while(TF2 != 1) {
+        }
+        LED_BIT ^= 1;
+    }
+}
+
+//////////////////////////////////////////////////////////////////////
+// read bytes from the data flash area
+
+void read_flash_data(uint8 flash_addr, uint8 len, uint8 *data)
+{
+    flash_addr <<= 1;
+
+    while(len-- != 0) {
+
+        ROM_ADDR_L = flash_addr;
+        ROM_ADDR_H = DATA_FLASH_ADDR >> 8;
+
+        ROM_CTRL = ROM_CMD_READ;
+
+        if((ROM_STATUS & bROM_CMD_ERR) != 0) {
+            break;
+        }
+
+        *data++ = ROM_DATA_L;
+
+        flash_addr += 2;
+    }
+}
+
+//////////////////////////////////////////////////////////////////////
+// write bytes to the data flash area
+
+void write_flash_data(uint8 flash_addr, uint8 len, uint8 *data)
+{
+    flash_addr <<= 1;
+
+    SAFE_MOD = 0x55;
+    SAFE_MOD = 0xAA;
+
+    GLOBAL_CFG |= bDATA_WE;
+
+    while(len-- != 0) {
+
+        ROM_ADDR_L = flash_addr;
+        ROM_ADDR_H = DATA_FLASH_ADDR >> 8;
+
+        ROM_DATA_L = *data++;
+
+        ROM_CTRL = ROM_CMD_WRITE;
+
+        if((ROM_STATUS & bROM_CMD_ERR) != 0) {
+            break;
+        }
+
+        flash_addr += 2;
+    }
+
+    SAFE_MOD = 0x55;
+    SAFE_MOD = 0xAA;
+
+    GLOBAL_CFG &= ~bDATA_WE;
+}
 
 // Main function
 int main()
 {
-    uint8_t length = 0;
-    uint8_t Midi_Timeout = 0;
+    uint16_t press_time = 0;
+
     CfgFsys();       // CH559 clock select configuration
     mDelaymS(5);     // Modify the main frequency and wait for the internal crystal stability, it will be added
     UART0_Init();    // Candidate 0, can be used for debugging
@@ -559,8 +797,8 @@ int main()
     // set GPIO 3.1 as bidirectional (rx)
     // set GPIO 3.0 as output push/pull (tx)
 
-    P3_MOD_OC = 0b00001010;
-    P3_DIR_PU = 0b00001011;
+    P3_MOD_OC = 0b00011110;
+    P3_DIR_PU = 0b00011111;
 
     USBDeviceCfg();
     USBDeviceEndPointCfg();    // Endpoint configuration
@@ -574,6 +812,7 @@ int main()
 
     putstr("Hello\n");
 
+    TR0 = 1;
     TR2 = 1;
 
     uint8_t i = 0;
@@ -591,11 +830,19 @@ int main()
 
     bool button_state = false;    // for debouncing the button
 
+    read_flash_data(0, 1, &vol_direction);
+
+    if(vol_direction == 0xff) {
+        vol_direction = ROTARY_DIRECTION;
+    }
+    turn_value = (int8)vol_direction - 1;    // becomes -1 or 1
+
     while(1) {
 
         // read/debounce the button
         bool pressed = false;
         bool new_state = !BTN_BIT;
+
         if(new_state != button_state && TF2) {
             TL2 = 0;
             TH2 = T2_DEBOUNCE;
@@ -604,32 +851,83 @@ int main()
             button_state = new_state;
         }
 
-        if(UsbConfig) {
-            if(USBByteCount) {
+        if(button_state) {
+            if(TF0 == 1) {
+                TF0 = 0;
+                press_time += 1;
+                if(press_time == BOOTLOADER_DELAY) {
 
-                memcpy(Receive_Midi_Buf, Ep2Buffer, USBByteCount);
-                UEP2_CTRL = (UEP2_CTRL & ~MASK_UEP_R_RES) | UEP_R_RES_ACK;
-                length = USBByteCount;
-                USBByteCount = 0;
+                    // shutdown peripherals
+                    EA = 0;
+                    USB_CTRL = 0;
+                    UDEV_CTRL = 0;
 
-                hexdump(Receive_Midi_Buf, length);
+                    // flash LED for a bit
+                    bootloader_led_flash(8);
 
-                if(Receive_Midi_Buf[0] == 0x04 && Receive_Midi_Buf[1] == 0xF0 && Receive_Midi_Buf[2] == 0x7D && Receive_Midi_Buf[3] == 114) {
-                    LED_BIT = !LED_BIT;
+                    // and jump to bootloader
+                    bootloader554();
                 }
             }
+        } else {
+            press_time = 0;
+        }
 
-            if(!UpPoint2_Busy && pressed) {
-                Ep2Buffer[MAX_PACKET_SIZE + 0] = 0x0B;
-                Ep2Buffer[MAX_PACKET_SIZE + 1] = 0xB0;
-                Ep2Buffer[MAX_PACKET_SIZE + 2] = 0x03;
-                Ep2Buffer[MAX_PACKET_SIZE + 3] = 0x01;
-                UEP2_T_LEN = 4;
-                UEP2_CTRL = UEP2_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK;    // Answer ACK
-                UpPoint2_Busy = 1;
-                length = 0;
+        // read the rotary encoder (returns -1, 0 or 1)
+        int8 direction = read_encoder();
 
-                LED_BIT = !LED_BIT;
+        // Timer2 does double duty, debounces encoder as well
+        if(direction != 0 && TF2 == 1) {
+            TL2 = 0;
+            TH2 = T2_DEBOUNCE;
+            TF2 = 0;
+        } else {
+            direction = 0;
+        }
+
+        if(UsbConfig) {
+            if(ep2_recv_len) {
+
+                memcpy(midi_in_buffer, Ep2Buffer, ep2_recv_len);
+                UEP2_CTRL = (UEP2_CTRL & ~MASK_UEP_R_RES) | UEP_R_RES_ACK;
+                uint8_t length = ep2_recv_len;
+                ep2_recv_len = 0;
+
+                hexdump("raw", midi_in_buffer, length);
+
+                process_midi_packet(length);
+            }
+
+            if(!ep2_busy) {
+                if(pressed) {
+                    Ep2Buffer[MAX_PACKET_SIZE + 0] = 0x0B;
+                    Ep2Buffer[MAX_PACKET_SIZE + 1] = 0xB0;
+                    Ep2Buffer[MAX_PACKET_SIZE + 2] = 0x03;
+                    Ep2Buffer[MAX_PACKET_SIZE + 3] = 0x01;
+                    UEP2_T_LEN = 4;
+                    UEP2_CTRL = UEP2_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK;    // Answer ACK
+                    ep2_busy = 1;
+                    LED_BIT = !LED_BIT;
+                }
+                if(direction == turn_value) {
+                    Ep2Buffer[MAX_PACKET_SIZE + 0] = 0x0B;
+                    Ep2Buffer[MAX_PACKET_SIZE + 1] = 0xB0;
+                    Ep2Buffer[MAX_PACKET_SIZE + 2] = 0x04;
+                    Ep2Buffer[MAX_PACKET_SIZE + 3] = 0x01;
+                    UEP2_T_LEN = 4;
+                    UEP2_CTRL = UEP2_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK;    // Answer ACK
+                    ep2_busy = 1;
+                    LED_BIT = !LED_BIT;
+                } else if(direction == -turn_value) {
+                    Ep2Buffer[MAX_PACKET_SIZE + 0] = 0x0B;
+                    Ep2Buffer[MAX_PACKET_SIZE + 1] = 0xB0;
+                    Ep2Buffer[MAX_PACKET_SIZE + 2] = 0x05;
+                    Ep2Buffer[MAX_PACKET_SIZE + 3] = 0x01;
+                    UEP2_T_LEN = 4;
+                    UEP2_CTRL = UEP2_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK;    // Answer ACK
+                    ep2_busy = 1;
+                    LED_BIT = !LED_BIT;
+                }
             }
         }
     }
