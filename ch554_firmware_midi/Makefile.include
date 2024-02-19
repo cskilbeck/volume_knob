@@ -1,0 +1,52 @@
+CC = sdcc
+OBJCOPY = objcopy
+PACK_HEX = packihx
+WCHISP = wchisptool
+
+ifndef FREQ_SYS
+FREQ_SYS = 12000000
+endif
+
+ifndef XRAM_SIZE
+XRAM_SIZE = 0x0400
+endif
+
+ifndef XRAM_LOC
+XRAM_LOC = 0x0000
+endif
+
+CFLAGS = -mmcs51 --model-small --xram-size $(XRAM_SIZE) --xram-loc $(XRAM_LOC) --code-size 0x2800 -I$(INC) -o$(OBJ) -DFREQ_SYS=$(FREQ_SYS) $(EXTRA_FLAGS)
+
+LFLAGS = $(CFLAGS)
+TARGET = $(BIN)$(PROJECT)
+
+C_FILES = $(SOURCES:%.c=$(SRC)%.c)
+DEP_FILES = $(SOURCES:%.c=$(OBJ)%.d)
+REL_FILES = $(SOURCES:%.c=$(OBJ)%.rel)
+
+$(OBJ)%.rel : $(SRC)%.c
+	$(CC) -c $(CFLAGS) -Wp,-MMD,-MT$(OBJ)$(basename $(@F)).rel,-MF$(OBJ)$(basename $(@F)).d $<
+
+$(TARGET).ihx: $(REL_FILES) $(C_FILES)
+	$(CC) $(REL_FILES) $(LFLAGS) -o $(TARGET).ihx
+
+$(TARGET).hex: $(TARGET).ihx
+	$(PACK_HEX) $(TARGET).ihx > $(TARGET).hex
+
+$(TARGET).bin: $(TARGET).ihx
+	$(OBJCOPY) -I ihex -O binary $(TARGET).ihx $(TARGET).bin
+	
+flash: $(TARGET).bin pre-flash
+	$(WCHISP) -f $(TARGET).bin -g
+
+clean:
+	rm -f $(BIN)* $(OBJ)*
+
+-include $(DEP_FILES)
+
+$(REL_FILES): Makefile Makefile.include
+
+.DEFAULT_GOAL := all
+all: $(TARGET).bin
+
+print-% : ; @echo $* = $($*)
