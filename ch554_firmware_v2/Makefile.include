@@ -1,0 +1,121 @@
+#######################################################
+# Makefile.include for SDCC in bash
+#
+# include this file from from Makefile where
+# you should define these variables:
+#
+# required:
+#
+# $(C_FILES)        all the C sources
+#
+# optional:
+#
+# $(PROJECT)        name of the project (defaults to 'project')
+# $(OBJ_DIR)        where to put object files (defaults to 'obj')
+# $(BIN_DIR)        where to put binary/hex files (defaults to 'bin')
+# $(INC_DIR)		where to look for include files (defaults to 'include')
+# $(EXTRA_FLAGS)    for SDCC command line (no default)
+
+#######################################################
+# print, use like `make print-LFLAGS` to see the value
+# of $(LFLAGS)
+
+print-%  : ; @echo $* = $($*)
+
+#######################################################
+# toolchain
+
+CC = sdcc
+OBJCOPY = objcopy
+PACK_HEX = packihx
+WCHISP ?= wchisptool -g -f
+
+#######################################################
+# layout
+
+FREQ_SYS ?= 24000000
+XRAM_SIZE ?= 0x0400
+XRAM_LOC ?= 0x0000
+CODE_SIZE ?= 0x3800
+
+#######################################################
+# build
+
+PROJECT ?= project
+
+OBJ_DIR ?= obj
+BIN_DIR ?= bin
+INC_DIR ?= include
+
+CFLAGS := -mmcs51 \
+		  --model-small \
+		  --xram-size $(XRAM_SIZE) \
+		  --xram-loc $(XRAM_LOC) \
+		  --code-size $(CODE_SIZE) \
+		  -DFREQ_SYS=$(FREQ_SYS) \
+		  -I$(INC_DIR) \
+		  $(EXTRA_FLAGS)
+
+VPATH = src:lib
+
+LFLAGS := $(CFLAGS)
+
+TARGET := $(BIN_DIR)/$(PROJECT)
+
+OBJECTS := $(patsubst %.c, $(OBJ_DIR)/%.rel, $(notdir $(C_FILES)))
+
+AUTODEPS := $(patsubst %.c, $(OBJ_DIR)/%.dep, $(notdir $(C_FILES)))
+
+-include $(AUTODEPS)
+
+# rebuild everything if the makefile changes
+
+$(OBJECTS): Makefile Makefile.include
+
+# compile c files and create dependency includes
+
+$(OBJ_DIR)/%.rel: %.c
+	@echo $<
+	@mkdir -p $(dir $@)
+	@$(CC) -MM $(CFLAGS) -o $(OBJ_DIR)/ $< | sed 's|$*.rel:|$(OBJ_DIR)/$*.rel:|' >$(OBJ_DIR)/$*.dep
+	@$(CC) -c $(CFLAGS) $< -o $(OBJ_DIR)/
+
+# link to ihx
+
+$(TARGET).ihx: $(OBJECTS)
+	@echo $(@F)
+	@mkdir -p $(dir $@)
+	@$(CC) $(OBJECTS) $(LFLAGS) -o $(TARGET).ihx
+
+# create bin from ihx
+
+$(TARGET).bin: $(TARGET).ihx
+	@echo $(@F)
+	@$(OBJCOPY) -I ihex -O binary $(TARGET).ihx $(TARGET).bin
+
+# create normal hex from ihx
+
+$(TARGET).hex: $(TARGET).ihx
+	@echo $(@F)
+	@$(PACK_HEX) $(TARGET).ihx > $(TARGET).hex
+
+# flash it to the chip
+	
+flash: $(TARGET).bin pre-flash
+	$(WCHISP) $(TARGET).bin
+
+#######################################################
+# admin
+
+.DEFAULT_GOAL := build
+
+.PHONY: clean all build
+
+build: $(TARGET).bin $(TARGET).hex
+
+clean:
+	@if [ -d "$(OBJ_DIR)" ]; then rm -r $(OBJ_DIR); fi
+	@if [ -d "$(BIN_DIR)" ]; then rm -r $(BIN_DIR); fi
+	@echo cleaned $(PROJECT)
+
+all: clean build
