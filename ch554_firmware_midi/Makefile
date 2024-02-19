@@ -7,6 +7,7 @@
 # This takes a total of 256bytes, so there are 256 bytes left.
 XRAM_SIZE = 0x0100
 XRAM_LOC = 0x0100
+FREQ_SYS = 24000000
 
 PROJECT = midi_knob
 

@@ -15,6 +15,26 @@
 #include <ch554_usb.h>
 #include <debug.h>
 
+enum midi_code_index
+{
+    mci_misc_function = 0x0,       // 1, 2 or 3    Miscellaneous function codes
+    mci_cable_event = 0x1,         // 1, 2 or 3    Reserved for future expansion
+    mci_system_common_2 = 0x2,     // 2            Two-byte System Common messages like MTC, SongSelect, etc.
+    mci_system_common_3 = 0x3,     // 3            Three-byte System Common messages like SPP, etc.
+    mci_sysex_start = 0x4,         // 3            SysEx starts or continues
+    mci_sysex_single = 0x5,        // 1            Single-byte System Common Message or SysEx ends with following single byte.
+    mci_sysex_end_2 = 0x6,         // 2            SysEx ends with following two bytes.
+    mci_sysex_end_3 = 0x7,         // 3            SysEx ends with following three bytes.
+    mci_note_off = 0x8,            // 3            Note-off
+    mci_note_on = 0x9,             // 3            Note-on
+    mci_poly_keypress = 0xA,       // 3            Poly-KeyPress
+    mci_control_change = 0xB,      // 3            Control Change
+    mci_program_change = 0xC,      // 2            Program Change
+    mci_channel_pressure = 0xD,    // 2            Channel Pressure
+    mci_pitch_bend = 0xE,          // 3            PitchBend Change
+    mci_single_byte = 0xF,         // 1            Single Byte
+};
+
 __xdata __at(0x0000) uint8_t Ep0Buffer[DEFAULT_ENDP0_SIZE];     // endpoint0 OUT & IN buffer，Must be an even address
 __xdata __at(0x0040) uint8_t Ep1Buffer[DEFAULT_ENDP1_SIZE];     // endpoint1 upload buffer
 __xdata __at(0x0080) uint8_t Ep2Buffer[2 * MAX_PACKET_SIZE];    // endpoint2 IN & OUT buffer, Must be an even address
@@ -27,8 +47,7 @@ __xdata __at(0x0080) uint8_t Ep2Buffer[2 * MAX_PACKET_SIZE];    // endpoint2 IN 
 uint16_t SetupLen;
 uint8_t SetupReq;
 uint8_t UsbConfig;
-const uint8_t *pDescr;        // USBConfiguration flags
-USB_SETUP_REQ SetupReqBuf;    // temporary storage Setup Buffer
+const uint8_t *pDescr;    // USB descriptor to send
 
 #define UsbSetupBuf ((PUSB_SETUP_REQ)Ep0Buffer)
 
@@ -109,8 +128,9 @@ unsigned char __code manufacturer_string[] = { 0x26, 0x03, 'T', 0,   'i', 0,   '
 
 #define MIDI_REV_LEN 64                            // MIDI receive buffer size
 __idata uint8_t Receive_Midi_Buf[MIDI_REV_LEN];    // MIDI receive buffer
-volatile __idata uint8_t USBByteCount = 0;         // # received by USB endpoint
-volatile __idata uint8_t UpPoint2_Busy = 0;        // upload endpoint busy flag
+
+volatile __idata uint8_t USBByteCount = 0;     // # received by USB endpoint
+volatile __idata uint8_t UpPoint2_Busy = 0;    // upload endpoint busy flag
 
 /*******************************************************************************
  * Function Name  : USBDeviceCfg()
@@ -143,19 +163,21 @@ void USBDeviceCfg()
  *******************************************************************************/
 void USBDeviceIntCfg()
 {
-    USB_INT_EN |= bUIE_SUSPEND;     // 使能设备挂起中断
-    USB_INT_EN |= bUIE_TRANSFER;    // 使能USB传输完成中断
-    USB_INT_EN |= bUIE_BUS_RST;     // 使能设备模式USB总线复位中断
-    USB_INT_FG |= 0x1F;             // 清中断标志
-    IE_USB = 1;                     // 使能USB中断
-    EA = 1;                         // 允许单片机中断
+    USB_INT_EN |= bUIE_SUSPEND;     // Make the device hang up and interrupt
+    USB_INT_EN |= bUIE_TRANSFER;    // Make USB transmission complete interruption
+    USB_INT_EN |= bUIE_BUS_RST;     // Make the device mode USB bus reset and interrupt
+    USB_INT_FG |= 0x1F;             // Clear interrupt
+    IE_USB = 1;                     // Enable USB interrupt
+    EA = 1;                         // Enable interrupts
 }
 /*******************************************************************************
- * Function Name  : USBDeviceEndPointCfg()
- * Description	: USB设备模式端点配置，模拟兼容HID设备，除了端点0的控制传输，还包括端点2批量上下传
- * Input		  : None
- * Output		 : None
- * Return		 : None
+ * Function Name    : USBDeviceEndPointCfg()
+ * Description	    : USB device mode endpoint configuration
+ *                  : simulation compatible HID device,
+ *                  : in addition to the control transmission of endpoint 0, also includes endpoint 2 batch up and down
+ * Input		    : None
+ * Output		    : None
+ * Return		    : None
  *******************************************************************************/
 void USBDeviceEndPointCfg()
 {
@@ -238,44 +260,50 @@ void DeviceInterrupt(void) __interrupt(INT_NO_USB)    // USB interrupt service p
             if(len == (sizeof(USB_SETUP_REQ))) {
                 SetupLen = ((uint16_t)UsbSetupBuf->wLengthH << 8) | (UsbSetupBuf->wLengthL);
                 len = 0;    // The default is success and upload 0 length
-                SetupReq = UsbSetupBuf->bRequest;
-                if((UsbSetupBuf->bRequestType & USB_REQ_TYP_MASK) != USB_REQ_TYP_STANDARD)    // Non -standard request
-                {
-                    switch(SetupReq) {
 
-                    default:
-                        len = 0xFF;    // unsupported
-                        break;
-                    }
-                } else    // Standard request
-                {
-                    switch(SetupReq)    // Request code
+                SetupReq = UsbSetupBuf->bRequest;
+
+                if((UsbSetupBuf->bRequestType & USB_REQ_TYP_MASK) != USB_REQ_TYP_STANDARD) {    // Non-standard request
+                    len = 0xFF;                                                                 // unsupported
+                } else {                                                                        // Standard request
+                    switch(SetupReq)                                                            // Request code
                     {
                     case USB_GET_DESCRIPTOR:
+
                         switch(UsbSetupBuf->wValueH) {
-                        case 1:    // Device descriptor
+
+                        case USB_DESCR_TYP_DEVICE:    // Device descriptor
                             pDescr = DevDesc;
                             len = sizeof(DevDesc);
                             break;
-                        case 2:    // Configuration descriptor
+
+                        case USB_DESCR_TYP_CONFIG:    // Configuration descriptor
                             pDescr = CfgDesc;
                             len = sizeof(CfgDesc);
                             break;
-                        case 3:
-                            if(UsbSetupBuf->wValueL == 0) {
+
+                        case USB_DESCR_TYP_STRING:    // String descriptor
+
+                            switch(UsbSetupBuf->wValueL) {
+                            case 0:
                                 pDescr = language_string;
                                 len = sizeof(language_string);
-                            } else if(UsbSetupBuf->wValueL == 1) {
+                                break;
+                            case 1:
                                 pDescr = manufacturer_string;
                                 len = sizeof(manufacturer_string);
-                            } else if(UsbSetupBuf->wValueL == 2) {
+                                break;
+                            case 2:
                                 pDescr = product_string;
                                 len = sizeof(product_string);
-                            } else {
+                                break;
+                            default:
                                 pDescr = serial_number_string;
                                 len = sizeof(serial_number_string);
+                                break;
                             }
                             break;
+
                         default:
                             len = 0xff;    // unsupported
                             break;
@@ -288,9 +316,11 @@ void DeviceInterrupt(void) __interrupt(INT_NO_USB)    // USB interrupt service p
                         SetupLen -= len;
                         pDescr += len;
                         break;
+
                     case USB_SET_ADDRESS:
                         SetupLen = UsbSetupBuf->wValueL;    // Temporary USB device address
                         break;
+
                     case USB_GET_CONFIGURATION:
                         Ep0Buffer[0] = UsbConfig;
                         if(SetupLen >= 1) {
@@ -300,8 +330,10 @@ void DeviceInterrupt(void) __interrupt(INT_NO_USB)    // USB interrupt service p
                     case USB_SET_CONFIGURATION:
                         UsbConfig = UsbSetupBuf->wValueL;
                         break;
+
                     case USB_GET_INTERFACE:
                         break;
+
                     case USB_CLEAR_FEATURE:                                               // Clear Feature
                         if((UsbSetupBuf->bRequestType & 0x1F) == USB_REQ_RECIP_DEVICE)    // Device
                         {
@@ -494,6 +526,9 @@ void DeviceInterrupt(void) __interrupt(INT_NO_USB)    // USB interrupt service p
     }
 }
 
+//////////////////////////////////////////////////////////////////////
+// MAIN
+
 #define PORT1 0x90
 #define PORT3 0xB0
 
@@ -502,8 +537,6 @@ void DeviceInterrupt(void) __interrupt(INT_NO_USB)    // USB interrupt service p
 
 #define LED_PORT PORT1
 #define LED_PIN 6
-
-// Set btn bit (P3.3) as input with pullup
 
 SBIT(BTN_BIT, BTN_PORT, BTN_PIN);
 SBIT(LED_BIT, LED_PORT, LED_PIN);
@@ -515,17 +548,19 @@ int main()
     uint8_t Midi_Timeout = 0;
     CfgFsys();       // CH559 clock select configuration
     mDelaymS(5);     // Modify the main frequency and wait for the internal crystal stability, it will be added
-    init_uart0();    // Candidate 0, can be used for debugging
+    UART0_Init();    // Candidate 0, can be used for debugging
+
+    // set GPIO 1.6 as output push/pull
 
     P1_MOD_OC = 0b00000000;
     P1_DIR_PU = 0b01000000;
 
-    P3_MOD_OC = 0b00001010;
-    P3_DIR_PU = 0b00001010;
+    // set GPIO 3.3 as bidirectional (button)
+    // set GPIO 3.1 as bidirectional (rx)
+    // set GPIO 3.0 as output push/pull (tx)
 
-#ifdef DE_PRINTF
-    printf("start ...\r\n");
-#endif
+    P3_MOD_OC = 0b00001010;
+    P3_DIR_PU = 0b00001011;
 
     USBDeviceCfg();
     USBDeviceEndPointCfg();    // Endpoint configuration
@@ -551,26 +586,6 @@ int main()
             i += 1;
         }
     }
-
-    enum midi_code_index
-    {
-        mci_misc_function = 0x0,       // 1, 2 or 3    Miscellaneous function codes
-        mci_cable_event = 0x1,         // 1, 2 or 3    Reserved for future expansion
-        mci_system_common_2 = 0x2,     // 2            Two-byte System Common messages like MTC, SongSelect, etc.
-        mci_system_common_3 = 0x3,     // 3            Three-byte System Common messages like SPP, etc.
-        mci_sysex_start = 0x4,         // 3            SysEx starts or continues
-        mci_sysex_single = 0x5,        // 1            Single-byte System Common Message or SysEx ends with following single byte.
-        mci_sysex_end_2 = 0x6,         // 2            SysEx ends with following two bytes.
-        mci_sysex_end_3 = 0x7,         // 3            SysEx ends with following three bytes.
-        mci_note_off = 0x8,            // 3            Note-off
-        mci_note_on = 0x9,             // 3            Note-on
-        mci_poly_keypress = 0xA,       // 3            Poly-KeyPress
-        mci_control_change = 0xB,      // 3            Control Change
-        mci_program_change = 0xC,      // 2            Program Change
-        mci_channel_pressure = 0xD,    // 2            Channel Pressure
-        mci_pitch_bend = 0xE,          // 3            PitchBend Change
-        mci_single_byte = 0xF,         // 1            Single Byte
-    };
 
     LED_BIT = 0;
 

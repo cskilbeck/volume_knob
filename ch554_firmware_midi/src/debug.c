@@ -1,14 +1,10 @@
 ﻿/********************************** (C) COPYRIGHT *******************************
-* File Name          : Debug.C
-* Author             : WCH
-* Version            : V1.0
-* Date               : 2017/01/20
-* Description        : CH554 DEBUG Interface
-                    CH554 main frequency modification, delay function definition
-                    Candidate 0 and serial port 1 initialization
-                    The transceiver function of serial port 0 and serial 1
-                    Watch the door dog initialization
-*******************************************************************************/
+ * File Name          : Debug.C
+ * Author             : WCH
+ * Version            : V1.0
+ * Date               : 2017/01/20
+ * Description        : CH554 DEBUG Interface
+ *******************************************************************************/
 
 #include <stdint.h>
 
@@ -49,7 +45,7 @@ void CfgFsys()
 #elif FREQ_SYS == 750000
     CLOCK_CFG = CLOCK_CFG & ~MASK_SYS_CK_SEL | 0x01;    // 750KHz
 #elif FREQ_SYS == 187500
-    CLOCK_CFG = CLOCK_CFG & ~MASK_SYS_CK_SEL | 0x00;    // 187.5MHz
+    CLOCK_CFG = CLOCK_CFG & ~MASK_SYS_CK_SEL | 0x00;    // 187.5KHz
 #else
 #warning FREQ_SYS invalid or not set
 #endif
@@ -57,16 +53,14 @@ void CfgFsys()
     SAFE_MOD = 0x00;
 }
 
-
-
 /*******************************************************************************
  * Function Name  : mDelayus(UNIT16 n)
- * Description    : us延时函数
+ * Description    : uS Delay function
  * Input          : UNIT16 n
  * Output         : None
  * Return         : None
  *******************************************************************************/
-void mDelayuS(uint16_t n)    // 以uS为单位延时
+void mDelayuS(uint16_t n)    // Delay in uS
 {
 #ifdef FREQ_SYS
 #if FREQ_SYS <= 6000000
@@ -118,9 +112,9 @@ void mDelayuS(uint16_t n)    // 以uS为单位延时
 }
 
 /*******************************************************************************
- * Function Name  : mDelayms(UNIT16 n)
- * Description    : msDelay function
- * Input          : UNIT16 n
+ * Function Name  : mDelaymS
+ * Description    : Delay in mS
+ * Input          : uint16_t n
  * Output         : None
  * Return         : None
  *******************************************************************************/
@@ -140,57 +134,60 @@ void mDelaymS(uint16_t n)    // Delay in the unit of MS
 }
 
 /*******************************************************************************
- * Function Name  : CH554UART0Alter()
- * Description    : CH554 Serial 0 pin mapping, serial port mapping to P0.2 and P0.3
+ * Function Name  : UART0_Alternate_Pins()
+ * Description    : Serial 0 pin mapping, serial port mapping to P0.2 and P0.3
  * Input          : None
  * Output         : None
  * Return         : None
  *******************************************************************************/
-void CH554UART0Alter()
+void UART0_Alternate_Pins()
 {
     PIN_FUNC |= bUART0_PIN_X;    // Map in serial port to P1.2 and P1.3
 }
 
 /*******************************************************************************
- * Function Name  : mInitSTDIO()
- * Description    : CH554 serial 0 initialization, the baud rate generator used by T1 as UART0 by default, you can also use T2
+ * Function Name  : UART0_Init()
+ * Description    : serial 0 initialization, the baud rate generator used by T1 as UART0 by default, you can also use T2
  * Input          : None
  * Output         : None
  * Return         : None
  *******************************************************************************/
-void init_uart0()
+void UART0_Init()
 {
-    volatile uint32_t x;
-    volatile uint8_t x2;
-
     SM0 = 0;
     SM1 = 1;
     SM2 = 0;     // Serial 0 use mode 1, use Timer1
     RCLK = 0;    // UART0 Receive the clock
     TCLK = 0;    // UART0 Send the clock
     PCON |= SMOD;
-    x = 10 * FREQ_SYS / UART0_BUAD / 16;    // If you change the main frequency, pay attention not to overflow the value of x
-    x2 = x % 10;
-    x /= 10;
-    if(x2 >= 5)
-        x++;    // rounding
+
+    // volatile uint32_t x;
+    // volatile uint8_t x2;
+    // x = 10 * FREQ_SYS / UART0_BUAD / 16;    // If you change the main frequency, pay attention not to overflow the value of x
+    // x2 = x % 10;
+    // x /= 10;
+    // if(x2 >= 5)
+    //     x++;    // rounding
+
+// 115200 BAUD @ 24MHz
+#define BAUD_REG 0xF3
 
     TMOD = TMOD & ~bT1_GATE & ~bT1_CT & ~MASK_T1_MOD | bT1_M1;    // 0X20，Timer1 As an 8 -bit automatic load timer
     T2MOD = T2MOD | bTMR_CLK | bT1_CLK;                           // Timer1 Clock selection
-    TH1 = 0 - x;                                                  // 12MHz Crystal, baud/12 For actual need to set the baud rate
+    TH1 = BAUD_REG;                                               // 12MHz Crystal, baud/12 For actual need to set the baud rate
     TR1 = 1;                                                      // Start the timer 1
     TI = 1;
     REN = 1;    // Serial 0 receive enable
 }
 
 /*******************************************************************************
- * Function Name  : CH554UART0RcvByte()
- * Description    : CH554UART0 Receive a byte
+ * Function Name  : UART0_Get_Byte()
+ * Description    : UART0 Receive a byte
  * Input          : None
  * Output         : None
  * Return         : SBUF
  *******************************************************************************/
-uint8_t CH554UART0RcvByte()
+uint8_t UART0_Get_Byte()
 {
     while(RI == 0)
         ;    // Inquiry and receiving, the interrupt method is not used
@@ -199,19 +196,21 @@ uint8_t CH554UART0RcvByte()
 }
 
 /*******************************************************************************
- * Function Name  : CH554UART0SendByte(uint8_t SendDat)
- * Description    : CH554UART0 Send a byte
+ * Function Name  : UART0_Send_Byte(uint8_t SendDat)
+ * Description    : UART0 Send a byte
  * Input          : uint8_t SendDat；Data to be sent
  * Output         : None
  * Return         : None
  *******************************************************************************/
-void CH554UART0SendByte(uint8_t SendDat)
+void UART0_Send_Byte(uint8_t SendDat)
 {
     SBUF = SendDat;    // Inquiry sending, the interrupt method does not require the following 2 statements, but before sending TI=0
     while(TI == 0)
         ;
     TI = 0;
 }
+
+//////////////////////////////////////////////////////////////////////
 
 void putchar(char c)
 {
@@ -220,6 +219,8 @@ void putchar(char c)
     TI = 0;
     SBUF = c;
 }
+
+//////////////////////////////////////////////////////////////////////
 
 char getchar()
 {
@@ -230,13 +231,14 @@ char getchar()
 }
 
 /*******************************************************************************
- * Function Name  : UART1Setup()
- * Description    : CH554 Serial 1 initialization
+ * Function Name  : UART1_Init()
+ * Description    : Serial 1 initialization
  * Input          : None
  * Output         : None
  * Return         : None
  *******************************************************************************/
-void UART1Setup()
+
+void UART1_Init()
 {
     U1SM0 = 0;     // UART1 Select 8 -bit data bit
     U1SMOD = 1;    // Fast mode
@@ -245,13 +247,13 @@ void UART1Setup()
 }
 
 /*******************************************************************************
- * Function Name  : CH554UART1RcvByte()
- * Description    : CH554UART1 Receive a byte
+ * Function Name  : UART1_Get_Byte()
+ * Description    : UART1 Receive a byte
  * Input          : None
  * Output         : None
  * Return         : SBUF
  *******************************************************************************/
-uint8_t CH554UART1RcvByte()
+uint8_t UART1_Get_Byte()
 {
     while(U1RI == 0)
         ;    // Inquiry and receiving, the interrupt method is not used
@@ -260,13 +262,13 @@ uint8_t CH554UART1RcvByte()
 }
 
 /*******************************************************************************
- * Function Name  : CH554UART1SendByte(uint8_t SendDat)
- * Description    : CH554UART1 Send a byte
+ * Function Name  : UART1_Send_Byte(uint8_t SendDat)
+ * Description    : UART1 Send a byte
  * Input          : uint8_t Senddat; data to be sent
  * Output         : None
  * Return         : None
  *******************************************************************************/
-void CH554UART1SendByte(uint8_t SendDat)
+void UART1_Send_Byte(uint8_t SendDat)
 {
     SBUF1 = SendDat;    // Inquiry sending, the interrupt method does not require the following 2 statements, but before sending TI=0
     while(U1TI == 0)
@@ -275,15 +277,15 @@ void CH554UART1SendByte(uint8_t SendDat)
 }
 
 /*******************************************************************************
-* Function Name  : CH554WDTModeSelect(uint8_t mode)
-* Description    : CH554 Watch Dog mode selection
+* Function Name  : WDT_Mode_Select(uint8_t mode)
+* Description    : Watch Dog mode selection
 * Input          : uint8_t mode
                    0  timer
                    1  watchDog
 * Output         : None
 * Return         : None
 *******************************************************************************/
-void CH554WDTModeSelect(uint8_t mode)
+void WDT_Mode_Select(uint8_t mode)
 {
     SAFE_MOD = 0x55;
     SAFE_MOD = 0xaa;    // Entering security mode
@@ -296,15 +298,15 @@ void CH554WDTModeSelect(uint8_t mode)
 }
 
 /*******************************************************************************
-* Function Name  : CH554WDTFeed(uint8_t tim)
-* Description    : CH554 Set time to watch the door
+* Function Name  : WDT_Feed(uint8_t tim)
+* Description    : Set time to watch the door
 * Input          : uint8_t tim Settings of the Dog resetting time
                    00H(6MHz)=2.8s
                    80H(6MHz)=1.4s
 * Output         : None
 * Return         : None
 *******************************************************************************/
-void CH554WDTFeed(uint8_t tim)
+void WDT_Feed(uint8_t tim)
 {
     WDOG_COUNT = tim;    // See the door dog counter assignment
 }
