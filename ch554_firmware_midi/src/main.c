@@ -17,6 +17,14 @@ typedef void (*BOOTLOADER)(void);
 
 #define BOOTLOADER_DELAY 0x300    // about 3 seconds
 
+volatile const __code __at(ROM_CHIP_ID_LO)
+uint16_t CHIP_UNIQUE_ID_LO;
+
+volatile const __code __at(ROM_CHIP_ID_HI)
+uint16_t CHIP_UNIQUE_ID_HI;
+
+uint32 chip_id;
+
 //////////////////////////////////////////////////////////////////////
 // GPIO
 
@@ -180,7 +188,7 @@ unsigned char __code product_string[] = {
 unsigned char __code manufacturer_string[] = { 0x26, 0x03, 'T', 0,   'i', 0,   'n', 0,   'y', 0,   ' ', 0,   'L', 0,   'i', 0,   't', 0,   't',
                                                0,    'l',  0,   'e', 0,   ' ', 0,   'T', 0,   'h', 0,   'i', 0,   'n', 0,   'g', 0,   's', 0 };
 
-#define MIDI_REV_LEN 64                        // MIDI receive buffer size
+#define MIDI_REV_LEN 32                        // MIDI receive buffer size
 __idata uint8 midi_in_buffer[MIDI_REV_LEN];    // MIDI receive buffer
 
 volatile __idata uint8 ep2_recv_len = 0;    // # received by USB endpoint
@@ -538,7 +546,7 @@ void DeviceInterrupt(void) __interrupt(INT_NO_USB)    // USB interrupt service p
 typedef uint32 midi_packet;
 
 // must be a power of 2
-#define KEY_QUEUE_LEN 8
+#define KEY_QUEUE_LEN 4
 
 midi_packet queue_buffer[KEY_QUEUE_LEN];
 uint8 queue_head = 0;
@@ -603,14 +611,10 @@ void midi_packet_send_update()
 //////////////////////////////////////////////////////////////////////
 
 #define MIDI_MANUFACTURER_ID 0x36    // Cheetah Marketing, defunct
-#define MIDI_FAMILTY_CODE_LOW 0x55
-#define MIDI_FAMILTY_CODE_HIGH 0x44
+#define MIDI_FAMILY_CODE_LOW 0x55
+#define MIDI_FAMILY_CODE_HIGH 0x44
 #define MIDI_MODEL_NUMBER_LOW 0x33
 #define MIDI_MODEL_NUMBER_HIGH 0x22
-#define MIDI_VERSION_0 0x11
-#define MIDI_VERSION_1 0x12
-#define MIDI_VERSION_2 0x13
-#define MIDI_VERSION_3 0x14
 
 //////////////////////////////////////////////////////////////////////
 
@@ -620,21 +624,23 @@ uint8 const identity_request_3[] = { 0x06, 0x01, 0xF7 };
 
 #define IDENTITY_REQUEST_LENGTH (sizeof(identity_request_2) + 1 + sizeof(identity_request_3))
 
-uint8 const identity_response[] = { 0xF0,
-                                    0x7E,
-                                    0x00,
-                                    0x06,
-                                    0x02,
-                                    MIDI_MANUFACTURER_ID,
-                                    MIDI_FAMILTY_CODE_LOW,
-                                    MIDI_FAMILTY_CODE_HIGH,
-                                    MIDI_MODEL_NUMBER_LOW,
-                                    MIDI_MODEL_NUMBER_HIGH,
-                                    MIDI_VERSION_0,
-                                    MIDI_VERSION_1,
-                                    MIDI_VERSION_2,
-                                    MIDI_VERSION_3,
-                                    0xF7 };
+uint8 identity_response[] = {
+    0xF0,    // identity response header
+    0x7E,    // identity response header
+    0x00,    // identity response header
+    0x06,    // identity response header
+    0x02,    // identity response header
+    MIDI_MANUFACTURER_ID,
+    MIDI_FAMILY_CODE_LOW,
+    MIDI_FAMILY_CODE_HIGH,
+    MIDI_MODEL_NUMBER_LOW,
+    MIDI_MODEL_NUMBER_HIGH,
+    0x00,    // UNIQUE_ID goes in here
+    0x00,    // UNIQUE_ID goes in here
+    0x00,    // UNIQUE_ID goes in here
+    0x00,    // UNIQUE_ID goes in here
+    0xF7     // sysex terminator
+};
 
 //////////////////////////////////////////////////////////////////////
 
@@ -687,7 +693,7 @@ bool sysex_send(uint8 *data, uint8 length)
 
 //////////////////////////////////////////////////////////////////////
 
-uint8 sysex_recv_buffer[16];
+uint8 sysex_recv_buffer[8];
 uint8 sysex_recv_length = 0;
 uint8 sysex_recv_packet_offset = 0;
 
@@ -698,10 +704,34 @@ void sysex_parse_add(uint8 length)
     } else {
         memcpy(sysex_recv_buffer + sysex_recv_length, midi_in_buffer + sysex_recv_packet_offset + 1, length);
         sysex_recv_length += length;
+
         if(sysex_recv_buffer[sysex_recv_length - 1] == 0xF7) {
+
             hexdump("sysex", sysex_recv_buffer, sysex_recv_length);
+
             sysex_recv_length = 0;
-            sysex_send(identity_response, sizeof(identity_response));
+
+            if(sysex_recv_buffer[0] == 0xF0 && sysex_recv_buffer[1] == 0x7E && sysex_recv_buffer[3] == 0x06) {
+
+                switch(sysex_recv_buffer[4]) {
+
+                // identity request
+                case 0x01:
+
+                    identity_response[2] = sysex_recv_buffer[2];
+                    identity_response[10] = (chip_id >> 21) & 0x7f;
+                    identity_response[11] = (chip_id >> 14) & 0x7f;
+                    identity_response[12] = (chip_id >> 7) & 0x7f;
+                    identity_response[13] = (chip_id >> 0) & 0x7f;
+                    sysex_send(identity_response, sizeof(identity_response));
+                    break;
+
+                // toggle led
+                case 0x02:
+                    LED_BIT = !LED_BIT;
+                    break;
+                }
+            }
         }
     }
 }
@@ -741,25 +771,6 @@ void process_midi_packet_in(uint8 length)
 
 //////////////////////////////////////////////////////////////////////
 // rotary encoder reader
-
-// odd # of bits set (1 or 3) means it's valid
-
-// 0  00 00 0
-// 1  00 01 1
-// 2  00 10 1
-// 3  00 11 0
-// 4  01 00 1
-// 5  01 01 0
-// 6  01 10 0
-// 7  01 11 1
-// 8  10 00 1
-// 9  10 01 0
-// A  10 10 0
-// B  10 11 1
-// C  11 00 0
-// D  11 01 1
-// E  11 10 1
-// F  11 11 0
 
 uint8 const encoder_valid_bits[16] = { 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0 };
 
@@ -811,62 +822,62 @@ void bootloader_led_flash(int8_t n)
 //////////////////////////////////////////////////////////////////////
 // read bytes from the data flash area
 
-void read_flash_data(uint8 flash_addr, uint8 len, uint8 *data)
+bool read_flash_data(uint8 flash_addr, uint8 num_bytes, uint8 *data)
 {
+    ROM_ADDR_H = DATA_FLASH_ADDR >> 8;
     flash_addr <<= 1;
 
-    while(len-- != 0) {
+    while(num_bytes != 0) {
 
         ROM_ADDR_L = flash_addr;
-        ROM_ADDR_H = DATA_FLASH_ADDR >> 8;
-
         ROM_CTRL = ROM_CMD_READ;
 
         if((ROM_STATUS & bROM_CMD_ERR) != 0) {
-            break;
+            return false;
         }
 
         *data++ = ROM_DATA_L;
-
         flash_addr += 2;
+        num_bytes -= 1;
     }
+    return true;
 }
 
 //////////////////////////////////////////////////////////////////////
 // write bytes to the data flash area
 
-void write_flash_data(uint8 flash_addr, uint8 len, uint8 *data)
+bool write_flash_data(uint8 flash_addr, uint8 num_bytes, uint8 const *data)
 {
-    flash_addr <<= 1;
-
     SAFE_MOD = 0x55;
     SAFE_MOD = 0xAA;
-
     GLOBAL_CFG |= bDATA_WE;
 
-    while(len-- != 0) {
+    ROM_ADDR_H = DATA_FLASH_ADDR >> 8;
+    flash_addr <<= 1;
+
+    while(num_bytes != 0) {
 
         ROM_ADDR_L = flash_addr;
-        ROM_ADDR_H = DATA_FLASH_ADDR >> 8;
-
         ROM_DATA_L = *data++;
-
         ROM_CTRL = ROM_CMD_WRITE;
 
         if((ROM_STATUS & bROM_CMD_ERR) != 0) {
-            break;
+            return false;
         }
-
         flash_addr += 2;
+        num_bytes -= 1;
     }
 
     SAFE_MOD = 0x55;
     SAFE_MOD = 0xAA;
-
     GLOBAL_CFG &= ~bDATA_WE;
+
+    return true;
 }
 
 //////////////////////////////////////////////////////////////////////
+
+uint8 bb[8];
 
 int main()
 {
@@ -875,6 +886,10 @@ int main()
     CfgFsys();       // CH559 clock select configuration
     mDelaymS(5);     // Modify the main frequency and wait for the internal crystal stability, it will be added
     UART0_Init();    // Candidate 0, can be used for debugging
+
+    chip_id = CHIP_UNIQUE_ID_LO | ((uint32)CHIP_UNIQUE_ID_HI << 16);
+
+    hexdump("CHIPID", &chip_id, 4);
 
     // set GPIO 1.6 as output push/pull
 
@@ -918,12 +933,26 @@ int main()
 
     bool button_state = false;    // for debouncing the button
 
-    read_flash_data(0, 1, &vol_direction);
-
-    if(vol_direction == 0xff) {
-        vol_direction = ROTARY_DIRECTION;
+    if(!read_flash_data(DATA_FLASH_ADDR, 1, &vol_direction)) {
+        putstr("Error reading flash data\n");
+    } else {
+        hexdump("Vol Direction", &vol_direction, 1);
     }
-    turn_value = (int8)vol_direction - 1;    // becomes -1 or 1
+
+    switch(vol_direction) {
+    case 0:
+        turn_value = -1;
+        break;
+    case 2:
+        turn_value = 1;
+        break;
+    default:
+        turn_value = ROTARY_DIRECTION - 1;
+        break;
+    }
+
+    read_flash_data(0, 8, bb);
+    hexdump("BB", bb, 8);
 
     while(1) {
 
@@ -977,9 +1006,13 @@ int main()
 
             if(ep2_recv_len) {
 
+                uint8_t length = ep2_recv_len;
+                if(length > sizeof(midi_in_buffer)) {
+                    length = sizeof(midi_in_buffer);
+                }
+
                 memcpy(midi_in_buffer, Ep2Buffer, ep2_recv_len);
                 UEP2_CTRL = (UEP2_CTRL & ~MASK_UEP_R_RES) | UEP_R_RES_ACK;
-                uint8_t length = ep2_recv_len;
                 ep2_recv_len = 0;
 
                 hexdump("raw", midi_in_buffer, length);

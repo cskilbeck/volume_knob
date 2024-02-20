@@ -5,13 +5,17 @@
     <link rel="shortcut icon" href="https://www.skilbeck.com/favicon.ico">
 </head>
 
-<button id="refresh_button" onclick="refresh();">Refresh</button>
+<button id="scan_button" onclick="initDevices();">Scan</button>
 
 <div id="devices">
 </div>
 
+<div id="status">
+    Status<br>
+</div>
+
 <script>
-    refresh();
+    on_page_load();
 </script>
 
 </html>
