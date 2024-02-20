@@ -531,6 +531,76 @@ void DeviceInterrupt(void) __interrupt(INT_NO_USB)    // USB interrupt service p
 }
 
 //////////////////////////////////////////////////////////////////////
+// a queue of MIDI packets
+// we have to queue things up because the rotary encoder can generate
+// messages faster than we can send them
+
+typedef uint32 midi_packet;
+
+// must be a power of 2
+#define KEY_QUEUE_LEN 8
+
+midi_packet queue_buffer[KEY_QUEUE_LEN];
+uint8 queue_head = 0;
+uint8 queue_size = 0;
+
+inline bool queue_full()
+{
+    return queue_size == KEY_QUEUE_LEN;
+}
+
+inline uint8 queue_space()
+{
+    return KEY_QUEUE_LEN - queue_size;
+}
+
+inline bool queue_empty()
+{
+    return queue_size == 0;
+}
+
+// push one onto the queue, check it's got space before calling this
+
+void queue_put(midi_packet k)
+{
+    queue_buffer[(queue_head + queue_size) & (KEY_QUEUE_LEN - 1)] = k;
+    queue_size += 1;
+}
+
+// pop next from the queue, check it's not empty before calling this
+
+midi_packet queue_get()
+{
+    uint8 old_head = queue_head;
+    queue_size -= 1;
+    queue_head = ++queue_head & (KEY_QUEUE_LEN - 1);
+    return queue_buffer[old_head];
+}
+
+// pop next into somewhere, check it's not empty before calling this
+
+inline void queue_get_at(midi_packet *dst)
+{
+    *dst = queue_buffer[queue_head];
+    queue_size -= 1;
+    queue_head = ++queue_head & (KEY_QUEUE_LEN - 1);
+}
+
+//////////////////////////////////////////////////////////////////////
+// send the next waiting packet if there is one and the usb is ready
+
+void midi_packet_send_update()
+{
+    if(!ep2_busy && !queue_empty()) {
+        queue_get_at((uint32 *)(Ep2Buffer + MAX_PACKET_SIZE));
+        hexdump("send", Ep2Buffer + MAX_PACKET_SIZE, 4);
+        UEP2_T_LEN = 4;
+        UEP2_CTRL = UEP2_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK;    // Answer ACK
+        ep2_busy = 1;
+    }
+}
+
+//////////////////////////////////////////////////////////////////////
 
 #define MIDI_MANUFACTURER_ID 0x36    // Cheetah Marketing, defunct
 #define MIDI_FAMILTY_CODE_LOW 0x55
@@ -578,6 +648,7 @@ bool sysex_send_update()
     if(r == 0) {
         return false;
     }
+
     if(r > 3) {
         r = 3;
     }
@@ -585,15 +656,14 @@ bool sysex_send_update()
     if(r < 3 || sysex_send_remain <= 3) {
         cmd = mci_sysex_end_1 + r - 1;
     }
-    Ep2Buffer[MAX_PACKET_SIZE] = cmd;
-    memcpy(Ep2Buffer + MAX_PACKET_SIZE + 1, sysex_send_ptr, r);
-    if(r < 3) {
-        memset(Ep2Buffer + MAX_PACKET_SIZE + 1 + r, 0, 3 - r);
+    midi_packet packet = 0;
+    uint8 *dst = (uint8 *)&packet;
+    uint8 *src = sysex_send_ptr;
+    *dst++ = cmd;
+    for(uint8 i = 0; i < r; ++i) {
+        *dst++ = *src++;
     }
-    UEP2_T_LEN = 4;
-    UEP2_CTRL = UEP2_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK;    // Answer ACK
-    ep2_busy = 1;
-    hexdump("send", Ep2Buffer + MAX_PACKET_SIZE, 4);
+    queue_put(packet);
     sysex_send_sent += r;
     sysex_send_ptr += r;
     sysex_send_remain -= r;
@@ -638,7 +708,7 @@ void sysex_parse_add(uint8 length)
 
 //////////////////////////////////////////////////////////////////////
 
-void process_midi_packet(uint8 length)
+void process_midi_packet_in(uint8 length)
 {
     sysex_recv_packet_offset = 0;
 
@@ -904,6 +974,7 @@ int main()
         }
 
         if(UsbConfig) {
+
             if(ep2_recv_len) {
 
                 memcpy(midi_in_buffer, Ep2Buffer, ep2_recv_len);
@@ -913,37 +984,29 @@ int main()
 
                 hexdump("raw", midi_in_buffer, length);
 
-                process_midi_packet(length);
+                process_midi_packet_in(length);
             }
 
-            if(!ep2_busy) {
-                if(!sysex_send_update()) {
-                    if(pressed) {
-                        Ep2Buffer[MAX_PACKET_SIZE + 0] = 0x0B;
-                        Ep2Buffer[MAX_PACKET_SIZE + 1] = 0xB0;
-                        Ep2Buffer[MAX_PACKET_SIZE + 2] = 0x03;
-                        Ep2Buffer[MAX_PACKET_SIZE + 3] = 0x01;
-                        UEP2_T_LEN = 4;
-                        UEP2_CTRL = UEP2_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK;    // Answer ACK
-                        ep2_busy = 1;
+            // send any waiting midi packets
+            midi_packet_send_update();
+
+            // maybe add some more to the queue
+            if(!queue_full() && !sysex_send_update()) {
+
+                if(pressed) {
+
+                    queue_put(0x0103b00b);
+                    LED_BIT = !LED_BIT;
+                }
+                if(!queue_full()) {
+                    if(direction == turn_value) {
+
+                        queue_put(0x0104b00b);
                         LED_BIT = !LED_BIT;
-                    } else if(direction == turn_value) {
-                        Ep2Buffer[MAX_PACKET_SIZE + 0] = 0x0B;
-                        Ep2Buffer[MAX_PACKET_SIZE + 1] = 0xB0;
-                        Ep2Buffer[MAX_PACKET_SIZE + 2] = 0x04;
-                        Ep2Buffer[MAX_PACKET_SIZE + 3] = 0x01;
-                        UEP2_T_LEN = 4;
-                        UEP2_CTRL = UEP2_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK;    // Answer ACK
-                        ep2_busy = 1;
-                        LED_BIT = !LED_BIT;
+
                     } else if(direction == -turn_value) {
-                        Ep2Buffer[MAX_PACKET_SIZE + 0] = 0x0B;
-                        Ep2Buffer[MAX_PACKET_SIZE + 1] = 0xB0;
-                        Ep2Buffer[MAX_PACKET_SIZE + 2] = 0x05;
-                        Ep2Buffer[MAX_PACKET_SIZE + 3] = 0x01;
-                        UEP2_T_LEN = 4;
-                        UEP2_CTRL = UEP2_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK;    // Answer ACK
-                        ep2_busy = 1;
+
+                        queue_put(0x0105b00b);
                         LED_BIT = !LED_BIT;
                     }
                 }
