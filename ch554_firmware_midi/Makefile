@@ -18,6 +18,7 @@ BIN = bin/
 
 SOURCES = \
 	main.c \
+	util.c \
 	debug.c
 
 #EXTRA_FLAGS += -DDE_PRINTF

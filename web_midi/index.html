@@ -3,9 +3,17 @@
 <head>
     <script src="web_midi.js"></script>
     <link rel="shortcut icon" href="https://www.skilbeck.com/favicon.ico">
+    <link rel="stylesheet" href="style.css">
 </head>
 
-<button id="scan_button" onclick="initDevices();">Scan</button>
+<div id="header">
+    <div id="banner">
+        Tiny USB MIDI Knob Configurator
+    </div>
+    <div id="scan_button">
+        <button onclick="initDevices();">Scan</button>
+    </div>
+</div>
 
 <div id="devices">
 </div>

@@ -7,6 +7,9 @@
 #include <ch554.h>
 #include <ch554_usb.h>
 #include <debug.h>
+#include "util.h"
+
+#pragma disable_warning 110
 
 //////////////////////////////////////////////////////////////////////
 // BOOTLOADER admin
@@ -539,6 +542,22 @@ void DeviceInterrupt(void) __interrupt(INT_NO_USB)    // USB interrupt service p
 }
 
 //////////////////////////////////////////////////////////////////////
+// Flash LED before jumping to bootloader
+
+void bootloader_led_flash(int8_t n)
+{
+    LED_BIT = 0;
+    for(int8_t i = 0; i < n; ++i) {
+        TF2 = 0;
+        TH2 = 0;
+        TL2 = 120;
+        while(TF2 != 1) {
+        }
+        LED_BIT ^= 1;
+    }
+}
+
+//////////////////////////////////////////////////////////////////////
 // a queue of MIDI packets
 // we have to queue things up because the rotary encoder can generate
 // messages faster than we can send them
@@ -548,7 +567,7 @@ typedef uint32 midi_packet;
 // must be a power of 2
 #define KEY_QUEUE_LEN 4
 
-midi_packet queue_buffer[KEY_QUEUE_LEN];
+__idata midi_packet queue_buffer[KEY_QUEUE_LEN];
 uint8 queue_head = 0;
 uint8 queue_size = 0;
 
@@ -618,13 +637,15 @@ void midi_packet_send_update()
 
 //////////////////////////////////////////////////////////////////////
 
-uint8 const identity_request_2[] = { 0xF0, 0x7E };
+__code uint8 const identity_request_2[] = { 0xF0, 0x7E };
 // channel in between, we ignore it
-uint8 const identity_request_3[] = { 0x06, 0x01, 0xF7 };
+__code uint8 const identity_request_3[] = { 0x06, 0x01, 0xF7 };
 
 #define IDENTITY_REQUEST_LENGTH (sizeof(identity_request_2) + 1 + sizeof(identity_request_3))
 
-uint8 identity_response[] = {
+__idata uint8 send_buffer[16];
+
+uint8 const identity_response[] = {
     0xF0,    // identity response header
     0x7E,    // identity response header
     0x00,    // identity response header
@@ -644,13 +665,13 @@ uint8 identity_response[] = {
 
 //////////////////////////////////////////////////////////////////////
 
-uint8 *sysex_send_ptr;
-uint8 sysex_send_sent = 0;
-uint8 sysex_send_remain = 0;
+uint8 *usb_send_ptr;
+uint8 usb_sent = 0;
+uint8 usb_send_remain = 0;
 
-bool sysex_send_update()
+bool usb_send_update()
 {
-    uint8 r = sysex_send_remain;
+    uint8 r = usb_send_remain;
     if(r == 0) {
         return false;
     }
@@ -659,43 +680,64 @@ bool sysex_send_update()
         r = 3;
     }
     uint8 cmd = mci_sysex_start;
-    if(r < 3 || sysex_send_remain <= 3) {
+    if(r < 3 || usb_send_remain <= 3) {
         cmd = mci_sysex_end_1 + r - 1;
     }
     midi_packet packet = 0;
     uint8 *dst = (uint8 *)&packet;
-    uint8 *src = sysex_send_ptr;
+    uint8 *src = usb_send_ptr;
     *dst++ = cmd;
     for(uint8 i = 0; i < r; ++i) {
         *dst++ = *src++;
     }
     queue_put(packet);
-    sysex_send_sent += r;
-    sysex_send_ptr += r;
-    sysex_send_remain -= r;
+    usb_sent += r;
+    usb_send_ptr += r;
+    usb_send_remain -= r;
     return true;
 }
 
+typedef struct config
+{
+    uint8 flags;
+    uint8 rotate_delta;
+    uint8 rotate_cc;
+    uint8 click_cc;
+    uint8 click_press_value;
+    uint8 click_release_value;
+
+} config_t;
+
+#define FLAG_REL_ABS 1
+#define FLAG_REVERSE 2
+#define FLAG_LED_PRESS 4
+#define FLAG_LED_RELEASE 8
+#define FLAG_LED_ROTATE 16
+#define FLAG_ACCEL_0 32
+#define FLAG_ACCEL_1 64
+
+
 //////////////////////////////////////////////////////////////////////
 
-bool sysex_send(uint8 *data, uint8 length)
+bool usb_send(uint8 *data, uint8 length)
 {
-    if(sysex_send_remain != 0) {
+    if(usb_send_remain != 0) {
         return false;
     }
     if(length < 4) {
         return false;
     }
-    sysex_send_remain = length;
-    sysex_send_ptr = data;
+    usb_send_remain = length;
+    usb_send_ptr = data;
     return true;
 }
 
 //////////////////////////////////////////////////////////////////////
 
-uint8 sysex_recv_buffer[8];
-uint8 sysex_recv_length = 0;
-uint8 sysex_recv_packet_offset = 0;
+__idata uint8 sysex_recv_buffer[16];
+__idata uint8 sysex_recv_length = 0;
+__idata uint8 sysex_recv_packet_offset = 0;
+__idata uint8 device_id = 0;
 
 void sysex_parse_add(uint8 length)
 {
@@ -717,19 +759,44 @@ void sysex_parse_add(uint8 length)
 
                 // identity request
                 case 0x01:
-
-                    identity_response[2] = sysex_recv_buffer[2];
-                    identity_response[10] = (chip_id >> 21) & 0x7f;
-                    identity_response[11] = (chip_id >> 14) & 0x7f;
-                    identity_response[12] = (chip_id >> 7) & 0x7f;
-                    identity_response[13] = (chip_id >> 0) & 0x7f;
-                    sysex_send(identity_response, sizeof(identity_response));
+                    device_id = sysex_recv_buffer[2];
+                    memcpy(send_buffer, identity_response, sizeof(identity_response));
+                    send_buffer[2] = device_id;
+                    send_buffer[10] = (chip_id >> 21) & 0x7f;
+                    send_buffer[11] = (chip_id >> 14) & 0x7f;
+                    send_buffer[12] = (chip_id >> 7) & 0x7f;
+                    send_buffer[13] = (chip_id >> 0) & 0x7f;
+                    usb_send(send_buffer, sizeof(identity_response));
                     break;
 
                 // toggle led
                 case 0x02:
                     LED_BIT = !LED_BIT;
                     break;
+
+                // Get flash
+                case 0x03: {
+                    putstr("Get flash!?\n");
+                    uint8 buffer[8];
+                    read_flash_data(0, 8, buffer);
+                    send_buffer[2] = device_id;
+                    send_buffer[4] = 0x10;
+                    memset(send_buffer + 5, 0, 10);
+                    bytes_to_bits7(buffer, 0, 8, send_buffer + 5);
+                    send_buffer[15] = 0xf7;
+                    usb_send(send_buffer, 16);
+                } break;
+
+                // Set flash
+                case 0x04: {
+                    uint8 buffer[8];
+                    bits7_to_bytes(sysex_recv_buffer, 5, 8, buffer);
+                    hexdump("WRITE", buffer, 8);
+                    write_flash_data(0, 8, buffer);
+                    send_buffer[2] = device_id;
+                    send_buffer[4] = 0x11;
+                    send_buffer[5] = 0xF7;
+                } break;
                 }
             }
         }
@@ -772,10 +839,10 @@ void process_midi_packet_in(uint8 length)
 //////////////////////////////////////////////////////////////////////
 // rotary encoder reader
 
-uint8 const encoder_valid_bits[16] = { 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0 };
+__code const uint8 encoder_valid_bits[16] = { 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0 };
 
-uint8 encoder_state = 0;
-uint8 encoder_store = 0;
+__idata uint8 encoder_state = 0;
+__idata uint8 encoder_store = 0;
 
 int8 read_encoder()
 {
@@ -804,80 +871,6 @@ int8 read_encoder()
 }
 
 //////////////////////////////////////////////////////////////////////
-// Flash LED before jumping to bootloader
-
-void bootloader_led_flash(int8_t n)
-{
-    LED_BIT = 0;
-    for(int8_t i = 0; i < n; ++i) {
-        TF2 = 0;
-        TH2 = 0;
-        TL2 = 120;
-        while(TF2 != 1) {
-        }
-        LED_BIT ^= 1;
-    }
-}
-
-//////////////////////////////////////////////////////////////////////
-// read bytes from the data flash area
-
-bool read_flash_data(uint8 flash_addr, uint8 num_bytes, uint8 *data)
-{
-    ROM_ADDR_H = DATA_FLASH_ADDR >> 8;
-    flash_addr <<= 1;
-
-    while(num_bytes != 0) {
-
-        ROM_ADDR_L = flash_addr;
-        ROM_CTRL = ROM_CMD_READ;
-
-        if((ROM_STATUS & bROM_CMD_ERR) != 0) {
-            return false;
-        }
-
-        *data++ = ROM_DATA_L;
-        flash_addr += 2;
-        num_bytes -= 1;
-    }
-    return true;
-}
-
-//////////////////////////////////////////////////////////////////////
-// write bytes to the data flash area
-
-bool write_flash_data(uint8 flash_addr, uint8 num_bytes, uint8 const *data)
-{
-    SAFE_MOD = 0x55;
-    SAFE_MOD = 0xAA;
-    GLOBAL_CFG |= bDATA_WE;
-
-    ROM_ADDR_H = DATA_FLASH_ADDR >> 8;
-    flash_addr <<= 1;
-
-    while(num_bytes != 0) {
-
-        ROM_ADDR_L = flash_addr;
-        ROM_DATA_L = *data++;
-        ROM_CTRL = ROM_CMD_WRITE;
-
-        if((ROM_STATUS & bROM_CMD_ERR) != 0) {
-            return false;
-        }
-        flash_addr += 2;
-        num_bytes -= 1;
-    }
-
-    SAFE_MOD = 0x55;
-    SAFE_MOD = 0xAA;
-    GLOBAL_CFG &= ~bDATA_WE;
-
-    return true;
-}
-
-//////////////////////////////////////////////////////////////////////
-
-uint8 bb[8];
 
 int main()
 {
@@ -951,9 +944,6 @@ int main()
         break;
     }
 
-    read_flash_data(0, 8, bb);
-    hexdump("BB", bb, 8);
-
     while(1) {
 
         // read/debounce the button
@@ -1024,7 +1014,7 @@ int main()
             midi_packet_send_update();
 
             // maybe add some more to the queue
-            if(!queue_full() && !sysex_send_update()) {
+            if(!queue_full() && !usb_send_update()) {
 
                 if(pressed) {
 
