@@ -57,12 +57,26 @@ const cc_list = {
 
 const FLASH_MAX_LEN = 16;
 
+// main webmidi object
 let midi = null;
-let midi_devices = []
-let midi_id = 1;
 
+// map of output port ids (e.g output-0) to midi_device objects
+let midi_map = new Map();
+
+// map of device_indices (start at 1) to output port ids
+let index_map = new Map();
+
+// next midi device index
+let midi_index = 1;
+
+// div where devices go
 let devices_div = null;
+
+// div where status messages go
 let status_div = null;
+
+// keep last N status messages
+let status_messages = [];
 
 //////////////////////////////////////////////////////////////////////
 // expand some bytes into an array of 7 bit values
@@ -117,6 +131,22 @@ function bits7_to_bytes(src_data, offset, len, dest) {
 
 //////////////////////////////////////////////////////////////////////
 
+function add_status_message(msg) {
+  status_messages.push(msg);
+  if (status_messages.length > 3) {
+    status_messages = status_messages.slice(1, 4);
+  }
+  let status = "";
+  let sep = "";
+  for (const s of status_messages) {
+    status = `${status}${sep}${s}`;
+    sep = "<br>";
+  }
+  status_div.innerHTML = status;
+}
+
+//////////////////////////////////////////////////////////////////////
+
 function on_page_load() {
 
   devices_div = document.getElementById("devices");
@@ -129,7 +159,7 @@ function on_page_load() {
         init_devices();
       },
       (err) => {
-        status_div.innerHTML = `requestMIDIAccess failed: ${err}`;
+        add_status_message(`requestMIDIAccess failed: ${err}`);
         console.log(`requestMIDIAccess failed: ${err}`);
       }
     );
@@ -139,14 +169,19 @@ function on_page_load() {
 
 function init_devices() {
 
-  midi_devices = []
-  midi_id = 1;
+  console.log(`init_devices`);
+
+  midi_map = new Map();
+  midi_index = 1;
 
   midi.addEventListener('statechange', function (event) {
     init_devices();
   });
 
   devices_div.innerHTML = "";
+
+  console.log(`${midi.inputs.size} inputs`);
+  console.log(`${midi.outputs.size} outputs`);
 
   for (const input of midi.inputs.values()) {
     input.onmidimessage = function (event) {
@@ -155,16 +190,25 @@ function init_devices() {
   }
 
   for (const output of midi.outputs.values()) {
-    midi_devices[midi_id] = {
-      midi_ident: midi_id,
-      midi_serial_number: 0,
-      midi_input: null,
-      midi_output: output,
-      midi_hex: []
-    };
-    output.send([0xF0, 0x7E, midi_id & 0xff, 0x06, 0x01, 0xF7]);
-    midi_id += 1;
+    let existing = midi_map.get(output.id);
+    if (existing == undefined) {
+      console.log(`New device: ${output.id}`);
+      midi_map.set(output.id, {
+        midi_index: midi_index,
+        midi_serial_number: 0,
+        midi_input: null,
+        midi_output: output,
+        midi_hex: []
+      });
+
+      // for looking up the device when the response arrives
+      index_map.set(midi_index, output.id);
+
+      output.send([0xF0, 0x7E, midi_index & 0xff, 0x06, 0x01, 0xF7]);
+      midi_index += 1;
+    }
   }
+  console.log(`init devices ends with ${midi_map.size} devices`);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -180,16 +224,25 @@ function compare_array_sections(a, b, s, e) {
 
 //////////////////////////////////////////////////////////////////////
 
-function toggle_device_led(index) {
-  const device = midi_devices[index];
-  if (device == undefined || device == null) {
+function get_device_from_index(index) {
+  const object_id = index_map.get(index);
+  if (object_id == undefined) {
     console.log("No such device");
     return;
   }
-  console.log(`Toggle led for device ${device.midi_serial_number.toString(16)}`);
+  return midi_map.get(object_id);
+}
 
-  // MMC play to toggle led
-  device.midi_output.send([0xF0, 0x7E, 0x00, 0x06, 0x02, 0xF7]);
+//////////////////////////////////////////////////////////////////////
+
+function toggle_device_led(index) {
+  const device = get_device_from_index(index);
+  if (device === undefined) {
+    add_status_message(`Can't find device ${index}`);
+  } else {
+    add_status_message(`Toggle led for device ${device.midi_serial_number.toString(16)}`);
+    device.midi_output.send([0xF0, 0x7E, 0x00, 0x06, 0x02, 0xF7]);
+  }
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -218,8 +271,8 @@ const memory_response = [0xF0, 0x7E, 0x00, 0x06, 0x03];
 
 //////////////////////////////////////////////////////////////////////
 
-function get_sysex_device_id(data) {
-  if (compare_array_sections(data, sysex_header, 0, 2) && data[3] == 0x06) {
+function get_sysex_device_index(data) {
+  if (compare_array_sections(data, sysex_header, 0, 2) && data[3] == 0x06 && data[data.length - 1] == 0xF7) {
     return data[2];
   }
   return undefined;
@@ -228,61 +281,67 @@ function get_sysex_device_id(data) {
 //////////////////////////////////////////////////////////////////////
 
 function handle_new_device(device, data) {
-  let reply_id = data[2];
+
+  let reply_index = data[2];
+
+  let output_id = index_map.get(reply_index);
+
+  if (output_id == undefined) {
+    console.log(`Error: Can't find device with index ${reply_index}`);
+    return;
+  }
 
   // yes, find the corresponding midi_device
 
-  for (const i in midi_devices) {
+  let d = midi_map.get(output_id);
 
-    const d = midi_devices[i];
+  // set the serial number
 
-    if (d.midi_ident === reply_id) {
+  let b0 = data[10] || 0;
+  let b1 = data[11] || 0;
+  let b2 = data[12] || 0;
+  let b3 = data[13] || 0;
 
-      // set the serial number
+  d.midi_serial_number = b3 | (b2 << 7) | (b1 << 14) | (b0 << 21);
 
-      let b0 = data[10] || 0;
-      let b1 = data[11] || 0;
-      let b2 = data[12] || 0;
-      let b3 = data[13] || 0;
+  // and input device
 
-      d.midi_serial_number = b3 | (b2 << 7) | (b1 << 14) | (b0 << 21);
+  d.midi_input = device;
 
-      // and input device
-
-      d.midi_input = device;
-
-      // add it to the page
-      devices_div.innerHTML += `
-        <div class = 'device_container'>
-          <div class = 'device_row'>
-            <div class = 'device_name'>
-              ${device.name}&nbsp;${d.midi_serial_number.toString(16).toUpperCase()}
-            </div>
-            <div class = 'device_ui'>
-              <div class = 'device_buttons'>
-                <button onclick='toggle_device_led(${i})'>Toggle LED</button>
-                <button onclick='read_flash(${i})'>Load</button>
-                <button onclick='write_flash(${i})'>Save</button>
-              </div>
-              <div class='device_controls'>
-                <input class = 'memory_input' id='memory_${i}' oninput='on_input_change(this, ${i})'></input>
-                <span class = 'memory_input' id='memory_contents_${i}'></span>
-              </div>
-            </div>
+  let str = "";
+  for (const midi_device of midi_map) {
+    str += `
+    <div class = 'device_container'>
+      <div class = 'device_row'>
+        <div class = 'device_name'>
+          ${device.name}&nbsp;${d.midi_serial_number.toString(16).toUpperCase()}
+        </div>
+        <div class = 'device_ui'>
+          <div class = 'device_buttons'>
+            <button onclick='toggle_device_led(${reply_index})'>Toggle LED</button>
+            <button onclick='read_flash(${reply_index})'>Load</button>
+            <button onclick='write_flash(${reply_index})'>Save</button>
+          </div>
+          <div class='device_controls'>
+            <input class = 'memory_input' id='memory_${reply_index}' oninput='on_input_change(this, ${reply_index})'></input>
+            <span class = 'memory_input' id='memory_contents_${reply_index}'></span>
           </div>
         </div>
-        `;
-
-      console.log(`Midi device ${device.name} at ${device.id} has serial # 0x${d.midi_serial_number.toString(16)} (id ${d.midi_ident})`);
-    }
+      </div>
+    </div>
+    `;
   }
+  // add it to the page
+  devices_div.innerHTML = str;
+
+  console.log(`Midi device ${device.name} at ${device.id} has serial # 0x${d.midi_serial_number.toString(16)} (id ${d.midi_index})`);
 }
 
 //////////////////////////////////////////////////////////////////////
 
 function read_flash(index) {
-  const device = midi_devices[index];
-  if (device == undefined || device == null) {
+  const device = get_device_from_index(index);
+  if (device === undefined) {
     console.log(`load_device: No such device ${index}`);
     return;
   }
@@ -292,15 +351,15 @@ function read_flash(index) {
 //////////////////////////////////////////////////////////////////////
 
 function write_flash(index) {
-  const device = midi_devices[index];
-  if (device == undefined || device == null) {
+  const midi_device = get_device_from_index(index);
+  if (midi_device === undefined) {
     console.log(`load_device: No such device ${index}`);
     return;
   }
   let data_7bits = [];
-  bytes_to_bits7(device.midi_hex, 0, FLASH_MAX_LEN, data_7bits);
+  bytes_to_bits7(midi_device.midi_hex, 0, FLASH_MAX_LEN, data_7bits);
   let msg = [0xF0, 0x7E, 0x00, 0x06, 0x04].concat(data_7bits).concat([0xF7]);
-  device.midi_output.send(msg);
+  midi_device.midi_output.send(msg);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -322,6 +381,9 @@ function hex_to_bytes(hex) {
 function bytes_to_hex_string(data, len) {
   let sep = "";
   let str = "";
+  if (len === undefined) {
+    len = data.length;
+  }
   let l = Math.min(len, data.length);
   for (let i = 0; i < l; ++i) {
     str += sep + data[i].toString(16).toUpperCase().padStart(2, '0');
@@ -334,8 +396,8 @@ function bytes_to_hex_string(data, len) {
 
 function on_input_change(e, index) {
 
-  const device = midi_devices[index];
-  if (device == undefined || device == null) {
+  const device = get_device_from_index(index);
+  if (device === undefined) {
     console.log("No such device");
     return;
   }
@@ -347,8 +409,9 @@ function on_input_change(e, index) {
   }
 
   device.midi_hex = hex_to_bytes(stripped);
-  document.getElementById(`memory_contents_${index}`).innerHTML = bytes_to_hex_string(device.midi_hex, FLASH_MAX_LEN);
-  console.log(`Memory for ${device.midi_ident}:${device.midi_hex}`);
+  let hex_str = bytes_to_hex_string(device.midi_hex, FLASH_MAX_LEN);
+  document.getElementById(`memory_contents_${index}`).innerHTML = hex_str;
+  console.log(`Memory for device ${device.midi_serial_number.toString(16).toUpperCase()}: ${hex_str}`);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -365,33 +428,35 @@ function on_midi_message(device, event) {
 
   console.log(`MIDI MESSAGE: ${data}`);
 
-  let device_id = get_sysex_device_id(data);
+  let device_index = get_sysex_device_index(data);
 
-  if (device_id != undefined) {
+  if (device_index != undefined) {
 
     switch (data[4]) {
 
       case 0x02:
         if (compare_array_sections(data, id_response, 5, 10)) {
           handle_new_device(device, data);
-          status_div.innerHTML = `Found ${midi_devices.length} device(s)`;
+          add_status_message(`Found ${midi_map.size} device(s)`);
         }
         break;
 
       case 0x3:
-        if (!is_null_or_undefined(device)) {
+        let midi_device = get_device_from_index(device_index);
+        if (midi_device !== undefined) {
           let flash_data = [];
           bits7_to_bytes(data, 5, FLASH_MAX_LEN, flash_data);
           console.log(`FLASH: ${flash_data}`);
-          device.midi_hex = flash_data;
+          midi_device.midi_hex = flash_data;
           let s = bytes_to_hex_string(flash_data, FLASH_MAX_LEN);
-          document.getElementById(`memory_${device_id}`).value = s;
-          document.getElementById(`memory_contents_${device_id}`).innerHTML = s;
+          document.getElementById(`memory_${device_index}`).value = s;
+          document.getElementById(`memory_contents_${device_index}`).innerHTML = s;
+          add_status_message(`Memory for ${midi_device.midi_serial_number.toString(16).toUpperCase()}: ${s}`);
         }
         break;
 
       case 0x4:
-        status_div.innerHTML = `Wrote flash data`;
+        add_status_message(`Wrote flash data`);
         break;
     }
   }

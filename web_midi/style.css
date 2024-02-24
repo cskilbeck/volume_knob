@@ -62,7 +62,10 @@ body {
     position: absolute;
     bottom: 0;
     width: 80%;
-    height: 20px;
-    padding-bottom: 20px;
+    height: 64px;
+    margin-bottom: 5px;
+    padding: 1px;
+    border: solid;
+    border-width: 1px;
     background-color: chartreuse;
 }
