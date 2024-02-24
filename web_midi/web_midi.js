@@ -55,6 +55,8 @@ const cc_list = {
 
 //////////////////////////////////////////////////////////////////////
 
+const FLASH_MAX_LEN = 16;
+
 let midi = null;
 let midi_devices = []
 let midi_id = 1;
@@ -124,23 +126,24 @@ function on_page_load() {
     .then(
       (midi_object) => {
         midi = midi_object;
-        initDevices();
+        init_devices();
       },
       (err) => {
-        console.log('requestMIDIAccess failed: ', err);
+        status_div.innerHTML = `requestMIDIAccess failed: ${err}`;
+        console.log(`requestMIDIAccess failed: ${err}`);
       }
     );
 }
 
 //////////////////////////////////////////////////////////////////////
 
-function initDevices() {
+function init_devices() {
 
   midi_devices = []
   midi_id = 1;
 
   midi.addEventListener('statechange', function (event) {
-    initDevices();
+    init_devices();
   });
 
   devices_div.innerHTML = "";
@@ -157,7 +160,7 @@ function initDevices() {
       midi_serial_number: 0,
       midi_input: null,
       midi_output: output,
-      midi_hex: ""
+      midi_hex: []
     };
     output.send([0xF0, 0x7E, midi_id & 0xff, 0x06, 0x01, 0xF7]);
     midi_id += 1;
@@ -215,7 +218,7 @@ const memory_response = [0xF0, 0x7E, 0x00, 0x06, 0x03];
 
 //////////////////////////////////////////////////////////////////////
 
-function is_sysex_message(data) {
+function get_sysex_device_id(data) {
   if (compare_array_sections(data, sysex_header, 0, 2) && data[3] == 0x06) {
     return data[2];
   }
@@ -295,7 +298,7 @@ function write_flash(index) {
     return;
   }
   let data_7bits = [];
-  bytes_to_bits7(device.midi_hex, 0, 8, data_7bits);
+  bytes_to_bits7(device.midi_hex, 0, FLASH_MAX_LEN, data_7bits);
   let msg = [0xF0, 0x7E, 0x00, 0x06, 0x04].concat(data_7bits).concat([0xF7]);
   device.midi_output.send(msg);
 }
@@ -303,10 +306,14 @@ function write_flash(index) {
 //////////////////////////////////////////////////////////////////////
 // Convert a hex string to a byte array
 
-function hexToBytes(hex) {
+function hex_to_bytes(hex) {
   let bytes = [];
-  for (let c = 0; c < hex.length; c += 2)
+  for (let c = 0; c < hex.length; c += 2) {
     bytes.push(parseInt(hex.substr(c, 2), 16));
+  }
+  while (bytes.length < FLASH_MAX_LEN) {
+    bytes.push(0xFF);
+  }
   return bytes;
 }
 
@@ -317,7 +324,7 @@ function bytes_to_hex_string(data, len) {
   let str = "";
   let l = Math.min(len, data.length);
   for (let i = 0; i < l; ++i) {
-    str += sep + data[i].toString(16).padStart(2, '0');
+    str += sep + data[i].toString(16).toUpperCase().padStart(2, '0');
     sep = " ";
   }
   return str;
@@ -333,15 +340,21 @@ function on_input_change(e, index) {
     return;
   }
   let stripped = e.value.replace(/\s+/g, '');
-  if (stripped.length == 0 || stripped.length % 2 != 0 || stripped.length > 16) {
-    device.midi_hex = null;
+  if (stripped.length == 0 || stripped.length % 2 != 0 || stripped.length > (FLASH_MAX_LEN * 2)) {
+    device.midi_hex = [];
     console.log("Not a hex string");
     return;
   }
 
-  device.midi_hex = hexToBytes(stripped);
-  document.getElementById(`memory_contents_${index}`).innerHTML = bytes_to_hex_string(device.midi_hex, 8);
+  device.midi_hex = hex_to_bytes(stripped);
+  document.getElementById(`memory_contents_${index}`).innerHTML = bytes_to_hex_string(device.midi_hex, FLASH_MAX_LEN);
   console.log(`Memory for ${device.midi_ident}:${device.midi_hex}`);
+}
+
+//////////////////////////////////////////////////////////////////////
+
+function is_null_or_undefined(x) {
+  return x === null || x === undefined;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -352,8 +365,10 @@ function on_midi_message(device, event) {
 
   console.log(`MIDI MESSAGE: ${data}`);
 
-  let device_id = is_sysex_message(data);
+  let device_id = get_sysex_device_id(data);
+
   if (device_id != undefined) {
+
     switch (data[4]) {
 
       case 0x02:
@@ -363,36 +378,19 @@ function on_midi_message(device, event) {
         }
         break;
 
-      case 0x03:
-        let num_bits = (event.length - 6) * 7;
-        let num_bytes = (num_bits + 7) / 8;
-        let bytes = [];
-        let total_bits = 0;
-        let current_byte = 0;
-        let cur = 5;
-        for (const i = 5; i < event.length - 5; ++i) {
-          let required_bits = 8 - total_bits;
-          if (required_bits > 7) {
-            required_bits = 7;
-          }
-          let extraction = data[cur] >> (7 - required_bits);
-          current_byte |= extraction << (8 - total_bits);
-          total_bits += required_bits;
-          if (total_bits == 8) {
-            bytes.push(current_byte);
-            total_bits = 0;
-          }
+      case 0x3:
+        if (!is_null_or_undefined(device)) {
+          let flash_data = [];
+          bits7_to_bytes(data, 5, FLASH_MAX_LEN, flash_data);
+          console.log(`FLASH: ${flash_data}`);
+          device.midi_hex = flash_data;
+          let s = bytes_to_hex_string(flash_data, FLASH_MAX_LEN);
+          document.getElementById(`memory_${device_id}`).value = s;
+          document.getElementById(`memory_contents_${device_id}`).innerHTML = s;
         }
         break;
 
-      case 0x10:
-        let flash_data = [];
-        bits7_to_bytes(data, 5, 8, flash_data);
-        console.log(`FLASH: ${flash_data}`);
-        document.getElementById(`memory_${device_id}`).value = bytes_to_hex_string(flash_data, 8);
-        break;
-
-      case 0x11:
+      case 0x4:
         status_div.innerHTML = `Wrote flash data`;
         break;
     }

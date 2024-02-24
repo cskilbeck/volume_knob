@@ -109,6 +109,32 @@ __xdata __at(0x0080) uint8 Ep2Buffer[2 * MAX_PACKET_SIZE];    // endpoint2 IN & 
 
 //////////////////////////////////////////////////////////////////////
 
+#define FLASH_LEN 16
+#define FLASH_7BIT_LEN (((FLASH_LEN * 8) + 6) / 7)
+
+__xdata __at(0x0080 + sizeof(Ep2Buffer)) uint8 send_buffer[48];
+__xdata __at(0x0080 + sizeof(Ep2Buffer) + sizeof(send_buffer)) uint8 flash_buffer[FLASH_LEN];
+
+
+volatile __idata uint8 ep2_recv_len = 0;    // # received by USB endpoint
+volatile __idata uint8 ep2_busy = 0;        // upload endpoint busy flag
+
+typedef uint32 midi_packet;
+
+// must be a power of 2
+#define KEY_QUEUE_LEN 4
+
+__idata midi_packet queue_buffer[KEY_QUEUE_LEN];
+__idata uint8 queue_head = 0;
+__idata uint8 queue_size = 0;
+
+__idata uint8 sysex_recv_buffer[48];
+__idata uint8 sysex_recv_length = 0;
+__idata uint8 sysex_recv_packet_offset = 0;
+__idata uint8 device_id = 0;
+
+//////////////////////////////////////////////////////////////////////
+
 uint16 SetupLen;
 uint8 SetupReq;
 uint8 UsbConfig;
@@ -190,12 +216,6 @@ unsigned char __code product_string[] = {
 // manufacturer string
 unsigned char __code manufacturer_string[] = { 0x26, 0x03, 'T', 0,   'i', 0,   'n', 0,   'y', 0,   ' ', 0,   'L', 0,   'i', 0,   't', 0,   't',
                                                0,    'l',  0,   'e', 0,   ' ', 0,   'T', 0,   'h', 0,   'i', 0,   'n', 0,   'g', 0,   's', 0 };
-
-#define MIDI_REV_LEN 32                        // MIDI receive buffer size
-__idata uint8 midi_in_buffer[MIDI_REV_LEN];    // MIDI receive buffer
-
-volatile __idata uint8 ep2_recv_len = 0;    // # received by USB endpoint
-volatile __idata uint8 ep2_busy = 0;        // upload endpoint busy flag
 
 //////////////////////////////////////////////////////////////////////
 
@@ -562,15 +582,6 @@ void bootloader_led_flash(int8_t n)
 // we have to queue things up because the rotary encoder can generate
 // messages faster than we can send them
 
-typedef uint32 midi_packet;
-
-// must be a power of 2
-#define KEY_QUEUE_LEN 4
-
-__idata midi_packet queue_buffer[KEY_QUEUE_LEN];
-uint8 queue_head = 0;
-uint8 queue_size = 0;
-
 inline bool queue_full()
 {
     return queue_size == KEY_QUEUE_LEN;
@@ -642,8 +653,6 @@ __code uint8 const identity_request_2[] = { 0xF0, 0x7E };
 __code uint8 const identity_request_3[] = { 0x06, 0x01, 0xF7 };
 
 #define IDENTITY_REQUEST_LENGTH (sizeof(identity_request_2) + 1 + sizeof(identity_request_3))
-
-__idata uint8 send_buffer[16];
 
 uint8 const identity_response[] = {
     0xF0,    // identity response header
@@ -734,73 +743,70 @@ bool usb_send(uint8 *data, uint8 length)
 
 //////////////////////////////////////////////////////////////////////
 
-__idata uint8 sysex_recv_buffer[16];
-__idata uint8 sysex_recv_length = 0;
-__idata uint8 sysex_recv_packet_offset = 0;
-__idata uint8 device_id = 0;
-
 void sysex_parse_add(uint8 length)
 {
     if(length > (sizeof(sysex_recv_buffer) - sysex_recv_length)) {
         sysex_recv_length = 0;
     } else {
-        memcpy(sysex_recv_buffer + sysex_recv_length, midi_in_buffer + sysex_recv_packet_offset + 1, length);
+        memcpy(sysex_recv_buffer + sysex_recv_length, Ep2Buffer + sysex_recv_packet_offset + 1, length);
         sysex_recv_length += length;
+    }
+}
 
-        if(sysex_recv_buffer[sysex_recv_length - 1] == 0xF7) {
+//////////////////////////////////////////////////////////////////////
 
-            hexdump("sysex", sysex_recv_buffer, sysex_recv_length);
+void handle_midi_packet()
+{
+    hexdump("MIDI", sysex_recv_buffer, sysex_recv_length);
 
-            sysex_recv_length = 0;
+    if(sysex_recv_buffer[sysex_recv_length - 1] == 0xF7) {
 
-            if(sysex_recv_buffer[0] == 0xF0 && sysex_recv_buffer[1] == 0x7E && sysex_recv_buffer[3] == 0x06) {
+        if(sysex_recv_buffer[0] == 0xF0 && sysex_recv_buffer[1] == 0x7E && sysex_recv_buffer[3] == 0x06) {
 
-                switch(sysex_recv_buffer[4]) {
+            switch(sysex_recv_buffer[4]) {
 
-                // identity request
-                case 0x01:
-                    device_id = sysex_recv_buffer[2];
-                    memcpy(send_buffer, identity_response, sizeof(identity_response));
-                    send_buffer[2] = device_id;
-                    send_buffer[10] = (chip_id >> 21) & 0x7f;
-                    send_buffer[11] = (chip_id >> 14) & 0x7f;
-                    send_buffer[12] = (chip_id >> 7) & 0x7f;
-                    send_buffer[13] = (chip_id >> 0) & 0x7f;
-                    usb_send(send_buffer, sizeof(identity_response));
-                    break;
+            // identity request
+            case 0x01:
+                device_id = sysex_recv_buffer[2];
+                memcpy(send_buffer, identity_response, sizeof(identity_response));
+                send_buffer[2] = device_id;
+                send_buffer[10] = (chip_id >> 21) & 0x7f;
+                send_buffer[11] = (chip_id >> 14) & 0x7f;
+                send_buffer[12] = (chip_id >> 7) & 0x7f;
+                send_buffer[13] = (chip_id >> 0) & 0x7f;
+                usb_send(send_buffer, sizeof(identity_response));
+                break;
 
-                // toggle led
-                case 0x02:
-                    LED_BIT = !LED_BIT;
-                    break;
+            // toggle led
+            case 0x02:
+                LED_BIT = !LED_BIT;
+                break;
 
-                // Get flash
-                case 0x03: {
-                    putstr("Get flash!?\n");
-                    uint8 buffer[8];
-                    read_flash_data(0, 8, buffer);
-                    send_buffer[2] = device_id;
-                    send_buffer[4] = 0x10;
-                    memset(send_buffer + 5, 0, 10);
-                    bytes_to_bits7(buffer, 0, 8, send_buffer + 5);
-                    send_buffer[15] = 0xf7;
-                    usb_send(send_buffer, 16);
-                } break;
+            // Get flash
+            case 0x03: {
+                read_flash_data(0, FLASH_LEN, flash_buffer);
+                hexdump("READ", flash_buffer, FLASH_LEN);
+                send_buffer[2] = device_id;
+                send_buffer[4] = 0x3;
+                memset(send_buffer + 5, 0, FLASH_7BIT_LEN);
+                bytes_to_bits7(flash_buffer, 0, FLASH_LEN, send_buffer + 5);
+                send_buffer[5 + FLASH_7BIT_LEN] = 0xf7;
+                usb_send(send_buffer, 6 + FLASH_7BIT_LEN);
+            } break;
 
-                // Set flash
-                case 0x04: {
-                    uint8 buffer[8];
-                    bits7_to_bytes(sysex_recv_buffer, 5, 8, buffer);
-                    hexdump("WRITE", buffer, 8);
-                    write_flash_data(0, 8, buffer);
-                    send_buffer[2] = device_id;
-                    send_buffer[4] = 0x11;
-                    send_buffer[5] = 0xF7;
-                } break;
-                }
+            // Set flash
+            case 0x04: {
+                bits7_to_bytes(sysex_recv_buffer, 5, FLASH_LEN, flash_buffer);
+                hexdump("WRITE", flash_buffer, FLASH_LEN);
+                write_flash_data(0, FLASH_LEN, flash_buffer);
+                send_buffer[2] = device_id;
+                send_buffer[4] = 0x4;
+                send_buffer[5] = 0xF7;
+            } break;
             }
         }
     }
+    sysex_recv_length = 0;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -811,7 +817,7 @@ void process_midi_packet_in(uint8 length)
 
     while(sysex_recv_packet_offset < length) {
 
-        uint8 cmd = midi_in_buffer[sysex_recv_packet_offset];
+        uint8 cmd = Ep2Buffer[sysex_recv_packet_offset];
 
         switch(cmd) {
 
@@ -996,18 +1002,10 @@ int main()
 
             if(ep2_recv_len) {
 
-                uint8_t length = ep2_recv_len;
-                if(length > sizeof(midi_in_buffer)) {
-                    length = sizeof(midi_in_buffer);
-                }
-
-                memcpy(midi_in_buffer, Ep2Buffer, ep2_recv_len);
+                process_midi_packet_in(ep2_recv_len);
                 UEP2_CTRL = (UEP2_CTRL & ~MASK_UEP_R_RES) | UEP_R_RES_ACK;
                 ep2_recv_len = 0;
-
-                hexdump("raw", midi_in_buffer, length);
-
-                process_midi_packet_in(length);
+                handle_midi_packet();
             }
 
             // send any waiting midi packets
