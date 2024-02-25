@@ -169,14 +169,18 @@ void UART0_Init()
     // if(x2 >= 5)
     //     x++;    // rounding
 
-// 115200 BAUD @ 24MHz
-#define BAUD_REG 0xF3
+#define _BAUD_X1(clk, baud) (10 * clk / baud / 16)
+#define _BAUD_X2(clk, baud) (_BAUD_X1(clk, baud) % 10)
+#define _BAUD_X3(clk, baud) (_BAUD_X2(clk, baud) / 5)
+#define _BAUD_X4(clk, baud) ((_BAUD_X1(clk, baud) / 10) + _BAUD_X3(clk, baud))
+#define BAUD_SET(clk, baud) ((uint8)(0x100 - _BAUD_X4(clk, baud)))
 
-    TMOD = TMOD & ~bT1_GATE & ~bT1_CT & ~MASK_T1_MOD | bT1_M1;    // 0X20，Timer1 As an 8 -bit automatic load timer
-    T2MOD = T2MOD | bTMR_CLK | bT1_CLK;                           // Timer1 Clock selection
-    TH1 = BAUD_REG;                                               // 12MHz Crystal, baud/12 For actual need to set the baud rate
-    TR1 = 1;                                                      // Start the timer 1
-    TI = 1;
+#define BAUD_REG BAUD_SET(FREQ_SYS, 115200)
+
+    TMOD = TMOD & ~bT1_GATE & ~bT1_CT & ~MASK_T1_MOD | bT1_M1;    // Timer 1 8-bit automatic load
+    T2MOD = T2MOD | bTMR_CLK | bT1_CLK;                           // Timer 1 clock select
+    TH1 = BAUD_REG;
+    TR1 = 1;    // Start Timer 1
     REN = 1;    // Serial 0 receive enable
 }
 
