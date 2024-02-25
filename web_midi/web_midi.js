@@ -55,7 +55,7 @@ const cc_list = {
 
 //////////////////////////////////////////////////////////////////////
 
-const FLASH_MAX_LEN = 16;
+const FLASH_MAX_LEN = 26;
 
 // main webmidi object
 let midi = null;
@@ -339,8 +339,8 @@ function handle_new_device(device, data) {
             <button onclick='write_flash(${midi_index})'>Save</button>
           </div>
           <div class='device_controls'>
-            <input class = 'memory_input' id='memory_${midi_index}' oninput='on_input_change(this, ${midi_index})'></input>
-            <span class = 'memory_input' id='memory_contents_${midi_index}'></span>
+            <textarea rows='2' cols='40' class='memory_input' id='memory_${midi_index}' oninput='on_input_change(this, ${midi_index})'></textarea>
+            <textarea readonly rows='2' cols='40' class = 'memory_contents' id='memory_contents_${midi_index}'></textarea>
           </div>
         </div>
       </div>

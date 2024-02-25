@@ -242,6 +242,7 @@ void usb_irq_handler(void) __interrupt(INT_NO_USB)    // USB interrupt service p
 
                     case USB_SET_CONFIGURATION:
                         usb_config = usb_setup_buffer->wValueL;
+                        hexdump("CONFIG", &usb_config, 1);
                         break;
 
                     case USB_GET_INTERFACE:

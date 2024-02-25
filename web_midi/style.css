@@ -52,10 +52,26 @@ body {
     margin-bottom: 3px;
 }
 
+textarea {
+    resize: none;
+}
+
 .memory_input {
-    width: 28em;
     margin-top: 2px;
     font-family: monospace;
+    overflow: hidden;
+    overflow-wrap: break-word;
+    text-wrap: wrap;
+}
+
+.memory_contents {
+    margin-top: 2px;
+    font-family: monospace;
+    overflow: hidden;
+    overflow-wrap: break-word;
+    text-wrap: wrap;
+    border-color: transparent;
+    background-color: transparent;
 }
 
 #status {

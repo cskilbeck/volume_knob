@@ -9,6 +9,7 @@
 #include "debug.h"
 #include "util.h"
 #include "usb.h"
+#include "load_save.h"
 
 //////////////////////////////////////////////////////////////////////
 // BOOTLOADER admin
@@ -84,7 +85,6 @@ enum midi_code_index
 
 //////////////////////////////////////////////////////////////////////
 
-#define FLASH_LEN 16
 #define FLASH_7BIT_LEN (((FLASH_LEN * 8) + 6) / 7)
 
 __xdata __at(0x0080 + sizeof(Ep2Buffer)) uint8 send_buffer[48];
