@@ -60,7 +60,6 @@ SBIT(ROTB_BIT, ROTB_PORT, ROTB_PIN);
 //////////////////////////////////////////////////////////////////////
 // Rotary Encoder
 
-uint8 vol_direction;
 int8 turn_value;
 
 #define CLOCKWISE 2
@@ -88,12 +87,12 @@ enum midi_code_index
 #define FLASH_7BIT_LEN (((FLASH_LEN * 8) + 6) / 7)
 
 __xdata __at(0x0080 + sizeof(Ep2Buffer)) uint8 send_buffer[48];
-__xdata __at(0x0080 + sizeof(Ep2Buffer) + sizeof(send_buffer)) uint8 flash_buffer[FLASH_LEN];
+__xdata __at(0x0080 + sizeof(Ep2Buffer) + sizeof(send_buffer)) save_buffer_t save_buffer;
 
 typedef uint32 midi_packet;
 
 // must be a power of 2
-#define KEY_QUEUE_LEN 4
+#define KEY_QUEUE_LEN 8
 
 __idata midi_packet queue_buffer[KEY_QUEUE_LEN];
 __idata uint8 queue_head = 0;
@@ -168,20 +167,6 @@ inline void queue_get_at(midi_packet *dst)
 }
 
 //////////////////////////////////////////////////////////////////////
-// send the next waiting packet if there is one and the usb is ready
-
-void midi_packet_send_update()
-{
-    if(!ep2_busy && !queue_empty()) {
-        queue_get_at((uint32 *)(Ep2Buffer + MAX_PACKET_SIZE));
-        hexdump("send", Ep2Buffer + MAX_PACKET_SIZE, 4);
-        UEP2_T_LEN = 4;
-        UEP2_CTRL = UEP2_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK;    // Answer ACK
-        ep2_busy = 1;
-    }
-}
-
-//////////////////////////////////////////////////////////////////////
 
 #define MIDI_MANUFACTURER_ID 0x36    // Cheetah Marketing, defunct
 #define MIDI_FAMILY_CODE_LOW 0x55
@@ -216,36 +201,56 @@ uint8 const identity_response[] = {
 };
 
 //////////////////////////////////////////////////////////////////////
+// send the next waiting packet if there is one and the usb is ready
+
+void midi_packet_send_update()
+{
+    if(ep2_busy) {
+        return;
+    }
+    uint8 filled = 0;
+    midi_packet *dst = (midi_packet *)(Ep2Buffer + MAX_PACKET_SIZE);
+    while(filled < (MAX_PACKET_SIZE - (sizeof(midi_packet) - 1)) && !queue_empty()) {
+        queue_get_at(dst);
+        filled += 4;
+        dst += 1;
+    }
+    if(filled != 0) {
+        hexdump("send", Ep2Buffer + MAX_PACKET_SIZE, filled);
+        UEP2_T_LEN = filled;
+        UEP2_CTRL = UEP2_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK;    // Answer ACK
+        ep2_busy = 1;
+    }
+}
+
+//////////////////////////////////////////////////////////////////////
 
 uint8 *usb_send_ptr;
-uint8 usb_sent = 0;
 uint8 usb_send_remain = 0;
 
 bool usb_send_update()
 {
-    uint8 r = usb_send_remain;
-    if(r == 0) {
+    if(usb_send_remain == 0) {
         return false;
     }
-
-    if(r > 3) {
-        r = 3;
+    while(!queue_full() && usb_send_remain != 0) {
+        uint8 r = usb_send_remain;
+        if(r > 3) {
+            r = 3;
+        }
+        uint8 cmd = mci_sysex_start;
+        if(r < 3 || usb_send_remain <= 3) {
+            cmd = mci_sysex_end_1 + r - 1;
+        }
+        midi_packet packet = 0;
+        uint8 *dst = (uint8 *)&packet;
+        *dst++ = cmd;
+        for(uint8 i = 0; i < r; ++i) {
+            *dst++ = *usb_send_ptr++;
+        }
+        queue_put(packet);
+        usb_send_remain -= r;
     }
-    uint8 cmd = mci_sysex_start;
-    if(r < 3 || usb_send_remain <= 3) {
-        cmd = mci_sysex_end_1 + r - 1;
-    }
-    midi_packet packet = 0;
-    uint8 *dst = (uint8 *)&packet;
-    uint8 *src = usb_send_ptr;
-    *dst++ = cmd;
-    for(uint8 i = 0; i < r; ++i) {
-        *dst++ = *src++;
-    }
-    queue_put(packet);
-    usb_sent += r;
-    usb_send_ptr += r;
-    usb_send_remain -= r;
     return true;
 }
 
@@ -307,21 +312,25 @@ void handle_midi_packet()
 
             // Get flash
             case 0x03: {
-                read_flash_data(0, FLASH_LEN, flash_buffer);
-                hexdump("READ", flash_buffer, FLASH_LEN);
+                if(!load_flash(&save_buffer)) {
+                    memset(save_buffer.data, 0xff, sizeof(save_buffer.data));
+                }
+                // read_flash_data(0, FLASH_LEN, flash_buffer);
+                hexdump("READ", save_buffer.data, FLASH_LEN);
                 send_buffer[2] = device_id;
                 send_buffer[4] = 0x3;
                 memset(send_buffer + 5, 0, FLASH_7BIT_LEN);
-                bytes_to_bits7(flash_buffer, 0, FLASH_LEN, send_buffer + 5);
+                bytes_to_bits7(save_buffer.data, 0, FLASH_LEN, send_buffer + 5);
                 send_buffer[5 + FLASH_7BIT_LEN] = 0xF7;
                 usb_send(send_buffer, 6 + FLASH_7BIT_LEN);
             } break;
 
             // Set flash
             case 0x04: {
-                bits7_to_bytes(sysex_recv_buffer, 5, FLASH_LEN, flash_buffer);
-                hexdump("WRITE", flash_buffer, FLASH_LEN);
-                write_flash_data(0, FLASH_LEN, flash_buffer);
+                bits7_to_bytes(sysex_recv_buffer, 5, FLASH_LEN, save_buffer.data);
+                hexdump("WRITE", save_buffer.data, FLASH_LEN);
+                save_flash(&save_buffer);
+                // write_flash_data(0, FLASH_LEN, save_buffer.data);
                 send_buffer[2] = device_id;
                 send_buffer[4] = 0x4;
                 send_buffer[5] = 0x0;
@@ -411,6 +420,8 @@ int main()
     mDelaymS(5);     // Modify the main frequency and wait for the internal crystal stability, it will be added
     UART0_Init();    // Candidate 0, can be used for debugging
 
+    TI = 1;    // enable irqs
+
     chip_id = CHIP_UNIQUE_ID_LO | ((uint32)CHIP_UNIQUE_ID_HI << 16);
 
     hexdump("===== CHIPID =====", &chip_id, 4);
@@ -456,23 +467,7 @@ int main()
 
     bool button_state = false;    // for debouncing the button
 
-    if(!read_flash_data(DATA_FLASH_ADDR, 1, &vol_direction)) {
-        putstr("Error reading flash data\n");
-    } else {
-        hexdump("Vol Direction", &vol_direction, 1);
-    }
-
-    switch(vol_direction) {
-    case 0:
-        turn_value = -1;
-        break;
-    case 2:
-        turn_value = 1;
-        break;
-    default:
-        turn_value = ROTARY_DIRECTION - 1;
-        break;
-    }
+    turn_value = ROTARY_DIRECTION - 1;
 
     putstr("main loop\n");
 
