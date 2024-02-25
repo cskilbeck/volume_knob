@@ -7,10 +7,6 @@
 
 // //////////////////////////////////////////////////////////////////////
 
-__xdata __at(0x0000) uint8 Ep0Buffer[DEFAULT_ENDP0_SIZE];     // endpoint0 OUT & IN buffer，Must be an even address
-__xdata __at(0x0040) uint8 Ep1Buffer[DEFAULT_ENDP1_SIZE];     // endpoint1 upload buffer
-__xdata __at(0x0080) uint8 Ep2Buffer[2 * MAX_PACKET_SIZE];    // endpoint2 IN & OUT buffer, Must be an even address
-
 volatile __idata uint8 ep2_recv_len = 0;
 volatile __idata uint8 ep2_busy = 0;
 volatile __idata uint8 usb_config = 0;

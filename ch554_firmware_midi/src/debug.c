@@ -180,6 +180,7 @@ void UART0_Init()
     TMOD = TMOD & ~bT1_GATE & ~bT1_CT & ~MASK_T1_MOD | bT1_M1;    // Timer 1 8-bit automatic load
     T2MOD = T2MOD | bTMR_CLK | bT1_CLK;                           // Timer 1 clock select
     TH1 = BAUD_REG;
+    TI = 1;     // Set Transmit IRQ so we don't wait indefinitely before sending 1st byte
     TR1 = 1;    // Start Timer 1
     REN = 1;    // Serial 0 receive enable
 }
@@ -193,8 +194,8 @@ void UART0_Init()
  *******************************************************************************/
 uint8_t UART0_Get_Byte()
 {
-    while(RI == 0)
-        ;    // Inquiry and receiving, the interrupt method is not used
+    while(RI == 0) {
+    }
     RI = 0;
     return SBUF;
 }
@@ -208,9 +209,9 @@ uint8_t UART0_Get_Byte()
  *******************************************************************************/
 void UART0_Send_Byte(uint8_t SendDat)
 {
-    SBUF = SendDat;    // Inquiry sending, the interrupt method does not require the following 2 statements, but before sending TI=0
-    while(TI == 0)
-        ;
+    SBUF = SendDat;
+    while(TI == 0) {
+    }
     TI = 0;
 }
 
@@ -218,8 +219,8 @@ void UART0_Send_Byte(uint8_t SendDat)
 
 void putchar(char c)
 {
-    while(!TI) /* assumes UART is initialized */
-        ;
+    while(!TI) {
+    }
     TI = 0;
     SBUF = c;
 }
@@ -228,8 +229,8 @@ void putchar(char c)
 
 char getchar()
 {
-    while(!RI)
-        ; /* assumes UART is initialized */
+    while(!RI) {
+    }
     RI = 0;
     return SBUF;
 }
