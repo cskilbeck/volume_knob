@@ -15,7 +15,7 @@ ifndef XRAM_LOC
 XRAM_LOC = 0x0000
 endif
 
-CFLAGS = -mmcs51 --model-small --xram-size $(XRAM_SIZE) --xram-loc $(XRAM_LOC) --code-size 0x2800 -I$(INC) -o$(OBJ) -DFREQ_SYS=$(FREQ_SYS) $(EXTRA_FLAGS)
+CFLAGS = -mmcs51 --model-small --xram-size $(XRAM_SIZE) --xram-loc $(XRAM_LOC) --code-size 0x3800 -I$(INC) -o$(OBJ) -DFREQ_SYS=$(FREQ_SYS) $(EXTRA_FLAGS)
 
 LFLAGS = $(CFLAGS)
 TARGET = $(BIN)$(PROJECT)
@@ -25,16 +25,17 @@ DEP_FILES = $(SOURCES:%.c=$(OBJ)%.d)
 REL_FILES = $(SOURCES:%.c=$(OBJ)%.rel)
 
 $(OBJ)%.rel : $(SRC)%.c
-	$(CC) -c $(CFLAGS) -Wp,-MMD,-MT$@,-MF$(OBJ)$*.d $<
+	@echo $<
+	@$(CC) -c $(CFLAGS) -Wp,-MMD,-MT$@,-MF$(OBJ)$*.d $<
 
 $(TARGET).ihx: $(REL_FILES) $(C_FILES)
-	$(CC) $(REL_FILES) $(LFLAGS) -o $(TARGET).ihx
-
-$(TARGET).hex: $(TARGET).ihx
-	$(PACK_HEX) $(TARGET).ihx > $(TARGET).hex
+	@echo $@
+	@$(CC) $(REL_FILES) $(LFLAGS) -o $(TARGET).ihx
 
 $(TARGET).bin: $(TARGET).ihx
-	$(OBJCOPY) -I ihex -O binary $(TARGET).ihx $(TARGET).bin
+	@echo $@
+	@$(PACK_HEX) $(TARGET).ihx > $(TARGET).hex
+	@$(OBJCOPY) -I ihex -O binary $(TARGET).ihx $(TARGET).bin
 	
 flash: $(TARGET).bin pre-flash
 	$(WCHISP) -f $(TARGET).bin -g

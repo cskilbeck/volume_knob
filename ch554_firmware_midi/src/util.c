@@ -1,3 +1,4 @@
+#include <string.h>
 #include <ch554.h>
 #include "debug.h"
 #include "util.h"
@@ -112,4 +113,19 @@ bool write_flash_data(uint8 flash_addr, uint8 num_bytes, uint8 const *data)
     GLOBAL_CFG &= ~bDATA_WE;
 
     return true;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+uint16 crc16(uint8 const *data, uint8 length)
+{
+    uint16 crc = 0xffff;
+
+    while(length != 0) {
+        uint16 x = (crc >> 8) ^ *data++;
+        x ^= x >> 4;
+        crc = (crc << 8) ^ (x << 12) ^ (x << 5) ^ x;
+        length -= 1;
+    }
+    return crc;
 }

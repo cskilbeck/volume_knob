@@ -17,8 +17,10 @@ OBJ = obj/
 BIN = bin/
 
 SOURCES = \
+	usb.c \
 	main.c \
 	util.c \
+	load_save.c \
 	debug.c
 
 #EXTRA_FLAGS += -DDE_PRINTF
