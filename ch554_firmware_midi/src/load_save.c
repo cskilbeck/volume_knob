@@ -74,12 +74,12 @@ bool load_flash(save_buffer_t *buffer)
 
 bool save_flash(save_buffer_t *buffer)
 {
+    current_save_slot = 1 - current_save_slot;
     current_save_index += 1;
     buffer->index = current_save_index;
     save_buffer_set_crc(buffer);
     hexdump("save to slot", &current_save_slot, 1);
     hexdump("save index", &current_save_index, 4);
     uint8 flash_addr = (current_save_slot == 0) ? 0 : sizeof(save_buffer_t);
-    current_save_slot = 1 - current_save_slot;
     return write_flash_data(flash_addr, sizeof(save_buffer_t), (uint8 *)buffer);
 }
