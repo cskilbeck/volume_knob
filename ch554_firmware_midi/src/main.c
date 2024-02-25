@@ -18,7 +18,8 @@ typedef void (*BOOTLOADER)(void);
 #define bootloader554 ((BOOTLOADER)0x3800)    // CH551/2/3/4
 #define bootloader559 ((BOOTLOADER)0xF400)    // CH558/9
 
-#define BOOTLOADER_DELAY 0x300    // about 3 seconds
+// #define BOOTLOADER_DELAY 0x300    // about 3 seconds
+#define BOOTLOADER_DELAY 0x80    // about 3 seconds
 
 volatile const __code __at(ROM_CHIP_ID_LO)
 uint16_t CHIP_UNIQUE_ID_LO;
@@ -27,6 +28,7 @@ volatile const __code __at(ROM_CHIP_ID_HI)
 uint16_t CHIP_UNIQUE_ID_HI;
 
 uint32 chip_id;
+uint32 chip_id_28;
 
 //////////////////////////////////////////////////////////////////////
 // GPIO
@@ -74,20 +76,21 @@ int8 turn_value;
 
 //////////////////////////////////////////////////////////////////////
 
-enum midi_code_index
+enum midi_packet_header_t
 {
-    mci_sysex_start = 0x4,    // 3 SysEx starts or continues
-    mci_sysex_end_1 = 0x5,    // 1 Single-byte System Common Message or SysEx ends with following single byte.
-    mci_sysex_end_2 = 0x6,    // 2 SysEx ends with following two bytes.
-    mci_sysex_end_3 = 0x7,    // 3 SysEx ends with following three bytes.
+    midi_packet_start = 0x4,    // SysEx starts or continues with following three bytes
+    midi_packet_end_1 = 0x5,    // 1 Single-byte System Common Message or SysEx ends with following single byte.
+    midi_packet_end_2 = 0x6,    // SysEx ends with following two bytes.
+    midi_packet_end_3 = 0x7,    // SysEx ends with following three bytes.
 };
 
 //////////////////////////////////////////////////////////////////////
 
 #define FLASH_7BIT_LEN (((FLASH_LEN * 8) + 6) / 7)
 
-__xdata __at(0x0080 + sizeof(Ep2Buffer)) uint8 send_buffer[48];
-__xdata __at(0x0080 + sizeof(Ep2Buffer) + sizeof(send_buffer)) save_buffer_t save_buffer;
+__xdata __at(0x0100 + sizeof(Ep2Buffer)) uint8 send_buffer[48];
+__xdata __at(0x0100 + sizeof(Ep2Buffer) + sizeof(send_buffer)) save_buffer_t save_buffer;
+__xdata __at(0x0100 + sizeof(Ep2Buffer) + sizeof(send_buffer) + sizeof(save_buffer)) uint8 sysex_recv_buffer[48];
 
 typedef uint32 midi_packet;
 
@@ -98,7 +101,6 @@ __idata midi_packet queue_buffer[KEY_QUEUE_LEN];
 __idata uint8 queue_head = 0;
 __idata uint8 queue_size = 0;
 
-__idata uint8 sysex_recv_buffer[48];
 __idata uint8 sysex_recv_length = 0;
 __idata uint8 sysex_recv_packet_offset = 0;
 __idata uint8 device_id = 0;
@@ -168,37 +170,55 @@ inline void queue_get_at(midi_packet *dst)
 
 //////////////////////////////////////////////////////////////////////
 
-#define MIDI_MANUFACTURER_ID 0x36    // Cheetah Marketing, defunct
-#define MIDI_FAMILY_CODE_LOW 0x55
-#define MIDI_FAMILY_CODE_HIGH 0x44
-#define MIDI_MODEL_NUMBER_LOW 0x33
-#define MIDI_MODEL_NUMBER_HIGH 0x22
+#define MIDI_MANUFACTURER_ID 0x36    // Cheetah Marketing, defunct?
+#define MIDI_FAMILY_CODE 0x5544
+#define MIDI_MODEL_NUMBER 0x3322
 
 //////////////////////////////////////////////////////////////////////
 
-__code uint8 const identity_request_2[] = { 0xF0, 0x7E };
-// channel in between, we ignore it
-__code uint8 const identity_request_3[] = { 0x06, 0x01, 0xF7 };
-
-#define IDENTITY_REQUEST_LENGTH (sizeof(identity_request_2) + 1 + sizeof(identity_request_3))
-
-uint8 const identity_response[] = {
-    0xF0,    // identity response header
-    0x7E,    // identity response header
-    0x00,    // identity response header
-    0x06,    // identity response header
-    0x02,    // identity response header
-    MIDI_MANUFACTURER_ID,
-    MIDI_FAMILY_CODE_LOW,
-    MIDI_FAMILY_CODE_HIGH,
-    MIDI_MODEL_NUMBER_LOW,
-    MIDI_MODEL_NUMBER_HIGH,
-    0x00,    // UNIQUE_ID goes in here
-    0x00,    // UNIQUE_ID goes in here
-    0x00,    // UNIQUE_ID goes in here
-    0x00,    // UNIQUE_ID goes in here
-    0xF7     // sysex terminator
+enum
+{
+    sysex_request_device_id = 0x01,
+    sysex_request_toggle_led = 0x02,
+    sysex_request_get_flash = 0x03,
+    sysex_request_set_flash = 0x04
 };
+
+enum
+{
+    sysex_response_unused_01 = 0x01,
+    sysex_response_device_id = 0x02,
+    sysex_response_get_flash = 0x03,
+    sysex_response_set_flash_ack = 0x04
+};
+
+typedef struct sysex_hdr
+{
+    uint8 sysex_start;           // 0xF0
+    uint8 sysex_realtime;        // 0x7F (realtime) or 0x7E (non-realtime)
+    uint8 sysex_device_index;    // get it from the identity request
+    uint8 sysex_type;            // 0x06
+    uint8 sysex_code;            // see enums above
+} sysex_hdr_t;
+
+typedef struct sysex_identity_response
+{
+    uint8 manufacturer_id;
+    uint16 family_code;
+    uint16 model_number;
+    uint32 unique_id;
+} sysex_identity_response_t;
+
+void *init_midi_sysex_response(uint8 code)
+{
+    sysex_hdr_t *p = (sysex_hdr_t *)send_buffer;
+    p->sysex_start = 0xF0;
+    p->sysex_realtime = 0x7E;
+    p->sysex_device_index = device_id;
+    p->sysex_type = 0x06;
+    p->sysex_code = code;
+    return (void *)(send_buffer + sizeof(sysex_hdr_t));
+}
 
 //////////////////////////////////////////////////////////////////////
 // send the next waiting packet if there is one and the usb is ready
@@ -238,9 +258,9 @@ bool usb_send_update()
         if(r > 3) {
             r = 3;
         }
-        uint8 cmd = mci_sysex_start;
+        uint8 cmd = midi_packet_start;
         if(r < 3 || usb_send_remain <= 3) {
-            cmd = mci_sysex_end_1 + r - 1;
+            cmd = midi_packet_end_1 + r - 1;
         }
         midi_packet packet = 0;
         uint8 *dst = (uint8 *)&packet;
@@ -271,6 +291,15 @@ bool usb_send(uint8 *data, uint8 length)
 
 //////////////////////////////////////////////////////////////////////
 
+bool usb_send_sysex(uint8 payload_length)
+{
+    uint8 total_length = sizeof(sysex_hdr_t) + payload_length + 1;    // +1 for 0xF7 terminator
+    send_buffer[total_length - 1] = 0xF7;
+    return usb_send(send_buffer, total_length);
+}
+
+//////////////////////////////////////////////////////////////////////
+
 void sysex_parse_add(uint8 length)
 {
     if(length > (sizeof(sysex_recv_buffer) - sysex_recv_length)) {
@@ -294,48 +323,45 @@ void handle_midi_packet()
             switch(sysex_recv_buffer[4]) {
 
             // identity request
-            case 0x01:
+            case sysex_request_device_id: {
+
                 device_id = sysex_recv_buffer[2];
-                memcpy(send_buffer, identity_response, sizeof(identity_response));
-                send_buffer[2] = device_id;
-                send_buffer[10] = (chip_id >> 21) & 0x7f;
-                send_buffer[11] = (chip_id >> 14) & 0x7f;
-                send_buffer[12] = (chip_id >> 7) & 0x7f;
-                send_buffer[13] = (chip_id >> 0) & 0x7f;
-                usb_send(send_buffer, sizeof(identity_response));
-                break;
+
+                sysex_identity_response_t *response = init_midi_sysex_response(sysex_response_device_id);
+                response->manufacturer_id = MIDI_MANUFACTURER_ID;
+                response->family_code = MIDI_FAMILY_CODE;
+                response->model_number = MIDI_MODEL_NUMBER;
+                response->unique_id = chip_id_28;
+                usb_send_sysex(sizeof(sysex_identity_response_t));
+            } break;
 
             // toggle led
-            case 0x02:
+            case sysex_request_toggle_led:
                 LED_BIT = !LED_BIT;
                 break;
 
             // Get flash
-            case 0x03: {
+            case sysex_request_get_flash: {
                 if(!load_flash(&save_buffer)) {
                     memset(save_buffer.data, 0xff, sizeof(save_buffer.data));
                 }
-                // read_flash_data(0, FLASH_LEN, flash_buffer);
                 hexdump("READ", save_buffer.data, FLASH_LEN);
-                send_buffer[2] = device_id;
-                send_buffer[4] = 0x3;
-                memset(send_buffer + 5, 0, FLASH_7BIT_LEN);
-                bytes_to_bits7(save_buffer.data, 0, FLASH_LEN, send_buffer + 5);
-                send_buffer[5 + FLASH_7BIT_LEN] = 0xF7;
-                usb_send(send_buffer, 6 + FLASH_7BIT_LEN);
+                uint8 *buf = init_midi_sysex_response(sysex_response_get_flash);
+                bytes_to_bits7(save_buffer.data, 0, FLASH_LEN, buf);
+                usb_send_sysex(FLASH_7BIT_LEN);
             } break;
 
             // Set flash
-            case 0x04: {
+            case sysex_request_set_flash: {
                 bits7_to_bytes(sysex_recv_buffer, 5, FLASH_LEN, save_buffer.data);
                 hexdump("WRITE", save_buffer.data, FLASH_LEN);
-                save_flash(&save_buffer);
-                // write_flash_data(0, FLASH_LEN, save_buffer.data);
-                send_buffer[2] = device_id;
-                send_buffer[4] = 0x4;
-                send_buffer[5] = 0x0;
-                send_buffer[6] = 0xF7;
-                usb_send(send_buffer, 7);
+                uint8 *buf = init_midi_sysex_response(sysex_response_set_flash_ack);
+                *buf = 0x01;
+                if(!save_flash(&save_buffer)) {
+                    putstr("Error saving flash\n");
+                    *buf = 0xff;
+                }
+                usb_send_sysex(1);
             } break;
             }
         }
@@ -355,15 +381,15 @@ void process_midi_packet_in(uint8 length)
 
         switch(cmd) {
 
-        case mci_sysex_start:
-        case mci_sysex_end_3:
+        case midi_packet_start:
+        case midi_packet_end_3:
             sysex_parse_add(3);
             break;
 
-        case mci_sysex_end_1:
+        case midi_packet_end_1:
             sysex_parse_add(1);
             break;
-        case mci_sysex_end_2:
+        case midi_packet_end_2:
             sysex_parse_add(2);
             break;
 
@@ -423,6 +449,11 @@ int main()
     TI = 1;    // enable irqs
 
     chip_id = CHIP_UNIQUE_ID_LO | ((uint32)CHIP_UNIQUE_ID_HI << 16);
+    uint8 *cip = (uint8 *)&chip_id_28;
+    cip[0] = (chip_id >> 21) & 0x7f;
+    cip[1] = (chip_id >> 14) & 0x7f;
+    cip[2] = (chip_id >> 7) & 0x7f;
+    cip[3] = (chip_id >> 0) & 0x7f;
 
     hexdump("===== CHIPID =====", &chip_id, 4);
 
