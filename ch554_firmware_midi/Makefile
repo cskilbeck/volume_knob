@@ -16,7 +16,8 @@ SOURCES = \
 	load_save.c \
 	gpio.c \
 	encoder.c \
-	debug.c
+	debug.c \
+	midi.c
 
 EXTRA_FLAGS += --std-c23
 

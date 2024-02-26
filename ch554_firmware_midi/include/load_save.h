@@ -10,6 +10,8 @@
 
 #define FLASH_LEN 26
 
+#define FLASH_7BIT_LEN (((FLASH_LEN * 8) + 6) / 7)
+
 //////////////////////////////////////////////////////////////////////
 // sizeof config_t must be FLASH_LEN
 

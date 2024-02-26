@@ -6,6 +6,9 @@
 
 #pragma disable_warning 110
 
+uint32 chip_id;
+uint32 chip_id_28;
+
 //////////////////////////////////////////////////////////////////////
 // expand some bytes into an array of 7 bit values
 
@@ -57,4 +60,19 @@ void bits7_to_bytes(uint8 *src_data, uint8 offset, uint8 len, uint8 *dest)
             dest[dest_index++] = (cur_src >> bits_available) & 0xff;
         }
     }
+}
+
+//////////////////////////////////////////////////////////////////////
+
+void init_chip_id()
+{
+    // get unique chip id
+    chip_id = CHIP_UNIQUE_ID_LO | ((uint32)CHIP_UNIQUE_ID_HI << 16);
+
+    // make a 28 bit version so we can send as 4 x 7bits for midi identification
+    uint8 *cip = (uint8 *)&chip_id_28;
+    cip[0] = (chip_id >> 21) & 0x7f;
+    cip[1] = (chip_id >> 14) & 0x7f;
+    cip[2] = (chip_id >> 7) & 0x7f;
+    cip[3] = (chip_id >> 0) & 0x7f;
 }
