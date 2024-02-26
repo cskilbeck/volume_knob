@@ -21,7 +21,9 @@ CFLAGS = -mmcs51 \
 LFLAGS = $(CFLAGS)
 TARGET = $(BIN)$(PROJECT)
 
-C_FILES = $(SOURCES:%.c=$(SRC)%.c)
+SOURCES = $(notdir $(wildcard $(SRC)*.c))
+
+SRC_FILES = $(SOURCES:%.c=$(SRC)%.c)
 DEP_FILES = $(SOURCES:%.c=$(OBJ)%.d)
 REL_FILES = $(SOURCES:%.c=$(OBJ)%.rel)
 
@@ -29,14 +31,13 @@ $(OBJ)%.rel : $(SRC)%.c
 	@echo $<
 	@$(CC) -c $(CFLAGS) -Wp,-MMD,-MT$@,-MF$(OBJ)$*.d $<
 
-$(TARGET).ihx: $(REL_FILES) $(C_FILES)
-	@echo $@
+$(TARGET).ihx: $(REL_FILES) $(SRC_FILES)
 	@$(CC) $(REL_FILES) $(LFLAGS) -o $(TARGET).ihx
 
 $(TARGET).bin: $(TARGET).ihx
-	@echo $@
-	@$(PACK_HEX) $(TARGET).ihx > $(TARGET).hex
+	@$(PACK_HEX) $(TARGET).ihx > $(TARGET).hex 2> >(grep -v -e ': OK\.' 1>&2)
 	@$(OBJCOPY) -I ihex -O binary $(TARGET).ihx $(TARGET).bin
+	@echo Built $@
 	
 flash: $(TARGET).bin pre-flash
 	$(WCHISP) -f $(TARGET).bin -g

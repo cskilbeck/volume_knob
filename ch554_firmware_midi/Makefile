@@ -10,16 +10,6 @@ INC = include/
 OBJ = obj/
 BIN = bin/
 
-SOURCES = \
-	usb.c \
-	main.c \
-	util.c \
-	config.c \
-	gpio.c \
-	encoder.c \
-	debug.c \
-	midi.c
-
 EXTRA_FLAGS += --std-c23
 
 include Makefile.include
