@@ -2,6 +2,7 @@
 #include <string.h>
 #include "ch554.h"
 #include "ch554_usb.h"
+#include "types.h"
 #include "debug.h"
 #include "usb.h"
 

@@ -9,6 +9,7 @@
 #include <stdint.h>
 
 #include "ch554.h"
+#include "types.h"
 #include "debug.h"
 
 /*******************************************************************************
@@ -29,6 +30,10 @@ void CfgFsys()
 
     SAFE_MOD = 0x55;
     SAFE_MOD = 0xAA;
+
+#if !defined(FREQ_SYS)
+#define FREQ_SYS 24000000
+#endif
 
 #if FREQ_SYS == 32000000
     CLOCK_CFG = CLOCK_CFG & ~MASK_SYS_CK_SEL | 0x07;    // 32MHz

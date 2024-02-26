@@ -1,5 +1,6 @@
 #include <string.h>
 #include "ch554.h"
+#include "types.h"
 #include "debug.h"
 #include "util.h"
 #include "load_save.h"

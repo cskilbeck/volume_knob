@@ -14,11 +14,10 @@ SOURCES = \
 	main.c \
 	util.c \
 	load_save.c \
+	gpio.c \
+	encoder.c \
 	debug.c
 
-#EXTRA_FLAGS += -DDE_PRINTF
 EXTRA_FLAGS += --std-c23
-
-pre-flash:
 
 include Makefile.include

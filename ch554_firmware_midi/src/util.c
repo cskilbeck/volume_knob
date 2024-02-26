@@ -1,5 +1,6 @@
 #include <string.h>
 #include <ch554.h>
+#include "types.h"
 #include "debug.h"
 #include "util.h"
 
@@ -7,7 +8,6 @@
 
 //////////////////////////////////////////////////////////////////////
 // expand some bytes into an array of 7 bit values
-// max len is 31 bytes
 
 void bytes_to_bits7(uint8 *src_data, uint8 offset, uint8 len, uint8 *dest)
 {

@@ -6,10 +6,13 @@
 
 #include "ch554.h"
 #include "ch554_usb.h"
+#include "types.h"
 #include "debug.h"
 #include "util.h"
 #include "usb.h"
 #include "load_save.h"
+#include "gpio.h"
+#include "encoder.h"
 
 //////////////////////////////////////////////////////////////////////
 // BOOTLOADER admin
@@ -19,7 +22,12 @@ typedef void (*BOOTLOADER)(void);
 #define bootloader559 ((BOOTLOADER)0xF400)    // CH558/9
 
 // #define BOOTLOADER_DELAY 0x300    // about 3 seconds
-#define BOOTLOADER_DELAY 0x80    // about 3 seconds
+#define BOOTLOADER_DELAY 0x80
+
+#define DEBOUNCE_TIME 0xA0u
+#define T2_DEBOUNCE (0xFFu - DEBOUNCE_TIME)
+
+#define BOOT_FLASH_LED_COUNT 6
 
 volatile const __code __at(ROM_CHIP_ID_LO)
 uint16_t CHIP_UNIQUE_ID_LO;
@@ -29,35 +37,6 @@ uint16_t CHIP_UNIQUE_ID_HI;
 
 uint32 chip_id;
 uint32 chip_id_28;
-
-//////////////////////////////////////////////////////////////////////
-// GPIO
-
-#define PORT1 0x90
-#define PORT3 0xB0
-
-#define UART_TX_PORT PORT3
-#define UART_TX_PIN 0
-
-#define UART_RX_PORT PORT3
-#define UART_RX_PIN 1
-
-#define ROTA_PORT PORT3
-#define ROTA_PIN 3
-
-#define ROTB_PORT PORT3
-#define ROTB_PIN 4
-
-#define BTN_PORT PORT3
-#define BTN_PIN 2
-
-#define LED_PORT PORT1
-#define LED_PIN 6
-
-SBIT(BTN_BIT, BTN_PORT, BTN_PIN);
-SBIT(LED_BIT, LED_PORT, LED_PIN);
-SBIT(ROTA_BIT, ROTA_PORT, ROTA_PIN);
-SBIT(ROTB_BIT, ROTB_PORT, ROTB_PIN);
 
 //////////////////////////////////////////////////////////////////////
 // Rotary Encoder
@@ -99,15 +78,18 @@ typedef uint32 midi_packet;
 __xdata uint8 Ep0Buffer[DEFAULT_ENDP0_SIZE];     // endpoint0 OUT & IN buffer，Must be an even address
 __xdata uint8 Ep1Buffer[DEFAULT_ENDP1_SIZE];     // endpoint1 upload buffer
 __xdata uint8 Ep2Buffer[2 * MAX_PACKET_SIZE];    // endpoint2 IN & OUT buffer, Must be an even address
-__xdata uint8 send_buffer[48];
-__xdata uint8 sysex_recv_buffer[48];
+__xdata uint8 midi_send_buffer[48];
+__xdata uint8 midi_recv_buffer[48];
 __xdata save_buffer_t save_buffer;
 __xdata midi_packet queue_buffer[MIDI_QUEUE_LEN];
 
-__idata uint8 queue_head = 0;
-__idata uint8 queue_size = 0;
-
-__idata uint8 device_id = 0;
+uint8 queue_head = 0;
+uint8 queue_size = 0;
+uint8 device_id = 0;
+uint8 *midi_send_ptr;
+uint8 midi_send_remain = 0;
+uint8 sysex_recv_length = 0;
+uint8 sysex_recv_packet_offset = 0;
 
 //////////////////////////////////////////////////////////////////////
 // Flash LED before jumping to bootloader
@@ -215,13 +197,13 @@ typedef struct sysex_identity_response
 
 void *init_sysex_response(uint8 code)
 {
-    sysex_hdr_t *p = (sysex_hdr_t *)send_buffer;
+    sysex_hdr_t *p = (sysex_hdr_t *)midi_send_buffer;
     p->sysex_start = 0xF0;
     p->sysex_realtime = 0x7E;
     p->sysex_device_index = device_id;
     p->sysex_type = 0x06;
     p->sysex_code = code;
-    return (void *)(send_buffer + sizeof(sysex_hdr_t));
+    return (void *)(midi_send_buffer + sizeof(sysex_hdr_t));
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -249,85 +231,77 @@ void midi_packet_send_update()
 
 //////////////////////////////////////////////////////////////////////
 
-uint8 *usb_send_ptr;
-uint8 usb_send_remain = 0;
-
-bool usb_send_update()
+bool midi_send_update()
 {
-    if(usb_send_remain == 0) {
+    if(midi_send_remain == 0) {
         return false;
     }
-    while(!queue_full() && usb_send_remain != 0) {
-        uint8 r = usb_send_remain;
+    while(!queue_full() && midi_send_remain != 0) {
+        uint8 r = midi_send_remain;
         if(r > 3) {
             r = 3;
         }
         uint8 cmd = midi_packet_start;
-        if(r < 3 || usb_send_remain <= 3) {
+        if(r < 3 || midi_send_remain <= 3) {
             cmd = midi_packet_end_1 + r - 1;
         }
         midi_packet packet = 0;
         uint8 *dst = (uint8 *)&packet;
         *dst++ = cmd;
         for(uint8 i = 0; i < r; ++i) {
-            *dst++ = *usb_send_ptr++;
+            *dst++ = *midi_send_ptr++;
         }
         queue_put(packet);
-        usb_send_remain -= r;
+        midi_send_remain -= r;
     }
     return true;
 }
 
 //////////////////////////////////////////////////////////////////////
 
-bool usb_send(uint8 *data, uint8 length)
+bool midi_send(uint8 *data, uint8 length)
 {
-    if(usb_send_remain != 0) {
+    if(midi_send_remain != 0) {
         return false;
     }
     if(length < 4) {
         return false;
     }
-    usb_send_remain = length;
-    usb_send_ptr = data;
+    midi_send_remain = length;
+    midi_send_ptr = data;
     return true;
 }
 
 //////////////////////////////////////////////////////////////////////
 
-bool usb_send_sysex(uint8 payload_length)
+bool midi_send_sysex(uint8 payload_length)
 {
     uint8 total_length = sizeof(sysex_hdr_t) + payload_length + 1;    // +1 for 0xF7 terminator
-    send_buffer[total_length - 1] = 0xF7;
-    return usb_send(send_buffer, total_length);
+    midi_send_buffer[total_length - 1] = 0xF7;
+    return midi_send(midi_send_buffer, total_length);
 }
-
-//////////////////////////////////////////////////////////////////////
-
-__idata uint8 sysex_recv_length = 0;
-__idata uint8 sysex_recv_packet_offset = 0;
 
 //////////////////////////////////////////////////////////////////////
 
 void handle_midi_packet()
 {
-    if(sysex_recv_buffer[sysex_recv_length - 1] == 0xF7) {
+    if(midi_recv_buffer[sysex_recv_length - 1] == 0xF7) {
 
-        hexdump("MIDI", sysex_recv_buffer, sysex_recv_length);
+        hexdump("MIDI", midi_recv_buffer, sysex_recv_length);
 
-        if(sysex_recv_buffer[0] == 0xF0 && sysex_recv_buffer[1] == 0x7E && sysex_recv_buffer[3] == 0x06) {
+        if(midi_recv_buffer[0] == 0xF0 && midi_recv_buffer[1] == 0x7E && midi_recv_buffer[3] == 0x06) {
 
-            switch(sysex_recv_buffer[4]) {
+            switch(midi_recv_buffer[4]) {
 
             // identity request
             case sysex_request_device_id: {
-                device_id = sysex_recv_buffer[2];
+                device_id = midi_recv_buffer[2];
                 sysex_identity_response_t *response = init_sysex_response(sysex_response_device_id);
                 response->manufacturer_id = MIDI_MANUFACTURER_ID;
                 response->family_code = MIDI_FAMILY_CODE;
                 response->model_number = MIDI_MODEL_NUMBER;
                 response->unique_id = chip_id_28;
-                usb_send_sysex(sizeof(sysex_identity_response_t));
+                midi_send_sysex(sizeof(sysex_identity_response_t));
             } break;
 
             // toggle led
@@ -343,12 +317,12 @@ void handle_midi_packet()
                 hexdump("READ", save_buffer.data, FLASH_LEN);
                 uint8 *buf = init_sysex_response(sysex_response_get_flash);
                 bytes_to_bits7(save_buffer.data, 0, FLASH_LEN, buf);
-                usb_send_sysex(FLASH_7BIT_LEN);
+                midi_send_sysex(FLASH_7BIT_LEN);
             } break;
 
             // Set flash
             case sysex_request_set_flash: {
-                bits7_to_bytes(sysex_recv_buffer, 5, FLASH_LEN, save_buffer.data);
+                bits7_to_bytes(midi_recv_buffer, 5, FLASH_LEN, save_buffer.data);
                 hexdump("WRITE", save_buffer.data, FLASH_LEN);
                 uint8 *buf = init_sysex_response(sysex_response_set_flash_ack);
                 *buf = 0x01;
@@ -356,7 +330,7 @@ void handle_midi_packet()
                     putstr("Error saving flash\n");
                     *buf = 0xff;
                 }
-                usb_send_sysex(1);
+                midi_send_sysex(1);
             } break;
             }
         }
@@ -368,10 +342,10 @@ void handle_midi_packet()
 
 void sysex_parse_add(uint8 length)
 {
-    if(length > (sizeof(sysex_recv_buffer) - sysex_recv_length)) {
+    if(length > (sizeof(midi_recv_buffer) - sysex_recv_length)) {
         sysex_recv_length = 0;
     } else {
-        memcpy(sysex_recv_buffer + sysex_recv_length, Ep2Buffer + sysex_recv_packet_offset + 1, length);
+        memcpy(midi_recv_buffer + sysex_recv_length, Ep2Buffer + sysex_recv_packet_offset + 1, length);
         sysex_recv_length += length;
     }
 }
@@ -410,40 +384,6 @@ void process_midi_packet_in(uint8 length)
 }
 
 //////////////////////////////////////////////////////////////////////
-// rotary encoder reader
-
-__code const uint8 encoder_valid_bits[16] = { 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0 };
-
-__idata uint8 encoder_state = 0;
-__idata uint8 encoder_store = 0;
-
-int8 read_encoder()
-{
-    uint8 a = 0;
-    if(!ROTA_BIT) {
-        a |= 1;
-    }
-    if(!ROTB_BIT) {
-        a |= 2;
-    }
-
-    encoder_state <<= 2;
-    encoder_state |= a;
-    encoder_state &= 0xf;
-
-    if(encoder_valid_bits[encoder_state] != 0) {
-        encoder_store = (encoder_store << 4) | encoder_state;
-        switch(encoder_store) {
-        case 0xe8:
-            return 1;
-        case 0x2b:
-            return -1;
-        }
-    }
-    return 0;
-}
-
-//////////////////////////////////////////////////////////////////////
 
 int main()
 {
@@ -453,7 +393,10 @@ int main()
     mDelaymS(5);     // Modify the main frequency and wait for the internal crystal stability, it will be added
     UART0_Init();    // Candidate 0, can be used for debugging
 
+    // get unique chip id
     chip_id = CHIP_UNIQUE_ID_LO | ((uint32)CHIP_UNIQUE_ID_HI << 16);
+
+    // make a 28 bit version so we can send as 4 x 7bits for midi identification
     uint8 *cip = (uint8 *)&chip_id_28;
     cip[0] = (chip_id >> 21) & 0x7f;
     cip[1] = (chip_id >> 14) & 0x7f;
@@ -462,19 +405,13 @@ int main()
 
     hexdump("===== CHIPID =====", &chip_id, 4);
 
-    // set GPIO 1.6 as output push/pull
+    gpio_init(UART_TX_PORT, UART_TX_PIN, gpio_output_push_pull);
+    gpio_init(UART_RX_PORT, UART_RX_PIN, gpio_output_open_drain);
+    gpio_init(ROTA_PORT, ROTA_PIN, gpio_input_pullup);
+    gpio_init(ROTB_PORT, ROTB_PIN, gpio_input_pullup);
+    gpio_init(BTN_PORT, BTN_PIN, gpio_input_pullup);
 
-    P1_MOD_OC = 0b00000000;
-    P1_DIR_PU = 0b01000000;
-
-    // set GPIO 3.3 as bidirectional (button)
-    // set GPIO 3.1 as bidirectional (rx)
-    // set GPIO 3.0 as output push/pull (tx)
-
-    P3_MOD_OC = 0b00011110;
-    P3_DIR_PU = 0b00011111;
-
-    putstr("Init USB\n");
+    // init usb
     usb_device_config();
     usb_device_endpoint_config();    // Endpoint configuration
     usb_device_int_config();         // Interrupt initialization
@@ -482,13 +419,12 @@ int main()
     UEP1_T_LEN = 0;    // Be pre -use and sending length must be empty
     UEP2_T_LEN = 0;    // Be pre -use and sending length must be empty
 
-#define DEBOUNCE_TIME 0xA0u
-#define T2_DEBOUNCE (0xFFu - DEBOUNCE_TIME)
+    // flash the led a few times at boot
 
     TR0 = 1;
     TR2 = 1;
 
-    for(uint8 i = 0; i < 6; ++i) {
+    for(uint8 i = 0; i < BOOT_FLASH_LED_COUNT; ++i) {
         while(TF2 == 0) {
         }
         TL2 = 0;
@@ -502,8 +438,6 @@ int main()
     bool button_state = false;    // for debouncing the button
 
     turn_value = ROTARY_DIRECTION - 1;
-
-    putstr("main loop\n");
 
     while(1) {
 
@@ -567,7 +501,7 @@ int main()
             midi_packet_send_update();
 
             // maybe add some more to the queue
-            if(!queue_full() && !usb_send_update()) {
+            if(!queue_full() && !midi_send_update()) {
 
                 if(pressed) {
 
