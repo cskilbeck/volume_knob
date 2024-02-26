@@ -201,7 +201,7 @@ void *init_sysex_response(uint8 code)
     p->sysex_start = 0xF0;
     p->sysex_realtime = 0x7E;
     p->sysex_device_index = device_id;
-    p->sysex_type = 0x06;
+    p->sysex_type = 0x07;    // machine control response
     p->sysex_code = code;
     return (void *)(midi_send_buffer + sizeof(sysex_hdr_t));
 }
@@ -285,54 +285,55 @@ bool midi_send_sysex(uint8 payload_length)
 
 void handle_midi_packet()
 {
-    if(midi_recv_buffer[sysex_recv_length - 1] == 0xF7) {
+    if(midi_recv_buffer[0] == 0xF0 &&                      // sysex status byte
+       midi_recv_buffer[1] == 0x7E &&                      // non-realtime
+       midi_recv_buffer[3] == 0x06 &&                      // machine control command
+       midi_recv_buffer[sysex_recv_length - 1] == 0xF7)    // sysex terminator
+    {
 
         hexdump("MIDI", midi_recv_buffer, sysex_recv_length);
 
-        if(midi_recv_buffer[0] == 0xF0 && midi_recv_buffer[1] == 0x7E && midi_recv_buffer[3] == 0x06) {
+        switch(midi_recv_buffer[4]) {
 
-            switch(midi_recv_buffer[4]) {
+        // identity request
+        case sysex_request_device_id: {
+            device_id = midi_recv_buffer[2];
+            sysex_identity_response_t *response = init_sysex_response(sysex_response_device_id);
+            response->manufacturer_id = MIDI_MANUFACTURER_ID;
+            response->family_code = MIDI_FAMILY_CODE;
+            response->model_number = MIDI_MODEL_NUMBER;
+            response->unique_id = chip_id_28;
+            midi_send_sysex(sizeof(sysex_identity_response_t));
+        } break;
 
-            // identity request
-            case sysex_request_device_id: {
-                device_id = midi_recv_buffer[2];
-                sysex_identity_response_t *response = init_sysex_response(sysex_response_device_id);
-                response->manufacturer_id = MIDI_MANUFACTURER_ID;
-                response->family_code = MIDI_FAMILY_CODE;
-                response->model_number = MIDI_MODEL_NUMBER;
-                response->unique_id = chip_id_28;
-                midi_send_sysex(sizeof(sysex_identity_response_t));
-            } break;
+        // toggle led
+        case sysex_request_toggle_led:
+            LED_BIT = !LED_BIT;
+            break;
 
-            // toggle led
-            case sysex_request_toggle_led:
-                LED_BIT = !LED_BIT;
-                break;
-
-            // Get flash
-            case sysex_request_get_flash: {
-                if(!load_flash(&save_buffer)) {
-                    memset(save_buffer.data, 0xff, sizeof(save_buffer.data));
-                }
-                hexdump("READ", save_buffer.data, FLASH_LEN);
-                uint8 *buf = init_sysex_response(sysex_response_get_flash);
-                bytes_to_bits7(save_buffer.data, 0, FLASH_LEN, buf);
-                midi_send_sysex(FLASH_7BIT_LEN);
-            } break;
-
-            // Set flash
-            case sysex_request_set_flash: {
-                bits7_to_bytes(midi_recv_buffer, 5, FLASH_LEN, save_buffer.data);
-                hexdump("WRITE", save_buffer.data, FLASH_LEN);
-                uint8 *buf = init_sysex_response(sysex_response_set_flash_ack);
-                *buf = 0x01;
-                if(!save_flash(&save_buffer)) {
-                    putstr("Error saving flash\n");
-                    *buf = 0xff;
-                }
-                midi_send_sysex(1);
-            } break;
+        // Get flash
+        case sysex_request_get_flash: {
+            if(!load_flash(&save_buffer)) {
+                memset(save_buffer.data, 0xff, sizeof(save_buffer.data));
             }
+            hexdump("READ", save_buffer.data, FLASH_LEN);
+            uint8 *buf = init_sysex_response(sysex_response_get_flash);
+            bytes_to_bits7(save_buffer.data, 0, FLASH_LEN, buf);
+            midi_send_sysex(FLASH_7BIT_LEN);
+        } break;
+
+        // Set flash
+        case sysex_request_set_flash: {
+            bits7_to_bytes(midi_recv_buffer, 5, FLASH_LEN, save_buffer.data);
+            hexdump("WRITE", save_buffer.data, FLASH_LEN);
+            uint8 *buf = init_sysex_response(sysex_response_set_flash_ack);
+            *buf = 0x01;
+            if(!save_flash(&save_buffer)) {
+                putstr("Error saving flash\n");
+                *buf = 0xff;
+            }
+            midi_send_sysex(1);
+        } break;
         }
     }
     sysex_recv_length = 0;

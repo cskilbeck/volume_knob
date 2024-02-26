@@ -1,6 +1,8 @@
 ## When I turn the knob
 
-#### A Control Change value is changed
+#### Either
+
+##### A Control Change value is changed
 - It might be a 14 bit or 7 bit value
     - If it's a 14 bit value, the LSB and MSB CC indices are specified
 - It might use one of the following modes:
@@ -14,6 +16,13 @@
     - When an absolute value hits a low limit
     - When an absolute value hits a high limit
 - Acceleration may be applied whether it's absolute or relative
+
+### Or
+
+#### Some other MIDI thing occurs, such as
+- Pitch Bend
+- Volume control
+- Etc
 
 ## When I click or release the knob
 

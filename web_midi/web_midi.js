@@ -155,13 +155,13 @@ function on_page_load() {
 
   navigator.requestMIDIAccess({ "sysex": true })
     .then(
-      (midi_object) => {
+      async (midi_object) => {
         midi = midi_object;
-        init_devices();
         midi.addEventListener('statechange', function (event) {
+          console.log(`statechange: ${event.port.name} (${event.port.id}): ${event.port.state}`);
           init_devices();
         });
-
+        init_devices();
       },
       (err) => {
         add_status_message(`requestMIDIAccess failed: ${err}`);
@@ -173,6 +173,7 @@ function on_page_load() {
 //////////////////////////////////////////////////////////////////////
 
 function send_midi(midi_device, data) {
+  console.log(`SEND: ${bytes_to_hex_string(data, data.length, " ")}`);
   add_status_message(`SEND: ${bytes_to_hex_string(data, data.length, "")}`);
   midi_device.midi_output.send(data);
 }
@@ -193,12 +194,14 @@ function init_devices() {
   console.log(`${midi.outputs.size} outputs`);
 
   for (const input of midi.inputs.values()) {
+    console.log(`Found ${input.name} at ${input.id}`);
     input.onmidimessage = function (event) {
       on_midi_message(input, event);
     };
   }
 
   for (const output of midi.outputs.values()) {
+    console.log(`Found ${output.name} at ${output.id}`);
     let existing = midi_map.get(output.id);
     if (existing == undefined) {
       console.log(`New device: ${output.id}`);
@@ -221,17 +224,6 @@ function init_devices() {
     }
   }
   console.log(`init devices scanned ${midi_map.size} devices`);
-}
-
-//////////////////////////////////////////////////////////////////////
-
-function compare_array_sections(a, b, s, e) {
-  for (const i = s; i < e; ++i) {
-    if (a[i] != b[i]) {
-      return false;
-    }
-    return true;
-  }
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -260,31 +252,25 @@ function toggle_device_led(index) {
 //////////////////////////////////////////////////////////////////////
 
 const MIDI_MANUFACTURER_ID = 0x36;    // Cheetah Marketing, defunct?
-const MIDI_FAMILTY_CODE_LOW = 0x55;
-const MIDI_FAMILTY_CODE_HIGH = 0x44;
-const MIDI_MODEL_NUMBER_LOW = 0x33;
-const MIDI_MODEL_NUMBER_HIGH = 0x22;
 
-const sysex_header = [0xF0, 0x7E];
+const MIDI_FAMILTY_CODE_LOW = 0x44;   // 0x5544
+const MIDI_FAMILTY_CODE_HIGH = 0x55;
+
+const MIDI_MODEL_NUMBER_LOW = 0x22;   // 0x3322
+const MIDI_MODEL_NUMBER_HIGH = 0x33;
 
 const id_response = [
-  0xF0, 0x7E, 0x00, 0x06, 0x02,
   MIDI_MANUFACTURER_ID,
   MIDI_FAMILTY_CODE_LOW,
   MIDI_FAMILTY_CODE_HIGH,
   MIDI_MODEL_NUMBER_LOW,
   MIDI_MODEL_NUMBER_HIGH];
-// bytes following are 4 x 7bits = 28 bit serial number, then F7 terminator
-
-const memory_response = [0xF0, 0x7E, 0x00, 0x06, 0x03];
-// byte following is offset
-// byte following is length
-// bytes following is flash contents, 7 bits per byte, 
+// followed by 4 x 7bits = 28 bit serial number
 
 //////////////////////////////////////////////////////////////////////
 
 function get_sysex_device_index(data) {
-  if (compare_array_sections(data, sysex_header, 0, 2) && data[3] == 0x06 && data[data.length - 1] == 0xF7) {
+  if (data[0] == 0xF0 && data[1] == 0x7E && data[3] == 0x07 && data[data.length - 1] == 0xF7) {
     return data[2];
   }
   return undefined;
@@ -312,6 +298,7 @@ function handle_new_device(device, data) {
   let b3 = data[13] || 0;
 
   d.midi_serial_number = b3 | (b2 << 7) | (b1 << 14) | (b0 << 21);
+  d.midi_serial_str = d.midi_serial_number.toString(16).toUpperCase()
   d.midi_input = device;
 
   let new_serial_number = d.midi_serial_number.toString(16).toUpperCase();
@@ -339,8 +326,12 @@ function handle_new_device(device, data) {
             <button onclick='write_flash(${midi_index})'>Save</button>
           </div>
           <div class='device_controls'>
-            <textarea rows='2' cols='40' class='memory_input' id='memory_${midi_index}' oninput='on_input_change(this, ${midi_index})'></textarea>
-            <textarea readonly rows='2' cols='40' class = 'memory_contents' id='memory_contents_${midi_index}'></textarea>
+            <label class='memory_label'>Input
+              <textarea rows='2' cols='40' class='memory_input' id='memory_${midi_index}' oninput='on_input_change(this, ${midi_index})'></textarea>
+            </label>
+            <label class='memory_label'>Contents
+              <textarea label = 'memory_contents' readonly rows='2' cols='40' class = 'memory_contents' id='memory_contents_${midi_index}'></textarea>
+            </label>
           </div>
         </div>
       </div>
@@ -440,6 +431,13 @@ function is_null_or_undefined(x) {
 
 //////////////////////////////////////////////////////////////////////
 
+function array_compare(a, b) {
+  return a.length === b.length &&
+    a.every((element, index) => element === b[index]);
+}
+
+//////////////////////////////////////////////////////////////////////
+
 function on_midi_message(device, event) {
 
   const data = event.data;
@@ -455,33 +453,35 @@ function on_midi_message(device, event) {
     switch (data[4]) {
 
       // device ID response
-      case 0x02:
-        // if it's a Tiny Midi Knob
-        if (compare_array_sections(data, id_response, 5, 10)) {
-          // add it to the list
+      case 0x02: {
+        // if it's a Tiny Midi Knob, add it to the list
+        if (array_compare(data.slice(5, 10), id_response)) {
           handle_new_device(device, data);
         }
-        break;
+      } break;
 
       // read flash memory response
-      case 0x3:
-        let midi_device = get_device_from_index(device_index);
-        if (midi_device !== undefined) {
+      case 0x3: {
+        let d = get_device_from_index(device_index);
+        if (d !== undefined) {
           let flash_data = [];
           bits7_to_bytes(data, 5, FLASH_MAX_LEN, flash_data);
           console.log(`FLASH: ${flash_data}`);
-          midi_device.midi_hex = flash_data;
+          d.midi_hex = flash_data;
           let s = bytes_to_hex_string(flash_data, FLASH_MAX_LEN);
           document.getElementById(`memory_${device_index}`).value = s;
           document.getElementById(`memory_contents_${device_index}`).innerHTML = s;
-          add_status_message(`Memory for ${midi_device.midi_serial_number.toString(16).toUpperCase()}: ${s}`);
+          add_status_message(`Memory for device ${d.midi_serial_str}: ${s}`);
         }
-        break;
+      } break;
 
       // write flash memory ACK
-      case 0x4:
-        add_status_message(`Wrote flash data`);
-        break;
+      case 0x4: {
+        let d = get_device_from_index(device_index);
+        if (d !== undefined) {
+          add_status_message(`Device ${d.midi_serial_str} wrote flash data`);
+        }
+      } break;
     }
   }
 }

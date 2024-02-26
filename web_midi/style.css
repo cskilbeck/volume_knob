@@ -34,6 +34,10 @@ body {
     display: flex;
 }
 
+.memory_label {
+    display: table-caption;
+}
+
 .device_name {
     width: 200px;
 }
@@ -47,7 +51,6 @@ body {
 }
 
 .device_controls {
-    height: fit-content;
     padding-left: 20px;
     margin-bottom: 3px;
 }
