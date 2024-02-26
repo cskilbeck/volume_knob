@@ -3,19 +3,20 @@ OBJCOPY = objcopy
 PACK_HEX = packihx
 WCHISP = wchisptool
 
-ifndef FREQ_SYS
-FREQ_SYS = 12000000
-endif
+FREQ_SYS ?= 12000000
+XRAM_SIZE ?= 0x0400
+XRAM_LOC ?= 0x0000
+CODE_SIZE ?= 0x3800
 
-ifndef XRAM_SIZE
-XRAM_SIZE = 0x0400
-endif
-
-ifndef XRAM_LOC
-XRAM_LOC = 0x0000
-endif
-
-CFLAGS = -mmcs51 --model-small --xram-size $(XRAM_SIZE) --xram-loc $(XRAM_LOC) --code-size 0x3800 -I$(INC) -o$(OBJ) -DFREQ_SYS=$(FREQ_SYS) $(EXTRA_FLAGS)
+CFLAGS = -mmcs51 \
+		--model-small \
+		--xram-size $(XRAM_SIZE) \
+		--xram-loc $(XRAM_LOC) \
+		--code-size $(CODE_SIZE) \
+		-I$(INC) \
+		-o$(OBJ) \
+		-DFREQ_SYS=$(FREQ_SYS) \
+		$(EXTRA_FLAGS)
 
 LFLAGS = $(CFLAGS)
 TARGET = $(BIN)$(PROJECT)

@@ -17,9 +17,9 @@
     - When an absolute value hits a high limit
 - Acceleration may be applied whether it's absolute or relative
 
-### Or
+#### Or
 
-#### Some other MIDI thing occurs, such as
+##### Some other MIDI thing occurs, such as
 - Pitch Bend
 - Volume control
 - Etc

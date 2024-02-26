@@ -10,13 +10,12 @@
 #include "debug.h"
 #include "util.h"
 #include "usb.h"
-#include "load_save.h"
+#include "config.h"
 #include "gpio.h"
 #include "encoder.h"
 #include "midi.h"
 
 //////////////////////////////////////////////////////////////////////
-// BOOTLOADER admin
 
 typedef void (*BOOTLOADER)(void);
 #define bootloader554 ((BOOTLOADER)0x3800)    // CH551/2/3/4
@@ -28,22 +27,21 @@ typedef void (*BOOTLOADER)(void);
 #define DEBOUNCE_TIME 0xA0u
 #define T2_DEBOUNCE (0xFFu - DEBOUNCE_TIME)
 
-#define BOOT_FLASH_LED_COUNT 6
+#define BOOT_FLASH_LED_COUNT 10
+#define BOOT_FLASH_LED_SPEED 0x40
 
-//////////////////////////////////////////////////////////////////////
-// Rotary Encoder
+#define BOOTLOADER_FLASH_LED_COUNT 20
+#define BOOTLOADER_FLASH_LED_SPEED 0x80
 
-int8 turn_value;
+#define ROT_CLOCKWISE 2
+#define ROT_ANTI_CLOCKWISE 0
 
-#define CLOCKWISE 2
-#define ANTI_CLOCKWISE 0
-
-// Define ROTARY_DIRECTION as CLOCKWISE for one kind of encoders, ANTI_CLOCKWISE for
+// Define ROTARY_DIRECTION as ROT_CLOCKWISE for one kind of encoders, ROT_ANTI_CLOCKWISE for
 // the other ones (some are reversed). This sets the default rotation (after first
 // flash), reverse by triple-clicking the knob
 
-#define ROTARY_DIRECTION (CLOCKWISE)
-// #define ROTARY_DIRECTION (ANTI_CLOCKWISE)
+#define ROTARY_DIRECTION (ROT_CLOCKWISE)
+// #define ROTARY_DIRECTION (ROT_ANTI_CLOCKWISE)
 
 //////////////////////////////////////////////////////////////////////
 // XDATA, 1KB available
@@ -57,17 +55,17 @@ __xdata save_buffer_t save_buffer;
 __xdata midi_packet queue_buffer[MIDI_QUEUE_LEN];
 
 //////////////////////////////////////////////////////////////////////
-// Flash LED before jumping to bootloader
+// Flash LED
 
-void led_flash(int8_t n, uint8 speed)
+void led_flash(uint8 n, uint8 speed)
 {
     LED_BIT = 1;
-    for(int8_t i = 0; i < n; ++i) {
-        TF2 = 0;
+    while(n-- != 0) {
         TH2 = speed;
         TL2 = 0;
         while(TF2 != 1) {
         }
+        TF2 = 0;
         LED_BIT ^= 1;
     }
     LED_BIT = 0;
@@ -77,13 +75,15 @@ void led_flash(int8_t n, uint8 speed)
 
 int main()
 {
-    CfgFsys();       // CH559 clock select configuration
-    mDelaymS(5);     // Modify the main frequency and wait for the internal crystal stability, it will be added
-    UART0_Init();    // Candidate 0, can be used for debugging
+    clk_init();
+    delay_mS(5);
+    uart0_init();
+
+    putstr("================ BOOT =================\n");
 
     init_chip_id();
 
-    hexdump("===== CHIPID =====", &chip_id, 4);
+    hexdump("CHIPID", &chip_id, 4);
 
     gpio_init(UART_TX_PORT, UART_TX_PIN, gpio_output_push_pull);
     gpio_init(UART_RX_PORT, UART_RX_PIN, gpio_output_open_drain);
@@ -91,6 +91,17 @@ int main()
     gpio_init(ROTB_PORT, ROTB_PIN, gpio_input_pullup);
     gpio_init(BTN_PORT, BTN_PIN, gpio_input_pullup);
     gpio_init(LED_PORT, LED_PIN, gpio_output_push_pull);
+
+    load_config(&save_buffer);
+
+    TL2 = 0;
+    TH2 = 0;
+    TF2 = 0;
+
+    TR0 = 1;
+    TR2 = 1;
+
+    led_flash(BOOT_FLASH_LED_COUNT, BOOT_FLASH_LED_SPEED);
 
     // init usb
     usb_device_config();
@@ -100,15 +111,10 @@ int main()
     UEP1_T_LEN = 0;    // Be pre -use and sending length must be empty
     UEP2_T_LEN = 0;    // Be pre -use and sending length must be empty
 
-    TR0 = 1;
-    TR2 = 1;
-
-    led_flash(20, 0x80);
-
     uint16_t press_time = 0;
     bool button_state = false;    // for debouncing the button
 
-    turn_value = ROTARY_DIRECTION - 1;
+    int8 turn_value = ROTARY_DIRECTION - 1;
 
     while(1) {
 
@@ -135,7 +141,7 @@ int main()
                     USB_CTRL = 0;
                     UDEV_CTRL = 0;
 
-                    led_flash(10, 0x40);
+                    led_flash(BOOTLOADER_FLASH_LED_COUNT, BOOTLOADER_FLASH_LED_SPEED);
 
                     // and jump to bootloader
                     bootloader554();

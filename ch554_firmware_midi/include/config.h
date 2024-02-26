@@ -53,5 +53,5 @@ typedef struct save_buffer
     uint16 crc;
 } save_buffer_t;
 
-bool load_flash(save_buffer_t *buffer);
-bool save_flash(save_buffer_t *buffer);
+bool load_config(save_buffer_t *buffer);
+bool save_config(save_buffer_t *buffer);

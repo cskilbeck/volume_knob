@@ -15,9 +15,8 @@
 
 void gpio_init(uint8 port, uint8 bit, gpio_state_t state)
 {
-    uint8 state_bits = (uint8)state;
-    uint8 oc_mask = ((state_bits >> 1) & 1) << bit;
-    uint8 pu_mask = (state_bits & 1) << bit;
+    uint8 oc_mask = (((uint8)state >> 1) & 1) << bit;
+    uint8 pu_mask = ((uint8)state & 1) << bit;
     uint8 mask_off = ~(1 << bit);
     switch(port) {
     case PORT1:

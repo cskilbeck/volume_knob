@@ -3,19 +3,20 @@
 #include "types.h"
 #include "debug.h"
 #include "midi.h"
-#include "load_save.h"
+#include "config.h"
 #include "xdata.h"
 #include "usb.h"
 #include "util.h"
 #include "gpio.h"
 
-uint8 queue_head = 0;
 uint8 queue_size = 0;
-uint8 device_id = 0;
-uint8 *midi_send_ptr;
-uint8 midi_send_remain = 0;
-uint8 sysex_recv_length = 0;
-uint8 sysex_recv_packet_offset = 0;
+
+static uint8 queue_head = 0;
+static uint8 device_id = 0;
+static uint8 *midi_send_ptr;
+static uint8 midi_send_remain = 0;
+static uint8 sysex_recv_length = 0;
+static uint8 sysex_recv_packet_offset = 0;
 
 //////////////////////////////////////////////////////////////////////
 // push one onto the queue, check it's got space before calling this
@@ -29,7 +30,7 @@ void queue_put(midi_packet k)
 //////////////////////////////////////////////////////////////////////
 // pop next from the queue, check it's not empty before calling this
 
-midi_packet queue_get()
+static midi_packet queue_get()
 {
     uint8 old_head = queue_head;
     queue_size -= 1;
@@ -40,7 +41,7 @@ midi_packet queue_get()
 //////////////////////////////////////////////////////////////////////
 // pop next into somewhere, check it's not empty before calling this
 
-inline void queue_get_at(midi_packet *dst)
+static inline void queue_get_at(midi_packet *dst)
 {
     *dst = queue_buffer[queue_head];
     queue_size -= 1;
@@ -113,7 +114,7 @@ bool midi_send_update()
 
 //////////////////////////////////////////////////////////////////////
 
-bool midi_send(uint8 *data, uint8 length)
+static bool midi_send(uint8 *data, uint8 length)
 {
     if(midi_send_remain != 0) {
         return false;
@@ -167,7 +168,7 @@ void handle_midi_packet()
 
         // Get flash
         case sysex_request_get_flash: {
-            if(!load_flash(&save_buffer)) {
+            if(!load_config(&save_buffer)) {
                 memset(save_buffer.data, 0xff, sizeof(save_buffer.data));
             }
             hexdump("READ", save_buffer.data, FLASH_LEN);
@@ -182,7 +183,7 @@ void handle_midi_packet()
             hexdump("WRITE", save_buffer.data, FLASH_LEN);
             uint8 *buf = init_sysex_response(sysex_response_set_flash_ack);
             *buf = 0x01;
-            if(!save_flash(&save_buffer)) {
+            if(!save_config(&save_buffer)) {
                 putstr("Error saving flash\n");
                 *buf = 0xff;
             }
@@ -195,7 +196,7 @@ void handle_midi_packet()
 
 //////////////////////////////////////////////////////////////////////
 
-void sysex_parse_add(uint8 length)
+static void sysex_parse_add(uint8 length)
 {
     if(length > (sizeof(midi_recv_buffer) - sysex_recv_length)) {
         sysex_recv_length = 0;

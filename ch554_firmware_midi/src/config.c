@@ -3,7 +3,7 @@
 #include "types.h"
 #include "debug.h"
 #include "util.h"
-#include "load_save.h"
+#include "config.h"
 
 //////////////////////////////////////////////////////////////////////
 
@@ -106,7 +106,7 @@ static bool save_buffer_check_crc(save_buffer_t const *buffer)
 //////////////////////////////////////////////////////////////////////
 // return 0 (we loaded it from slot 0), 1 (we loaded it from slot 1) or -1 (no valid save found)
 
-bool load_flash(save_buffer_t *buffer)
+bool load_config(save_buffer_t *buffer)
 {
     bool valid[2] = { false, false };
     uint32 index[2];
@@ -144,7 +144,7 @@ bool load_flash(save_buffer_t *buffer)
 
 //////////////////////////////////////////////////////////////////////
 
-bool save_flash(save_buffer_t *buffer)
+bool save_config(save_buffer_t *buffer)
 {
     current_save_slot = 1 - current_save_slot;
     current_save_index += 1;

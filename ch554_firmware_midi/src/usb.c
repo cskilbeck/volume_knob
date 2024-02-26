@@ -4,6 +4,9 @@
 #include "ch554_usb.h"
 #include "types.h"
 #include "debug.h"
+#include "config.h"
+#include "midi.h"
+#include "xdata.h"
 #include "usb.h"
 
 // //////////////////////////////////////////////////////////////////////
@@ -12,9 +15,9 @@ volatile __idata uint8 ep2_recv_len = 0;
 volatile __idata uint8 ep2_busy = 0;
 volatile __idata uint8 usb_config = 0;
 
-uint8 const *descriptor = 0;
-uint8 setup_request;
-uint16 setup_len;
+static uint8 const *descriptor = 0;
+static uint8 setup_request;
+static uint16 setup_len;
 
 #define usb_setup_buffer ((PUSB_SETUP_REQ)Ep0Buffer)
 
@@ -100,11 +103,12 @@ void usb_device_config()
     USB_CTRL |= bUC_DEV_PU_EN | bUC_INT_BUSY | bUC_DMA_EN;    // The USB device and internal pull-up are enabled, and automatically return to NAK before the
                                                               // interrupt flag is cleared during the interrupt.
     USB_DEV_AD = 0x00;                                        // Device address initialization
-    //	 USB_CTRL |= bUC_LOW_SPEED;
-    //	 UDEV_CTRL |= bUD_LOW_SPEED;												//Select low speed 1.5M mode
+
+    // USB_CTRL |= bUC_LOW_SPEED;
+    // UDEV_CTRL |= bUD_LOW_SPEED;  // low speed 1.5Mbit mode
     USB_CTRL &= ~bUC_LOW_SPEED;
-    UDEV_CTRL &= ~bUD_LOW_SPEED;    // Select full speed 12M mode, the default mode
-    UDEV_CTRL = bUD_PD_DIS;         // Disable DP/DM pull-down resistor
+    UDEV_CTRL &= ~bUD_LOW_SPEED;    // full speed 12Mbit mode
+    UDEV_CTRL |= bUD_PD_DIS;        // Disable DP/DM pull-down resistor
     UDEV_CTRL |= bUD_PORT_EN;       // Enable physical port
 }
 
@@ -400,26 +404,26 @@ void usb_irq_handler(void) __interrupt(INT_NO_USB)    // USB interrupt service p
         UIF_TRANSFER = 0;    // clear interrupt
     }
 
-    if(UIF_BUS_RST)    // bus reset
-    {
-        putstr("reset\n");    // Sleep state
+    // bus reset
+    if(UIF_BUS_RST) {
+        putstr("reset\n");
         UEP0_CTRL = UEP_R_RES_ACK | UEP_T_RES_NAK;
         UEP1_CTRL = bUEP_AUTO_TOG | UEP_T_RES_NAK;
         UEP2_CTRL = bUEP_AUTO_TOG | UEP_T_RES_NAK | UEP_R_RES_ACK;
         USB_DEV_AD = 0x00;
         UIF_SUSPEND = 0;
         UIF_TRANSFER = 0;
-        usb_config = 0;    // Clear configuration value
+        usb_config = 0;
         ep2_busy = 0;
     }
-    if(UIF_SUSPEND)    // USB bus hangs/Wake up
-    {
+
+    // USB bus hangs/Wake up
+    if(UIF_SUSPEND) {
         UIF_SUSPEND = 0;
-        if(USB_MIS_ST & bUMS_SUSPEND)    // Hang up
-        {
-            putstr("suspend\n");    // Sleep state
-            while(XBUS_AUX & bUART0_TX) {
-                ;    // Waiting for sending complete
+        // Hang up
+        if(USB_MIS_ST & bUMS_SUSPEND) {
+            putstr("suspend\n");
+            while(XBUS_AUX & bUART0_TX) {    // Wait for msg to send
             }
             SAFE_MOD = 0x55;
             SAFE_MOD = 0xAA;
@@ -428,9 +432,7 @@ void usb_irq_handler(void) __interrupt(INT_NO_USB)    // USB interrupt service p
             SAFE_MOD = 0x55;
             SAFE_MOD = 0xAA;
             WAKE_CTRL = 0x00;
-            putstr("awoke\n");
         }
-    } else {                  // Unexpected interrupt, should not happen
-        USB_INT_FG = 0xFF;    // Clear interruption
     }
+    USB_INT_FG = 0x1F;    // clear all writeable USB IRQ flags
 }

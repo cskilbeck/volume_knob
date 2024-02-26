@@ -6,10 +6,10 @@
 //////////////////////////////////////////////////////////////////////
 // rotary encoder reader
 
-__code const uint8 encoder_valid_bits[16] = { 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0 };
+static __code const uint8 encoder_valid_bits[16] = { 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0 };
 
-__idata uint8 encoder_state = 0;
-__idata uint8 encoder_store = 0;
+static __idata uint8 encoder_state = 0;
+static __idata uint8 encoder_store = 0;
 
 int8 read_encoder()
 {
