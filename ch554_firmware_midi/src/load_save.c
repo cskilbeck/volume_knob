@@ -11,6 +11,77 @@ static uint32 current_save_index = 1;
 static uint8 current_save_slot = 0;
 
 //////////////////////////////////////////////////////////////////////
+// read bytes from the data flash area
+
+static bool read_flash_data(uint8 flash_addr, uint8 num_bytes, uint8 *data)
+{
+    ROM_ADDR_H = DATA_FLASH_ADDR >> 8;
+    flash_addr <<= 1;
+
+    while(num_bytes != 0) {
+
+        ROM_ADDR_L = flash_addr;
+        ROM_CTRL = ROM_CMD_READ;
+
+        if((ROM_STATUS & bROM_CMD_ERR) != 0) {
+            return false;
+        }
+
+        *data++ = ROM_DATA_L;
+        flash_addr += 2;
+        num_bytes -= 1;
+    }
+    return true;
+}
+
+//////////////////////////////////////////////////////////////////////
+// write bytes to the data flash area
+
+static bool write_flash_data(uint8 flash_addr, uint8 num_bytes, uint8 const *data)
+{
+    SAFE_MOD = 0x55;
+    SAFE_MOD = 0xAA;
+    GLOBAL_CFG |= bDATA_WE;
+
+    ROM_ADDR_H = DATA_FLASH_ADDR >> 8;
+    flash_addr <<= 1;
+
+    while(num_bytes != 0) {
+
+        ROM_ADDR_L = flash_addr;
+        ROM_DATA_L = *data++;
+        ROM_CTRL = ROM_CMD_WRITE;
+
+        if((ROM_STATUS & bROM_CMD_ERR) != 0) {
+            return false;
+        }
+        flash_addr += 2;
+        num_bytes -= 1;
+    }
+
+    SAFE_MOD = 0x55;
+    SAFE_MOD = 0xAA;
+    GLOBAL_CFG &= ~bDATA_WE;
+
+    return true;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+static uint16 crc16(uint8 const *data, uint8 length)
+{
+    uint16 crc = 0xffff;
+
+    while(length != 0) {
+        uint16 x = (uint16)((uint8)(crc >> 8) ^ *data++);
+        x ^= x >> 4;
+        crc = (crc << 8) ^ (x << 12) ^ (x << 5) ^ x;
+        length -= 1;
+    }
+    return crc;
+}
+
+//////////////////////////////////////////////////////////////////////
 
 static uint16 save_buffer_get_crc(save_buffer_t const *buffer)
 {

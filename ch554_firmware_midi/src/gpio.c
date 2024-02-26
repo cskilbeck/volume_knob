@@ -9,7 +9,7 @@
 //   0 1:  push-pull output, strong driving high level and low level
 //   1 0:  open-drain output and input without pullup resistance
 //   1 1:  quasi-bidirectional (standard 8051 mode), open-drain output and input with pullup resistance, just driving high level strongly for 2 clocks if
-//   turning output level from low to high
+//          turning output level from low to high
 
 //////////////////////////////////////////////////////////////////////
 
