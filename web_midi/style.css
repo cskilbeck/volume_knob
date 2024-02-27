@@ -16,10 +16,9 @@ body {
     margin-top: 10px;
 }
 
-#devices {
+.device_list {
     width: 80%;
     height: 70%;
-    position: fixed;
 }
 
 .device_container {
@@ -27,6 +26,19 @@ body {
     width: 100%;
     padding-top: 15px;
     padding-bottom: 15px;
+}
+
+.input_text_narrow {
+    width: 8em;
+    float: left;
+}
+
+.text_label {
+    margin-left: 0.5em;
+}
+
+.checker {
+    float: left;
 }
 
 .device_row {
@@ -53,6 +65,11 @@ body {
 .device_controls {
     padding-left: 20px;
     margin-bottom: 3px;
+    font-size: small;
+}
+
+.device_controls div {
+    display: table-row;
 }
 
 textarea {
