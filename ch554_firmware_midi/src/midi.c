@@ -64,14 +64,14 @@ void *init_sysex_response(uint8 code)
 //////////////////////////////////////////////////////////////////////
 // send the next waiting packet if there is one and the usb is ready
 
-void midi_packet_send_update()
+void midi_flush_queue()
 {
     if(ep2_busy) {
         return;
     }
     uint8 filled = 0;
     midi_packet *dst = (midi_packet *)(Ep2Buffer + MAX_PACKET_SIZE);
-    while(filled < (MAX_PACKET_SIZE - (sizeof(midi_packet) - 1)) && !queue_empty()) {
+    while(filled < MAX_PACKET_SIZE && !queue_empty()) {
         queue_get_at(dst);
         filled += 4;
         dst += 1;

@@ -88,7 +88,7 @@ inline bool queue_empty()
 
 void process_midi_packet_in(uint8 length);
 void handle_midi_packet();
-void midi_packet_send_update();
+void midi_flush_queue();
 bool midi_send_update();
 
 void queue_put(midi_packet k);

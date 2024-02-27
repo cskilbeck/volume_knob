@@ -173,19 +173,21 @@ int main()
                 handle_midi_packet();
             }
 
-            // send any waiting midi packets
-            midi_packet_send_update();
+            // flush any waiting midi packets
+            midi_flush_queue();
 
-            // maybe add some more to the queue
-            if(!queue_full() && !midi_send_update()) {
+            // queue up any new waiting midi packets
+            if(!midi_send_update()) {
 
-                if(pressed) {
-
-                    queue_put(0x0103b00b);
-                    LED_BIT = !LED_BIT;
-                }
+                // no midi packets waiting to be sent, queue up any keypress/rotations
                 if(!queue_full()) {
-                    if(direction == turn_value) {
+
+                    if(pressed) {
+
+                        queue_put(0x0103b00b);
+                        LED_BIT = !LED_BIT;
+
+                    } else if(direction == turn_value) {
 
                         queue_put(0x0104b00b);
                         LED_BIT = !LED_BIT;

@@ -41,6 +41,8 @@ let default_config = {
 
 /*
 
+// 16 flags available
+
 typedef enum flags
 {
     extended = 1,
@@ -50,12 +52,15 @@ typedef enum flags
 
 } flags_t;
 
+// sizeof(config_t) should be 26 bytes
+
 typedef struct config {
-    uint8 cc_msb;
-    uint8 cc_lsb;
-    uint16 zero_point;
-    uint16 delta;
-    uint8 flags;
+    uint8 cc_msb;       // 7 bits
+    uint8 cc_lsb;       // 7 bits
+    uint16 zero_point;  // 14 bits
+    uint16 delta;       // 14 bits
+    uint16 flags;       // 16 bits
+    uint8 pad[18];      // set to 0
 
 } config_t;
 
@@ -63,33 +68,37 @@ typedef struct config {
 
 //////////////////////////////////////////////////////////////////////
 
-function config_from_bytes(data) {
+function config_from_bytes(bytes) {
     let config = default_config;
-    config.cc_msb = data[0] & 0x7f;
-    config.cc_lsb = data[1] & 0x7f;
-    config.zero_point = (data[2] & 0x7f) | ((data[3] & 0x7f) << 7);
-    config.delta = (data[4] & 0x7f) | ((data[5] & 0x7f) << 7);
-    config.extended = (data[6] & 1) != 0;
-    config.relative = (data[6] & 2) != 0;
-    config.acceleration = (data[6] >> 2) & 3;
+    config.cc_msb = bytes[0] & 0x7f;
+    config.cc_lsb = bytes[1] & 0x7f;
+    config.zero_point = bytes[2] & 0xff;
+    config.zero_point |= (bytes[3] & 0x3f) << 8;
+    config.delta = bytes[4] & 0xff;
+    config.delta |= (bytes[5] & 0x3f) << 8;
+    let flags = (bytes[6] & 0xff) | ((bytes[7] & 0xff) << 8);
+    config.extended = (flags & 1) != 0;
+    config.relative = (flags & 2) != 0;
+    config.acceleration = (flags >> 2) & 3;
     return config;
 }
 
 //////////////////////////////////////////////////////////////////////
 
 function bytes_from_config(config) {
-    let bytes = [];
-    bytes.push(config.cc_msb);
-    bytes.push(config.cc_lsb);
-    bytes.push(config.zero_point & 0xff);
-    bytes.push((config.zero_point >> 8) & 0xff);
-    bytes.push(config.delta & 0xff);
-    bytes.push((config.delta >> 8) & 0xff);
+    let bytes = new Array(26).fill(0);
+    bytes[0] = config.cc_msb & 0x7f;
+    bytes[1] = config.cc_lsb & 0x7f;
+    bytes[2] = config.zero_point & 0xff;
+    bytes[3] = (config.zero_point >> 8) & 0x3f;
+    bytes[4] = config.delta & 0xff;
+    bytes[5] = (config.delta >> 8) & 0x3f;
     let flags = 0;
-    flags |= (config.extended) ? 1 : 0;
-    flags |= (config.relative) ? 2 : 0;
+    flags |= config.extended ? 1 : 0;
+    flags |= config.relative ? 2 : 0;
     flags |= (config.acceleration & 3) << 2;
-    bytes.push(flags);
+    bytes[6] = flags & 0xff;
+    bytes[7] = (flags >> 8) & 0xff;
     return bytes;
 }
 
@@ -160,23 +169,15 @@ function toggle_device_led(index) {
 
 const MIDI_MANUFACTURER_ID = 0x36;    // Cheetah Marketing, defunct?
 
-const MIDI_FAMILTY_CODE_LOW = 0x44;   // 0x5544
-const MIDI_FAMILTY_CODE_HIGH = 0x55;
+const MIDI_FAMILY_CODE_LOW = 0x44;   // 0x5544
+const MIDI_FAMILY_CODE_HIGH = 0x55;
 
 const MIDI_MODEL_NUMBER_LOW = 0x22;   // 0x3322
 const MIDI_MODEL_NUMBER_HIGH = 0x33;
 
-const id_response = [
-    MIDI_MANUFACTURER_ID,
-    MIDI_FAMILTY_CODE_LOW,
-    MIDI_FAMILTY_CODE_HIGH,
-    MIDI_MODEL_NUMBER_LOW,
-    MIDI_MODEL_NUMBER_HIGH];
-// followed by 4 x 7bits = 28 bit serial number
-
 //////////////////////////////////////////////////////////////////////
 
-function handle_new_device(input_device, data) {
+function handle_new_device(input_port, data) {
 
     let reply_index = data[2];
     let output_port = output_ports[reply_index];
@@ -185,7 +186,18 @@ function handle_new_device(input_device, data) {
         return;
     }
 
-    console.log(`New device: ${output_port.id}`);
+    console.log(`New device on ${output_port.id} / ${input_port.id} ?`);
+
+    // check MANUFACTURER, FAMILY, MODEL
+    if (!(data[5] == MIDI_MANUFACTURER_ID &&
+        data[6] == MIDI_FAMILY_CODE_LOW &&
+        data[7] == MIDI_FAMILY_CODE_HIGH &&
+        data[8] == MIDI_MODEL_NUMBER_LOW &&
+        data[9] == MIDI_MODEL_NUMBER_HIGH)) {
+
+        console.log(`Unrecognized device, ignoring...`);
+        return;
+    }
 
     // get the serial number
 
@@ -203,9 +215,9 @@ function handle_new_device(input_device, data) {
         device_index: reply_index,
         serial_number: serial_number,
         serial_str: serial_str,
-        input: input_device,
+        input: input_port,
         output: output_port,
-        name: input_device.name,
+        name: input_port.name,
         config: default_config,
         midi_hex: []
     };
@@ -335,7 +347,7 @@ function get_sysex_device_index(data) {
 
 //////////////////////////////////////////////////////////////////////
 
-function on_midi_message(input_device, event) {
+function on_midi_message(input_port, event) {
 
     const data = event.data;
 
@@ -349,7 +361,7 @@ function on_midi_message(input_device, event) {
 
             // device ID response
             case 0x02: {
-                handle_new_device(input_device, data);
+                handle_new_device(input_port, data);
             } break;
 
             // read flash memory response
