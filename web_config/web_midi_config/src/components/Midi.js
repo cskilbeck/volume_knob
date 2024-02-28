@@ -11,10 +11,14 @@ const FLASH_MAX_LEN = 26;
 let midi = null;
 
 //////////////////////////////////////////////////////////////////////
-// all the midi devices which have responded to device id requests
+// all the midi devices and configs which have responded to device id requests
 // position in the array is device_index
 
+// configs in a separate array for reactivity purposes
+
 let midi_devices = ref([]);
+
+let configs = ref([]);
 
 //////////////////////////////////////////////////////////////////////
 // output ports which have been sent a device id request
@@ -218,9 +222,9 @@ function handle_new_device(input_port, data) {
         input: input_port,
         output: output_port,
         name: input_port.name,
-        config: default_config,
-        midi_hex: []
+        config: ref({})
     };
+    device.config.value = default_config;
     midi_devices.value[reply_index] = device;
     console.log(`Found device ${device.name}, serial # ${device.serial_str}, ${midi_devices.value.length} device(s) so far...`);
 }
@@ -247,7 +251,7 @@ function write_flash(index) {
         return;
     }
     let data_7bits = [];
-    bytes_to_bits7(device.midi_hex, 0, FLASH_MAX_LEN, data_7bits);
+    bytes_to_bits7(bytes_from_config(device.config.value), 0, FLASH_MAX_LEN, data_7bits);
     send_midi(device, [0xF0, 0x7E, 0x00, 0x06, 0x04].concat(data_7bits).concat([0xF7]));
 }
 
@@ -371,11 +375,12 @@ function on_midi_message(input_port, event) {
                     let flash_data = [];
                     bits7_to_bytes(data, 5, FLASH_MAX_LEN, flash_data);
                     console.log(`FLASH: ${flash_data}`);
-                    d.midi_hex = flash_data;
+                    d.config.value = config_from_bytes(flash_data);
+                    if (on_config_changed_callback != null) {
+                        on_config_changed_callback(d);
+                    }
                     let s = bytes_to_hex_string(flash_data, FLASH_MAX_LEN);
-                    //document.getElementById(`memory_${device_index}`).value = s;
-                    //document.getElementById(`memory_contents_${device_index}`).innerHTML = s;
-                    console.log(`Memory for device ${d.midi_serial_str}: ${s}`);
+                    console.log(`Memory for device ${d.serial_str}: ${s}`);
                 }
             } break;
 
@@ -383,11 +388,17 @@ function on_midi_message(input_port, event) {
             case 0x4: {
                 let d = midi_devices.value[device_index];
                 if (d !== undefined) {
-                    console.log(`Device ${d.midi_serial_str} wrote flash data`);
+                    console.log(`Device ${d.serial_str} wrote flash data`);
                 }
             } break;
         }
     }
+}
+
+let on_config_changed_callback = null;
+
+function on_config_changed(callback) {
+    on_config_changed_callback = callback;
 }
 
 function on_midi(midi_obj) {
@@ -404,6 +415,7 @@ export default {
     midi_devices,
     init_devices,
     on_midi_message,
+    on_config_changed,
     on_midi,
     toggle_device_led,
     read_flash,
