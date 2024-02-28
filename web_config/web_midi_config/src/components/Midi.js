@@ -52,19 +52,25 @@ typedef enum flags
     extended = 1,
     relative = 2,
     accel_0 = 4,
-    accel_1 = 8
+    accel_1 = 8,
+    momentary = 16
 
 } flags_t;
 
 // sizeof(config_t) should be 26 bytes
 
 typedef struct config {
-    uint8 cc_msb;       // 7 bits
-    uint8 cc_lsb;       // 7 bits
-    uint16 zero_point;  // 14 bits
-    uint16 delta;       // 14 bits
-    uint16 flags;       // 16 bits
-    uint8 pad[18];      // set to 0
+    uint8 rot_control_low;
+    uint8 rot_control_high;
+    uint16 rot_zero_point;
+    uint16 rot_current_value;
+    uint16 rot_delta;
+
+    uint8 btn_cc_low;
+    uint8 btn_cc_high;
+    uint8 btn_pressed_value;
+    uint8 btn_released_value;
+    uint16 cf_flags;
 
 } config_t;
 
@@ -203,7 +209,7 @@ function handle_new_device(input_port, data) {
         return;
     }
 
-    // get the serial number
+    // get the serial number from the device id response
 
     let b0 = data[10] || 0;
     let b1 = data[11] || 0;
@@ -213,7 +219,7 @@ function handle_new_device(input_port, data) {
     let serial_number = b3 | (b2 << 7) | (b1 << 14) | (b0 << 21);
     let serial_str = serial_number.toString(16).toUpperCase()
 
-    // add a new device to the midi_devices
+    // add a new device to the array of midi_devices
 
     let device = {
         device_index: reply_index,
@@ -226,7 +232,11 @@ function handle_new_device(input_port, data) {
     };
     device.config.value = default_config;
     midi_devices.value[reply_index] = device;
+
     console.log(`Found device ${device.name}, serial # ${device.serial_str}, ${midi_devices.value.length} device(s) so far...`);
+
+    // get the config
+    read_flash(reply_index);
 }
 
 //////////////////////////////////////////////////////////////////////

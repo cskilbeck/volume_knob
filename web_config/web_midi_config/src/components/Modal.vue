@@ -3,7 +3,8 @@
         <transition name="fade">
             <div v-if="modelValue" class="pt-4 position-fixed top-0 start-0 h-100 w-100"
                 style="background-color: rgba(0, 0, 0, 0.5)">
-                <div id="backdrop" @click="backdropClick" class="modal1-dialog h-100 overflow-auto">
+                <div id="backdrop" @click="backdropClick"
+                    class="modal1-dialog h-100 overflow-auto align-items-center d-flex">
                     <div class="card px-0" :class="(container == null) ? 'container' : `container-${container}`"
                         :style="(maxwidth != null) ? `max-width: ${maxwidth}` : null">
                         <div class="card-header h5 text-center pt-2">

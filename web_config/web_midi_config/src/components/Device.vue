@@ -15,7 +15,7 @@ watch(props.device, (o, n) => {
     t.config.cc_msb = Math.max(0, Math.min(t.config.cc_msb, 127));
     t.config.cc_lsb = Math.max(0, Math.min(t.config.cc_lsb, 127));
     t.config.zero_point = Math.max(16, Math.min(t.config.zero_point, 128));
-    t.config.delta = Math.max(1, Math.min(t.config.delta, 127));
+    t.config.delta = Math.max(1, Math.min(t.config.delta, t.config.zero_point));
     n = t;
 });
 

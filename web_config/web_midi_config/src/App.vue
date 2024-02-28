@@ -3,7 +3,6 @@
 //////////////////////////////////////////////////////////////////////
 
 import DeviceList from './components/DeviceList.vue'
-import 'bootstrap/dist/css/bootstrap.min.css'
 import midi from './components/Midi.js'
 import Modal from './components/Modal.vue'
 import { ref } from 'vue'
@@ -41,15 +40,28 @@ navigator.requestMIDIAccess({ "sysex": true })
         </div>
         <div class="col text-end">
           <button @click="closeableModal = true" class="btn btn-secondary btn-sm">
-            Info
+            About
           </button>
           <Modal v-model="closeableModal" maxwidth="40%" closeable
             header="It's a Configurator for the Tiny USB Midi Knob">
-            <p class="text-center">Made by <a href="https://twitter.com/cskilbeck" target="_blank"
-                rel="noreferrer noopener">@cskilbeck</a><br>
-              On 27/02/2024<br>
-              Using <a href="https://vuejs.org/" target="_blank" rel="noreferrer noopener">Vue.js</a><br>
-              And <a href="https://getbootstrap.com/" target="_blank" rel="noreferrer noopener">Bootstrap</a></p>
+            <div class="row">
+              <div class="col text-center h5">
+                Crafted with care by <a class="" href="https://twitter.com/cskilbeck" target="_blank"
+                  rel="noreferrer noopener">@cskilbeck</a>
+              </div>
+            </div>
+            <div class="row mt-3">
+              <div class="col text-center">
+                Get your own Tiny USB Midi Knob <a href="https://www.etsy.com/uk/shop/TinyLittleGadgets" target="_blank"
+                  rel="noreferrer noopener">here</a>
+              </div>
+            </div>
+            <div class="row mt-5">
+              <div class="col text-end">
+                Made with <a href="https://vuejs.org/" target="_blank" rel="noreferrer noopener">Vue.js</a> and <a
+                  href="https://getbootstrap.com/" target="_blank" rel="noreferrer noopener">Bootstrap</a>
+              </div>
+            </div>
           </Modal>
         </div>
       </div>
