@@ -2,7 +2,7 @@
     <teleport to="body">
         <transition name="fade">
             <div v-if="modelValue" class="pt-4 position-fixed top-0 start-0 h-100 w-100"
-                style="background-color: rgba(0, 0, 0, 0.5)">
+                style="background-color: rgba(0, 0, 0, 0.8)">
                 <div id="backdrop" @click="backdropClick"
                     class="modal1-dialog h-100 overflow-auto align-items-center d-flex">
                     <div class="card px-0" :class="(container == null) ? 'container' : `container-${container}`"
@@ -23,7 +23,7 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits, ref } from 'vue';
+import { ref } from 'vue';
 
 const backdropClick = (event) => {
     if (event.target.id == 'backdrop' && props.closeable == true) {

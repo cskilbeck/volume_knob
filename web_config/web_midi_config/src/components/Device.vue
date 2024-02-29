@@ -1,7 +1,7 @@
 <script setup>
 
-import { defineProps, watch, getCurrentInstance } from 'vue';
-import midi from './Midi.js'
+import { watch, getCurrentInstance } from 'vue';
+import midi from '../Midi.js'
 
 const props = defineProps({
     device: {
@@ -12,10 +12,16 @@ const props = defineProps({
 
 watch(props.device, (o, n) => {
     let t = o;
-    t.config.cc_msb = Math.max(0, Math.min(t.config.cc_msb, 127));
-    t.config.cc_lsb = Math.max(0, Math.min(t.config.cc_lsb, 127));
-    t.config.zero_point = Math.max(16, Math.min(t.config.zero_point, 128));
-    t.config.delta = Math.max(1, Math.min(t.config.delta, t.config.zero_point));
+    t.config.rot_control_high = Math.max(0, Math.min(t.config.rot_control_high, 127));
+    t.config.rot_control_low = Math.max(0, Math.min(t.config.rot_control_low, 127));
+
+    let max_zero_point = t.config.cf_rotate_extended ? (1 << 14) - 1 : (1 << 7) - 1;
+    t.config.rot_zero_point = Math.max(16, Math.min(t.config.rot_zero_point, max_zero_point));
+
+    t.config.rot_delta = Math.max(1, Math.min(t.config.rot_delta, t.config.rot_zero_point));
+
+    t.config.rot_limit_high = Math.max(1, Math.min(t.config.rot_limit_high, max_zero_point));
+    t.config.rot_limit_low = Math.max(0, Math.min(t.config.rot_limit_low, t.config.rot_limit_high));
     n = t;
 });
 
@@ -29,7 +35,7 @@ midi.on_config_changed((device) => {
 </script>
 
 <template>
-    <div class="container " style="background-color:#181818;">
+    <div class="container bg-black border rounded-3 py-3">
         <div class='row p-2'>
             <div class='col-2'>
                 <div class='row'>
@@ -70,19 +76,20 @@ midi.on_config_changed((device) => {
                         <div class="form-check">
                             <label class="form-check-label user-select-none" for="extended_check">Extended
                                 control</label>
-                            <input class="form-check-input pull-left" type="checkbox" v-model="device.config.extended">
+                            <input class="form-check-input pull-left" type="checkbox"
+                                v-model="device.config.cf_rotate_extended">
                         </div>
                     </div>
                 </div>
                 <div class="row p-1">
                     <div class="input-group mb-1">
-                        <input type="number" class="form-control" v-model.number="device.config.cc_msb">
+                        <input type="number" class="form-control" v-model.number="device.config.rot_control_high">
                         <span class="input-group-text user-select-none">CC MSB</span>
                     </div>
                 </div>
                 <div class="row p-1">
-                    <div class="input-group mb-1" v-show="device.config.extended">
-                        <input type="number" class="form-control" v-model.number="device.config.cc_lsb">
+                    <div class="input-group mb-1" v-show="device.config.cf_rotate_extended">
+                        <input type="number" class="form-control" v-model.number="device.config.rot_control_low">
                         <span class="input-group-text user-select-none">CC LSB</span>
                     </div>
                 </div>
@@ -91,21 +98,33 @@ midi.on_config_changed((device) => {
                 <div class="row p-1">
                     <div class="col">
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" v-model="device.config.relative">
+                            <input class="form-check-input" type="checkbox" v-model="device.config.cf_rotate_relative">
                             <label class="form-check-label user-select-none" for="relative_check">Relative</label>
                         </div>
                     </div>
                 </div>
-                <div class="row p-1" v-show="device.config.relative">
+                <div class="row p-1" v-show="device.config.cf_rotate_relative">
                     <div class="input-group mb-1">
-                        <input type="number" class="form-control" v-model.number="device.config.zero_point">
+                        <input type="number" class="form-control" v-model.number="device.config.rot_zero_point">
                         <span class="input-group-text user-select-none">Zero point</span>
                     </div>
                 </div>
-                <div class="row p-1" v-show="device.config.relative">
+                <div class="row p-1" v-show="device.config.cf_rotate_relative">
                     <div class="input-group mb-1">
-                        <input type="number" class="form-control" v-model.number="device.config.delta">
+                        <input type="number" class="form-control" v-model.number="device.config.rot_delta">
                         <span class="input-group-text user-select-none">Delta</span>
+                    </div>
+                </div>
+                <div class="row p-1" v-show="!device.config.cf_rotate_relative">
+                    <div class="input-group mb-1">
+                        <input type="number" class="form-control" v-model.number="device.config.rot_limit_low">
+                        <span class="input-group-text user-select-none">Low Limit</span>
+                    </div>
+                </div>
+                <div class="row p-1" v-show="!device.config.cf_rotate_relative">
+                    <div class="input-group mb-1">
+                        <input type="number" class="form-control" v-model.number="device.config.rot_limit_high">
+                        <span class="input-group-text user-select-none">High Limit</span>
                     </div>
                 </div>
             </div>
@@ -117,7 +136,7 @@ midi.on_config_changed((device) => {
                 </div>
                 <div class="row p-1">
                     <div class="col">
-                        <select class="form-select form-control" v-model="device.config.acceleration">
+                        <select class="form-select form-control w-75" v-model="device.config.cf_acceleration">
                             <option value="0" selected>Off</option>
                             <option value="1" selected>Low</option>
                             <option value="2" selected>Medium</option>

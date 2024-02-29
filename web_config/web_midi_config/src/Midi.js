@@ -34,62 +34,151 @@ let device_index = 0;
 //////////////////////////////////////////////////////////////////////
 
 let default_config = {
-    cc_msb: 3,
-    cc_lsb: 35,
-    zero_point: 64,
-    delta: 1,
-    extended: true,
-    relative: false,
-    acceleration: 0
+    cf_rotate_extended: 0,
+    cf_rotate_relative: 0,
+    cf_led_invert: 0,
+    cf_led_flash_on_rot: 0,
+    cf_led_flash_on_limit: 0,
+    cf_btn_momentary: 0,
+    cf_btn_extended: 0,
+    cf_led_flash_on_click: 0,
+    cf_led_flash_on_release: 0,
+    cf_led_track_button_toggle: 0,
+    cf_acceleration: 0,
+    rot_control_high: 0,
+    rot_control_low: 0,
+    rot_zero_point: 0,
+    rot_delta: 0,
+    rot_limit_low: 0,
+    rot_limit_high: 0,
+    rot_current_value: 0,
+    btn_cc_high: 0,
+    btn_cc_low: 0,
+    btn_value_1: 0,
+    btn_value_2: 0,
 };
 
 /*
 
-// 16 flags available
+//////////////////////////////////////////////////////////////////////
+// flags in config.cf_flags
 
-typedef enum flags
+typedef enum config_flags
 {
-    extended = 1,
-    relative = 2,
-    accel_0 = 4,
-    accel_1 = 8,
-    momentary = 16
+    // rotate modifies both CC MSB and LSB
+    cf_rotate_extended = 0x0001,
 
-} flags_t;
+    // rotate sends relative changes
+    cf_rotate_relative = 0x0002,
 
-// sizeof(config_t) should be 26 bytes
+    // led on means off and vice versa
+    cf_led_invert = 0x0004,
 
-typedef struct config {
-    uint8 rot_control_low;
+    // flash when knob is rotated
+    cf_led_flash_on_rot = 0x0008,
+
+    // flash when rotation limit is hit (if not cf_rotate_relative)
+    cf_led_flash_on_limit = 0x0010,
+
+    // btn sets value1/value2 based on state of button rather than toggling between them
+    cf_btn_momentary = 0x0020,
+
+    // button modifies both CC MSB and LSB
+    cf_btn_extended = 0x0040,
+
+    // flash led when button is clicked
+    cf_led_flash_on_click = 0x0080,
+
+    // flash led when button is released
+    cf_led_flash_on_release = 0x0100,
+
+    // led tracks state of button
+    cf_led_track_button_toggle = 0x0200,
+
+    // two bits for acceleration (so 4 options: off, low, med, high)
+    cf_acceleration_lsb = 0x0400,
+    cf_acceleration_msb = 0x0800,
+};
+
+//////////////////////////////////////////////////////////////////////
+// sizeof config_t must be FLASH_LEN
+
+typedef struct config
+{
     uint8 rot_control_high;
-    uint16 rot_zero_point;
-    uint16 rot_current_value;
-    uint16 rot_delta;
+    uint8 rot_control_low;
+    union
+    {
+        struct
+        {
+            uint16 rot_zero_point;
+            uint16 rot_delta;
+        };
 
-    uint8 btn_cc_low;
+        struct
+        {
+            uint16 rot_limit_low;
+            uint16 rot_limit_high;
+        };
+    };
+    uint16 rot_current_value;
     uint8 btn_cc_high;
-    uint8 btn_pressed_value;
-    uint8 btn_released_value;
+    uint8 btn_cc_low;
+    uint16 btn_value_1;
+    uint16 btn_value_2;
     uint16 cf_flags;
+    uint8 pad[FLASH_LEN - 16];
 
 } config_t;
 
 */
 
 //////////////////////////////////////////////////////////////////////
+// this is a drag, but... there we are
 
 function config_from_bytes(bytes) {
+
     let config = default_config;
-    config.cc_msb = bytes[0] & 0x7f;
-    config.cc_lsb = bytes[1] & 0x7f;
-    config.zero_point = bytes[2] & 0xff;
-    config.zero_point |= (bytes[3] & 0x3f) << 8;
-    config.delta = bytes[4] & 0xff;
-    config.delta |= (bytes[5] & 0x3f) << 8;
-    let flags = (bytes[6] & 0xff) | ((bytes[7] & 0xff) << 8);
-    config.extended = (flags & 1) != 0;
-    config.relative = (flags & 2) != 0;
-    config.acceleration = (flags >> 2) & 3;
+
+    console.log(`CONFIG: ${bytes_to_hex_string(bytes)}`);
+
+    let flags = (bytes[14] & 0xff) | ((bytes[15] & 0xff) << 8);
+
+    config.cf_rotate_extended = (flags & 0x0001) != 0;
+    config.cf_rotate_relative = (flags & 0x0002) != 0;
+    config.cf_led_invert = (flags & 0x0004) != 0;
+    config.cf_led_flash_on_rot = (flags & 0x0008) != 0;
+    config.cf_led_flash_on_limit = (flags & 0x0010) != 0;
+    config.cf_btn_momentary = (flags & 0x0020) != 0;
+    config.cf_btn_extended = (flags & 0x0040) != 0;
+    config.cf_led_flash_on_click = (flags & 0x0080) != 0;
+    config.cf_led_flash_on_release = (flags & 0x0100) != 0;
+    config.cf_led_track_button_toggle = (flags & 0x0200) != 0;
+    config.cf_acceleration = (flags & 0x0C00) >> 10;
+
+    config.rot_control_high = bytes[0] & 0x7f;
+    config.rot_control_low = bytes[1] & 0x7f;
+    if (config.cf_rotate_relative) {
+        config.rot_zero_point = bytes[2] & 0xff;
+        config.rot_zero_point |= (bytes[3] & 0x3f) << 8;
+        config.rot_delta = bytes[4] & 0xff;
+        config.rot_delta |= (bytes[5] & 0x3f) << 8;
+    } else {
+        config.rot_limit_low = bytes[2] & 0xff;
+        config.rot_limit_low |= (bytes[3] & 0x3f) << 8;
+        config.rot_limit_high = bytes[4] & 0xff;
+        config.rot_limit_high |= (bytes[5] & 0x3f) << 8;
+    }
+
+    config.rot_current_value = bytes[6] & 0xff;
+    config.rot_current_value |= (bytes[7] & 0x3f) << 8;
+    config.btn_cc_high = bytes[8] & 0x7f;
+    config.btn_cc_low = bytes[9] & 0x7f;
+    config.btn_value_1 = bytes[10] & 0xff;
+    config.btn_value_1 |= (bytes[11] & 0x3f) << 8;
+    config.btn_value_2 = bytes[12] & 0xff;
+    config.btn_value_2 |= (bytes[13] & 0x3f) << 8;
+
     return config;
 }
 
@@ -97,18 +186,45 @@ function config_from_bytes(bytes) {
 
 function bytes_from_config(config) {
     let bytes = new Array(26).fill(0);
-    bytes[0] = config.cc_msb & 0x7f;
-    bytes[1] = config.cc_lsb & 0x7f;
-    bytes[2] = config.zero_point & 0xff;
-    bytes[3] = (config.zero_point >> 8) & 0x3f;
-    bytes[4] = config.delta & 0xff;
-    bytes[5] = (config.delta >> 8) & 0x3f;
+
     let flags = 0;
-    flags |= config.extended ? 1 : 0;
-    flags |= config.relative ? 2 : 0;
-    flags |= (config.acceleration & 3) << 2;
-    bytes[6] = flags & 0xff;
-    bytes[7] = (flags >> 8) & 0xff;
+
+    flags |= config.cf_rotate_extended ? 0x0001 : 0;
+    flags |= config.cf_rotate_relative ? 0x0002 : 0;
+    flags |= config.cf_led_invert ? 0x0004 : 0;
+    flags |= config.cf_led_flash_on_rot ? 0x0008 : 0;
+    flags |= config.cf_led_flash_on_limit ? 0x0010 : 0;
+    flags |= config.cf_btn_momentary ? 0x0020 : 0;
+    flags |= config.cf_btn_extended ? 0x0040 : 0;
+    flags |= config.cf_led_flash_on_click ? 0x0080 : 0;
+    flags |= config.cf_led_flash_on_release ? 0x0100 : 0;
+    flags |= config.cf_led_track_button_toggle ? 0x0200 : 0;
+    flags |= (config.cf_acceleration & 3) << 10;
+
+    bytes[0] = config.rot_control_high & 0x7f;
+    bytes[1] = config.rot_control_low & 0x7f;
+    if (config.cf_rotate_relative) {
+        bytes[2] = config.rot_zero_point & 0xff;
+        bytes[3] = (config.rot_zero_point >> 8) & 0x3f;
+        bytes[4] = config.rot_delta & 0xff;
+        bytes[5] = (config.rot_delta >> 8) & 0x3f;
+    } else {
+        bytes[2] = config.rot_limit_low & 0xff;
+        bytes[3] = (config.rot_limit_low >> 8) & 0x3f;
+        bytes[4] = config.rot_limit_high & 0xff;
+        bytes[5] = (config.rot_limit_high >> 8) & 0x3f;
+    }
+    bytes[6] = config.rot_current_value & 0xff;
+    bytes[7] = (config.rot_current_value >> 8) & 0x3f;
+    bytes[8] = config.btn_cc_high & 0x7f;
+    bytes[9] = config.btn_cc_low & 0x7f;
+    bytes[10] = config.btn_value_1 & 0xff;
+    bytes[11] = (config.btn_value_1 >> 8) & 0x3f;
+    bytes[12] = config.btn_value_2 & 0xff;
+    bytes[13] = (config.btn_value_2 >> 8) & 0x3f;
+    bytes[14] = flags & 0xff;
+    bytes[15] = (flags >> 8) & 0xff;
+
     return bytes;
 }
 

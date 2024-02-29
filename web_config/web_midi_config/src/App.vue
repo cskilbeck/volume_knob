@@ -3,8 +3,8 @@
 //////////////////////////////////////////////////////////////////////
 
 import DeviceList from './components/DeviceList.vue'
-import midi from './components/Midi.js'
 import Modal from './components/Modal.vue'
+import midi from './Midi.js'
 import { ref } from 'vue'
 
 const closeableModal = ref(false);

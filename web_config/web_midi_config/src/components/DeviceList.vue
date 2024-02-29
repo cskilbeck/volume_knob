@@ -1,7 +1,6 @@
 <script setup>
 
 import Device from './Device.vue'
-import midi from './Midi.js'
 
 defineProps({
     devices: {
