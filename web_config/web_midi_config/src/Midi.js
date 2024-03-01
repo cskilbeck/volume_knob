@@ -34,6 +34,20 @@ let device_index = 0;
 //////////////////////////////////////////////////////////////////////
 
 let default_config = {
+    version: 0,
+    rot_control_high: 0,
+    rot_control_low: 0,
+    btn_control_high: 0,
+    btn_control_low: 0,
+    rot_channel: 0,
+    btn_channel: 0,
+    rot_zero_point: 0,
+    rot_delta: 0,
+    rot_limit_low: 0,
+    rot_limit_high: 0,
+    rot_current_value: 0,
+    btn_value_1: 0,
+    btn_value_2: 0,
     cf_rotate_extended: 0,
     cf_rotate_relative: 0,
     cf_led_invert: 0,
@@ -45,17 +59,6 @@ let default_config = {
     cf_led_flash_on_release: 0,
     cf_led_track_button_toggle: 0,
     cf_acceleration: 0,
-    rot_control_high: 0,
-    rot_control_low: 0,
-    rot_zero_point: 0,
-    rot_delta: 0,
-    rot_limit_low: 0,
-    rot_limit_high: 0,
-    rot_current_value: 0,
-    btn_cc_high: 0,
-    btn_cc_low: 0,
-    btn_value_1: 0,
-    btn_value_2: 0,
 };
 
 /*
@@ -105,44 +108,58 @@ typedef enum config_flags
 
 typedef struct config
 {
-    uint8 rot_control_high;
-    uint8 rot_control_low;
-    union
-    {
-        struct
-        {
-            uint16 rot_zero_point;
-            uint16 rot_delta;
-        };
-
-        struct
-        {
-            uint16 rot_limit_low;
-            uint16 rot_limit_high;
-        };
-    };
-    uint16 rot_current_value;
-    uint8 btn_cc_high;
-    uint8 btn_cc_low;
-    uint16 btn_value_1;
-    uint16 btn_value_2;
-    uint16 cf_flags;
-    uint8 pad[FLASH_LEN - 16];
+    // 0  uint8 version;
+    // 1  uint8 rot_control[2];
+    // 3  uint8 btn_control[2];
+    // 5  uint16 btn_value[2];
+    // 9  uint8 channels;
+    // 10 uint16 rot_zero_point;
+    // 12 uint16 rot_delta;
+    // 14 uint16 rot_limit_low;
+    // 16 uint16 rot_limit_high;
+    // 18 uint16 rot_current_value;
+    // 20 uint16 flags;
+    // 22 uint8 pad[FLASH_LEN - 20];
 
 } config_t;
 
 */
 
 //////////////////////////////////////////////////////////////////////
-// this is a drag, but... there we are
+// this is a super nasty
+// the temptation is to build a system for keeping the structure
+// declaration in the firmware source code in sync with this stuff
+// rather than all this hard coded offset nonsense, which would
+// involve some fiddly kind of macro / include thingy. Maybe...
 
 function config_from_bytes(bytes) {
 
     let config = default_config;
 
-    console.log(`CONFIG: ${bytes_to_hex_string(bytes)}`);
+    config.version = bytes[0] & 0xff;
+    config.rot_control_high = bytes[1] & 0x7f;
+    config.rot_control_low = bytes[2] & 0x7f;
+    config.btn_control_high = bytes[3] & 0x7f;
+    config.btn_control_low = bytes[4] & 0x7f;
+    config.btn_value_1 = bytes[5] & 0xff;
+    config.btn_value_1 |= (bytes[6] << 8) & 0x3f;
+    config.btn_value_2 = bytes[7] & 0xff;
+    config.btn_value_2 |= (bytes[8] << 8) & 0x3f;
+    config.rot_channel = bytes[9] & 0xf;
+    config.btn_channel = (bytes[9] >> 4) & 0xf;
+    config.rot_zero_point = bytes[10] & 0xff;
+    config.rot_zero_point |= (bytes[11] & 0x3f) << 8;
+    config.rot_delta = bytes[12] & 0xff;
+    config.rot_delta |= (bytes[13] & 0x3f) << 8;
+    config.rot_limit_low = bytes[14] & 0xff;
+    config.rot_limit_low |= (bytes[15] & 0x3f) << 8;
+    config.rot_limit_high = bytes[16] & 0xff;
+    config.rot_limit_high |= (bytes[17] & 0x3f) << 8;
+    config.rot_current_value = bytes[18] & 0xff;
+    config.rot_current_value |= (bytes[19] & 0x3f) << 8;
 
-    let flags = (bytes[14] & 0xff) | ((bytes[15] & 0xff) << 8);
+    let flags = bytes[20] & 0xff;
+    flags |= (bytes[21] & 0xff) << 8;
 
     config.cf_rotate_extended = (flags & 0x0001) != 0;
     config.cf_rotate_relative = (flags & 0x0002) != 0;
@@ -156,28 +173,7 @@ function config_from_bytes(bytes) {
     config.cf_led_track_button_toggle = (flags & 0x0200) != 0;
     config.cf_acceleration = (flags & 0x0C00) >> 10;
 
-    config.rot_control_high = bytes[0] & 0x7f;
-    config.rot_control_low = bytes[1] & 0x7f;
-    if (config.cf_rotate_relative) {
-        config.rot_zero_point = bytes[2] & 0xff;
-        config.rot_zero_point |= (bytes[3] & 0x3f) << 8;
-        config.rot_delta = bytes[4] & 0xff;
-        config.rot_delta |= (bytes[5] & 0x3f) << 8;
-    } else {
-        config.rot_limit_low = bytes[2] & 0xff;
-        config.rot_limit_low |= (bytes[3] & 0x3f) << 8;
-        config.rot_limit_high = bytes[4] & 0xff;
-        config.rot_limit_high |= (bytes[5] & 0x3f) << 8;
-    }
-
-    config.rot_current_value = bytes[6] & 0xff;
-    config.rot_current_value |= (bytes[7] & 0x3f) << 8;
-    config.btn_cc_high = bytes[8] & 0x7f;
-    config.btn_cc_low = bytes[9] & 0x7f;
-    config.btn_value_1 = bytes[10] & 0xff;
-    config.btn_value_1 |= (bytes[11] & 0x3f) << 8;
-    config.btn_value_2 = bytes[12] & 0xff;
-    config.btn_value_2 |= (bytes[13] & 0x3f) << 8;
+    console.log(config);
 
     return config;
 }
@@ -186,6 +182,28 @@ function config_from_bytes(bytes) {
 
 function bytes_from_config(config) {
     let bytes = new Array(26).fill(0);
+
+    bytes[0] = config.version & 0xff;
+    bytes[1] = config.rot_control_high & 0x7f;
+    bytes[2] = config.rot_control_low & 0x7f;
+    bytes[3] = config.btn_control_high & 0x7f;
+    bytes[4] = config.btn_control_low & 0x7f;
+    bytes[5] = config.btn_value_1 & 0xff;
+    bytes[6] = (config.btn_value_1 >> 8) & 0x3f;
+    bytes[7] = config.btn_value_2 & 0xff;
+    bytes[8] = (config.btn_value_2 >> 8) & 0x3f;
+    bytes[9] = config.rot_channel & 0xf;
+    bytes[9] |= (config.btn_channel & 0xf) << 4;
+    bytes[10] = config.rot_zero_point & 0xff;
+    bytes[11] = (config.rot_zero_point >> 8) & 0x3f;
+    bytes[12] = config.rot_delta & 0xff;
+    bytes[13] = (config.rot_delta >> 8) & 0x3f;
+    bytes[14] = config.rot_limit_low & 0xff;
+    bytes[15] = (config.rot_limit_low >> 8) & 0x3f;
+    bytes[16] = config.rot_limit_high & 0xff;
+    bytes[17] = (config.rot_limit_high >> 8) & 0x3f;
+    bytes[18] = config.rot_current_value & 0xff;
+    bytes[19] = (config.rot_current_value >> 8) & 0x3f;
 
     let flags = 0;
 
@@ -201,29 +219,8 @@ function bytes_from_config(config) {
     flags |= config.cf_led_track_button_toggle ? 0x0200 : 0;
     flags |= (config.cf_acceleration & 3) << 10;
 
-    bytes[0] = config.rot_control_high & 0x7f;
-    bytes[1] = config.rot_control_low & 0x7f;
-    if (config.cf_rotate_relative) {
-        bytes[2] = config.rot_zero_point & 0xff;
-        bytes[3] = (config.rot_zero_point >> 8) & 0x3f;
-        bytes[4] = config.rot_delta & 0xff;
-        bytes[5] = (config.rot_delta >> 8) & 0x3f;
-    } else {
-        bytes[2] = config.rot_limit_low & 0xff;
-        bytes[3] = (config.rot_limit_low >> 8) & 0x3f;
-        bytes[4] = config.rot_limit_high & 0xff;
-        bytes[5] = (config.rot_limit_high >> 8) & 0x3f;
-    }
-    bytes[6] = config.rot_current_value & 0xff;
-    bytes[7] = (config.rot_current_value >> 8) & 0x3f;
-    bytes[8] = config.btn_cc_high & 0x7f;
-    bytes[9] = config.btn_cc_low & 0x7f;
-    bytes[10] = config.btn_value_1 & 0xff;
-    bytes[11] = (config.btn_value_1 >> 8) & 0x3f;
-    bytes[12] = config.btn_value_2 & 0xff;
-    bytes[13] = (config.btn_value_2 >> 8) & 0x3f;
-    bytes[14] = flags & 0xff;
-    bytes[15] = (flags >> 8) & 0xff;
+    bytes[20] = flags & 0xff;
+    bytes[21] = (flags >> 8) & 0xff;
 
     return bytes;
 }
@@ -500,7 +497,8 @@ function on_midi_message(input_port, event) {
                 if (d !== undefined) {
                     let flash_data = [];
                     bits7_to_bytes(data, 5, FLASH_MAX_LEN, flash_data);
-                    console.log(`FLASH: ${flash_data}`);
+                    console.log(`FLASH: ${bytes_to_hex_string(flash_data, flash_data.length, " ")}`);
+                    let cfg = config_from_bytes(flash_data);
                     d.config.value = config_from_bytes(flash_data);
                     if (on_config_changed_callback != null) {
                         on_config_changed_callback(d);

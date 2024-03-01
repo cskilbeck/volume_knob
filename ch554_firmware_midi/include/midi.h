@@ -57,10 +57,10 @@ enum midi_packet_header_t
     midi_packet_end_3 = 0x7,    // SysEx ends with following three bytes.
 };
 
-typedef uint32 midi_packet;
+#define MIDI_PACKET_SIZE 4
 
-// must be a power of 2 and MIDI_QUEUE_LEN * sizeof(midi_packet) must be < MAX_PACKET_SIZE (64) so
-// effectively the max length is 8
+// must be a power of 2 and MIDI_QUEUE_LEN * MIDI_PACKET_SIZE must be < MAX_PACKET_SIZE (64) so
+// effectively the max length is 16
 #define MIDI_QUEUE_LEN 8
 
 extern uint8 queue_size;
@@ -91,4 +91,4 @@ void handle_midi_packet();
 void midi_flush_queue();
 bool midi_send_update();
 
-void queue_put(midi_packet k);
+void queue_put(uint8 *k);

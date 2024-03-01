@@ -26,10 +26,10 @@ navigator.requestMIDIAccess({ "sysex": true })
 <template>
   <main>
     <header>
-      <h5 class="text-center mt-3">Tiny USB MIDI Knob Configurator</h5>
+      <h5 class="text-center mt-4 mb-4">Tiny USB MIDI Knob Configurator</h5>
     </header>
     <div class="container">
-      <div class="row mb-3">
+      <div class="row mb-4">
         <div class="col">
           Found {{ midi.midi_devices.value.length }} device{{ midi.midi_devices.value.length != 1 ? "s" : "" }}
         </div>
@@ -42,7 +42,7 @@ navigator.requestMIDIAccess({ "sysex": true })
           <button @click="closeableModal = true" class="btn btn-secondary btn-sm">
             About
           </button>
-          <Modal v-model="closeableModal" maxwidth="40%" closeable
+          <Modal v-model="closeableModal" maxwidth="30%" closeable
             header="It's a Configurator for the Tiny USB Midi Knob">
             <div class="row">
               <div class="col text-center h5">
@@ -58,7 +58,7 @@ navigator.requestMIDIAccess({ "sysex": true })
             </div>
             <div class="row mt-5">
               <div class="col text-end">
-                Made with <a href="https://vuejs.org/" target="_blank" rel="noreferrer noopener">Vue.js</a> and <a
+                <a href="https://vuejs.org/" target="_blank" rel="noreferrer noopener">Vue.js</a> / <a
                   href="https://getbootstrap.com/" target="_blank" rel="noreferrer noopener">Bootstrap</a>
               </div>
             </div>

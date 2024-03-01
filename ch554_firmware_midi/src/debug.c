@@ -264,6 +264,40 @@ void puthex(uint8 b)
 
 //////////////////////////////////////////////////////////////////////
 
+void print_uint8(char *msg, uint8 v)
+{
+    putstr(msg);
+    putstr(": U8 = 0x");
+    puthex(v);
+    putstr("\n");
+}
+
+//////////////////////////////////////////////////////////////////////
+
+void print_uint16(char *msg, uint16 v)
+{
+    putstr(msg);
+    putstr(": U16 = 0x");
+    puthex(v >> 8);
+    puthex(v & 0xff);
+    putstr("\n");
+}
+
+//////////////////////////////////////////////////////////////////////
+
+void print_uint32(char *msg, uint32 v)
+{
+    putstr(msg);
+    putstr(": U32 = 0x");
+    puthex((v >> 24) & 0xff);
+    puthex((v >> 16) & 0xff);
+    puthex((v >> 8) & 0xff);
+    puthex(v & 0xff);
+    putstr("\n");
+}
+
+//////////////////////////////////////////////////////////////////////
+
 void hexdump(char *msg, uint8 *p, uint8 n)
 {
     putstr(msg);

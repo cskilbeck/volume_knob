@@ -10,6 +10,32 @@
 static uint32 current_save_index = 1;
 static uint8 current_save_slot = 0;
 
+#define DEFAULT_FLAGS (cf_rotate_extended | cf_led_flash_on_rot | cf_btn_momentary | cf_btn_extended | cf_led_track_button_toggle | 0x400)
+
+// 03,23
+// 78,00
+// 0100,0000
+// 00
+// 0000
+// FF3F
+// 0000
+// 6906
+// 000000000000000000
+
+__code const config_t default_config = {
+    CONFIG_VERSION,    // uint8 version
+    { 3, 35 },         // uint8 rot_control[2];
+    { 120, 0 },        // uint8 btn_control[2];
+    { 1, 0 },          // uint16 btn_value[2];
+    0x00,              // uint8 channels;
+    0x0040,            // uint16 rot_zero_point
+    0x0001,            // uint16 rot_delta
+    0x0000,            // uint16 rot_limit_low;
+    0x3fff,            // uint16 rot_limit_high;
+    0x0000,            // uint16 rot_current_value;
+    DEFAULT_FLAGS      // uint16 cf_flags;
+};
+
 //////////////////////////////////////////////////////////////////////
 // read bytes from the data flash area
 
@@ -99,6 +125,9 @@ static void save_buffer_set_crc(save_buffer_t *buffer)
 
 static bool save_buffer_check_crc(save_buffer_t const *buffer)
 {
+    if(save_buffer.data[0] != CONFIG_VERSION) {
+        return false;
+    }
     uint16 check = save_buffer_get_crc(buffer);
     return check == buffer->crc;
 }
@@ -106,52 +135,60 @@ static bool save_buffer_check_crc(save_buffer_t const *buffer)
 //////////////////////////////////////////////////////////////////////
 // return 0 (we loaded it from slot 0), 1 (we loaded it from slot 1) or -1 (no valid save found)
 
-bool load_config(save_buffer_t *buffer)
+bool load_config()
 {
     bool valid[2] = { false, false };
     uint32 index[2];
 
-    if(read_flash_data(0, sizeof(save_buffer_t), (uint8 *)buffer)) {
-        valid[0] = save_buffer_check_crc(buffer);
-        index[0] = buffer->index;
+    if(read_flash_data(0, sizeof(save_buffer_t), (uint8 *)&save_buffer)) {
+        valid[0] = save_buffer_check_crc(&save_buffer);
+        index[0] = save_buffer.index;
     }
 
-    if(read_flash_data(sizeof(save_buffer_t), sizeof(save_buffer_t), (uint8 *)buffer)) {
-        valid[1] = save_buffer_check_crc(buffer);
-        index[1] = buffer->index;
+    if(read_flash_data(sizeof(save_buffer_t), sizeof(save_buffer_t), (uint8 *)&save_buffer)) {
+        valid[1] = save_buffer_check_crc(&save_buffer);
+        index[1] = save_buffer.index;
     }
 
     if(valid[1] && (index[1] > index[0] || valid[0] == false)) {
         current_save_index = index[1];
         current_save_slot = 1;
         putstr("load slot 1\n");
+        memcpy(&config, save_buffer.data, sizeof(config_t));
         return true;
     }
 
-    if(read_flash_data(0, sizeof(save_buffer_t), (uint8 *)buffer)) {
-        valid[0] = save_buffer_check_crc(buffer);
-        index[0] = buffer->index;
+    if(read_flash_data(0, sizeof(save_buffer_t), (uint8 *)&save_buffer)) {
+        valid[0] = save_buffer_check_crc(&save_buffer);
+        index[0] = save_buffer.index;
         if(valid[0]) {
             current_save_index = index[0];
             current_save_slot = 0;
             putstr("load slot 0\n");
+            memcpy(&config, save_buffer.data, sizeof(config_t));
             return true;
         }
     }
     putstr("no save found\n");
+    memcpy(&config, &default_config, sizeof(config_t));
     return false;
 }
 
 //////////////////////////////////////////////////////////////////////
 
-bool save_config(save_buffer_t *buffer)
+bool save_config()
 {
+    memcpy(&save_buffer.data, &config, sizeof(config_t));
+    uint8 extra = FLASH_LEN - sizeof(config_t);
+    if(extra != 0) {
+        memset(save_buffer.data + sizeof(config_t), 0, extra);
+    }
     current_save_slot = 1 - current_save_slot;
     current_save_index += 1;
-    buffer->index = current_save_index;
-    save_buffer_set_crc(buffer);
+    save_buffer.index = current_save_index;
+    save_buffer_set_crc(&save_buffer);
     hexdump("save to slot", &current_save_slot, 1);
     hexdump("save index", &current_save_index, 4);
     uint8 flash_addr = (current_save_slot == 0) ? 0 : sizeof(save_buffer_t);
-    return write_flash_data(flash_addr, sizeof(save_buffer_t), (uint8 *)buffer);
+    return write_flash_data(flash_addr, sizeof(save_buffer_t), (uint8 *)&save_buffer);
 }

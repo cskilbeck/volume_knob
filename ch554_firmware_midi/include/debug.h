@@ -33,3 +33,7 @@ void putnibble(uint8 n);
 void putstr(char *p);
 void puthex(uint8 b);
 void hexdump(char *msg, uint8 *p, uint8 n);
+
+void print_uint32(char *msg, uint32 v);
+void print_uint16(char *msg, uint16 v);
+void print_uint8(char *msg, uint8 v);

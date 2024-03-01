@@ -12,6 +12,8 @@
 
 #define FLASH_7BIT_LEN (((FLASH_LEN * 8) + 6) / 7)
 
+#define CONFIG_VERSION 0x06
+
 //////////////////////////////////////////////////////////////////////
 // flags in config.cf_flags
 
@@ -50,6 +52,9 @@ typedef enum config_flags
     // two bits for acceleration (so 4 options: off, low, med, high)
     cf_acceleration_lsb = 0x0400,
     cf_acceleration_msb = 0x0800,
+
+    // current button toggle state
+    cf_toggle = 0x1000
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -57,65 +62,71 @@ typedef enum config_flags
 
 typedef struct config
 {
-    // Control Change index MSB for knob
-    uint8 rot_control_high;
+    // config struct version - must be 1st byte!
+    uint8 version;
 
-    // Control Change index LSB for knob - used if cf_rotate_extended
-    uint8 rot_control_low;
+    // Control Change index MSB,LSB for knob
+    uint8 rot_control[2];
 
-    union
-    {
-        // if cf_rotate_relative
-        struct
-        {
-            // Zero point
-            uint16 rot_zero_point;
+    // Control Change index MSB,LSB for button
+    uint8 btn_control[2];
 
-            // How much to change by
-            uint16 rot_delta;
-        };
+    // 1st,2nd button values or pressed/released values if cf_btn_momentary
+    uint16 btn_value[2];
 
-        // else if !cf_rotate_relative
-        struct
-        {
-            // lower limit of value
-            uint16 rot_limit_low;
+    // rotate channel in low nibble, button in high nibble
+    uint8 channels;
 
-            // upper limit of value in absolute mode
-            uint16 rot_limit_high;
-        };
-    };
+    // Zero point in relative mode
+    uint16 rot_zero_point;
 
-    // current value (unused if cf_rotate_relative)
+    // How much to change by
+    uint16 rot_delta;
+
+    // lower limit of value in absolute mode
+    uint16 rot_limit_low;
+
+    // upper limit of value in absolute mode
+    uint16 rot_limit_high;
+
+    // current value (in absolute mode)
     uint16 rot_current_value;
 
-    // Control Change index MSB for button
-    uint8 btn_cc_high;
-
-    // Control Change index LSB for button - use if cf_btn_extended
-    uint8 btn_cc_low;
-
-    // 1st button toggle value or released value if cf_btn_momentary
-    uint16 btn_value_1;
-
-    // 2nd button toggle value or pressed value if cf_btn_momentary
-    uint16 btn_value_2;
-
     // flags, see enum above
-    uint16 cf_flags;
-
-    uint8 pad[FLASH_LEN - 16];
+    uint16 flags;
 
 } config_t;
+
+_Static_assert(sizeof(config_t) < FLASH_LEN);
+
+extern __code const config_t default_config;
+extern __xdata config_t config;
+
+inline uint8 get_rot_channel()
+{
+    return config.channels & 0xf;
+}
+
+inline uint8 get_btn_channel()
+{
+    return config.channels >> 4;
+}
+
+inline bool is_toggle_mode()
+{
+    return (config.flags & cf_btn_momentary) == 0;
+}
 
 //////////////////////////////////////////////////////////////////////
 
 typedef struct save_buffer
 {
-    uint8 data[sizeof(config_t)];
+    uint8 data[FLASH_LEN];
     uint32 index;
     uint16 crc;
 } save_buffer_t;
 
-bool load_config(save_buffer_t *buffer);
-bool save_config(save_buffer_t *buffer);
+extern __xdata save_buffer_t save_buffer;
+
+bool load_config();
+bool save_config();

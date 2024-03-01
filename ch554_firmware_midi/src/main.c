@@ -46,13 +46,15 @@ typedef void (*BOOTLOADER)(void);
 //////////////////////////////////////////////////////////////////////
 // XDATA, 1KB available
 
-__xdata uint8 Ep0Buffer[DEFAULT_ENDP0_SIZE];     // endpoint0 OUT & IN buffer，Must be an even address
-__xdata uint8 Ep1Buffer[DEFAULT_ENDP1_SIZE];     // endpoint1 upload buffer
-__xdata uint8 Ep2Buffer[2 * MAX_PACKET_SIZE];    // endpoint2 IN & OUT buffer, Must be an even address
+__xdata uint8 endpoint_0_buffer[DEFAULT_ENDP0_SIZE];     // endpoint0 OUT & IN buffer，Must be an even address
+__xdata uint8 endpoint_1_buffer[DEFAULT_ENDP1_SIZE];     // endpoint1 upload buffer
+__xdata uint8 endpoint_2_in_buffer[MAX_PACKET_SIZE];     // endpoint2 IN buffer, Must be an even address
+__xdata uint8 endpoint_2_out_buffer[MAX_PACKET_SIZE];    // endpoint2 OUT buffer, Must be an even address
 __xdata uint8 midi_send_buffer[48];
 __xdata uint8 midi_recv_buffer[48];
 __xdata save_buffer_t save_buffer;
-__xdata midi_packet queue_buffer[MIDI_QUEUE_LEN];
+__xdata uint8 queue_buffer[MIDI_QUEUE_LEN * MIDI_PACKET_SIZE];
+__xdata config_t config;
 
 //////////////////////////////////////////////////////////////////////
 // Flash LED
@@ -73,6 +75,48 @@ void led_flash(uint8 n, uint8 speed)
 
 //////////////////////////////////////////////////////////////////////
 
+void send_cc(uint8 channel, uint8 cc[2], uint16 value, bool is_extended)
+{
+    uint8 packet[MIDI_PACKET_SIZE];
+    packet[0] = 0x0B;
+    packet[1] = 0xB0 | channel;
+    packet[2] = cc[0];
+    if(is_extended) {
+        packet[3] = (value >> 7) & 0x7F;
+        queue_put(packet);
+        packet[2] = cc[1];
+        packet[3] = value & 0x7F;
+    } else {
+        packet[3] = value;
+    }
+    queue_put(packet);
+}
+
+void do_absolute_rotation(int16 offset)
+{
+    int16 cur = config.rot_current_value;
+    cur += offset;
+    if(cur < (int16)config.rot_limit_low) {
+        cur = config.rot_limit_low;
+    } else if(cur > (int16)config.rot_limit_high) {
+        cur = config.rot_limit_high;
+    }
+    config.rot_current_value = cur;
+    send_cc(get_rot_channel(), config.rot_control, cur, (config.flags & cf_rotate_extended) != 0);
+}
+
+void do_relative_rotation(int16 offset)
+{
+    int16 cur = config.rot_zero_point;
+    cur += offset;
+    if(cur < 0) {
+        cur = 0;
+    } else if(cur > 0x3fff) {
+        cur = 0x3fff;
+    }
+    send_cc(get_rot_channel(), config.rot_control, cur, (config.flags & cf_rotate_extended) != 0);
+}
+
 int main()
 {
     clk_init();
@@ -80,6 +124,8 @@ int main()
     uart0_init();
 
     putstr("================ BOOT =================\n");
+
+    hexdump("default config", (uint8 *)&default_config, sizeof(default_config));
 
     init_chip_id();
 
@@ -92,7 +138,7 @@ int main()
     gpio_init(BTN_PORT, BTN_PIN, gpio_input_pullup);
     gpio_init(LED_PORT, LED_PIN, gpio_output_push_pull);
 
-    load_config(&save_buffer);
+    load_config();
 
     TL2 = 0;
     TH2 = 0;
@@ -111,15 +157,19 @@ int main()
     UEP1_T_LEN = 0;    // Be pre -use and sending length must be empty
     UEP2_T_LEN = 0;    // Be pre -use and sending length must be empty
 
+
     uint16_t press_time = 0;
     bool button_state = false;    // for debouncing the button
 
     int8 turn_value = ROTARY_DIRECTION - 1;
 
+    uint8 toggle = 0;
+
     while(1) {
 
         // read/debounce the button
         bool pressed = false;
+        bool released = false;
         bool new_state = !BTN_BIT;
 
         if(new_state != button_state && TF2) {
@@ -127,6 +177,7 @@ int main()
             TH2 = T2_DEBOUNCE;
             TF2 = 0;
             pressed = new_state;
+            released = !new_state;
             button_state = new_state;
         }
 
@@ -166,7 +217,6 @@ int main()
         if(usb_config) {
 
             if(ep2_recv_len) {
-
                 process_midi_packet_in(ep2_recv_len);
                 UEP2_CTRL = (UEP2_CTRL & ~MASK_UEP_R_RES) | UEP_R_RES_ACK;
                 ep2_recv_len = 0;
@@ -184,17 +234,35 @@ int main()
 
                     if(pressed) {
 
-                        queue_put(0x0103b00b);
+                        uint8 index = 0;
+                        if(is_toggle_mode()) {
+                            config.flags ^= cf_toggle;
+                            if((config.flags & cf_toggle) != 0) {
+                                index = 1;
+                            }
+                        }
+
+                        send_cc(get_btn_channel(), config.btn_control, config.btn_value[index], (config.flags & cf_btn_extended) != 0);
                         LED_BIT = !LED_BIT;
 
-                    } else if(direction == turn_value) {
+                    } else if(released) {
 
-                        queue_put(0x0104b00b);
-                        LED_BIT = !LED_BIT;
+                        if(!is_toggle_mode()) {
+                            send_cc(get_btn_channel(), config.btn_control, config.btn_value[1], (config.flags & cf_btn_extended) != 0);
+                        }
 
-                    } else if(direction == -turn_value) {
+                    } else if(direction != 0) {
 
-                        queue_put(0x0105b00b);
+                        int16 delta = config.rot_delta;
+                        if(direction == turn_value) {
+                            delta = -delta;
+                        }
+
+                        if((config.flags & cf_rotate_relative) != 0) {
+                            do_relative_rotation(delta);
+                        } else {
+                            do_absolute_rotation(delta);
+                        }
                         LED_BIT = !LED_BIT;
                     }
                 }

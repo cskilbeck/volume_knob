@@ -21,29 +21,30 @@ static uint8 sysex_recv_packet_offset = 0;
 //////////////////////////////////////////////////////////////////////
 // push one onto the queue, check it's got space before calling this
 
-void queue_put(midi_packet k)
+void queue_put(uint8 *k)
 {
-    queue_buffer[(queue_head + queue_size) & (MIDI_QUEUE_LEN - 1)] = k;
+    uint8 const offset = ((queue_head + queue_size) & (MIDI_QUEUE_LEN - 1)) * MIDI_PACKET_SIZE;
+    memcpy(queue_buffer + offset, k, MIDI_PACKET_SIZE);
     queue_size += 1;
 }
 
-//////////////////////////////////////////////////////////////////////
-// pop next from the queue, check it's not empty before calling this
+// //////////////////////////////////////////////////////////////////////
+// // pop next from the queue, check it's not empty before calling this
 
-static midi_packet queue_get()
-{
-    uint8 old_head = queue_head;
-    queue_size -= 1;
-    queue_head = ++queue_head & (MIDI_QUEUE_LEN - 1);
-    return queue_buffer[old_head];
-}
+// static midi_packet queue_get()
+// {
+//     uint8 old_head = queue_head;
+//     queue_size -= 1;
+//     queue_head = ++queue_head & (MIDI_QUEUE_LEN - 1);
+//     return queue_buffer[old_head];
+// }
 
 //////////////////////////////////////////////////////////////////////
 // pop next into somewhere, check it's not empty before calling this
 
-static inline void queue_get_at(midi_packet *dst)
+static inline void queue_get_at(uint8 *dst)
 {
-    *dst = queue_buffer[queue_head];
+    memcpy(dst, queue_buffer + (queue_head * MIDI_PACKET_SIZE), MIDI_PACKET_SIZE);
     queue_size -= 1;
     queue_head = ++queue_head & (MIDI_QUEUE_LEN - 1);
 }
@@ -69,16 +70,14 @@ void midi_flush_queue()
     if(ep2_busy) {
         return;
     }
-    uint8 filled = 0;
-    midi_packet *dst = (midi_packet *)(Ep2Buffer + MAX_PACKET_SIZE);
-    while(filled < MAX_PACKET_SIZE && !queue_empty()) {
+
+    uint8 *dst;
+    for(dst = endpoint_2_out_buffer; !queue_empty() && dst < (endpoint_2_out_buffer + MAX_PACKET_SIZE); dst += 4) {
         queue_get_at(dst);
-        filled += 4;
-        dst += 1;
     }
-    if(filled != 0) {
-        hexdump("send", Ep2Buffer + MAX_PACKET_SIZE, filled);
-        UEP2_T_LEN = filled;
+    if(dst != endpoint_2_out_buffer) {
+        hexdump("send", endpoint_2_out_buffer, dst - endpoint_2_out_buffer);
+        UEP2_T_LEN = dst - endpoint_2_out_buffer;
         UEP2_CTRL = UEP2_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK;    // Answer ACK
         ep2_busy = 1;
     }
@@ -100,8 +99,8 @@ bool midi_send_update()
         if(r < 3 || midi_send_remain <= 3) {
             cmd = midi_packet_end_1 + r - 1;
         }
-        midi_packet packet = 0;
-        uint8 *dst = (uint8 *)&packet;
+        uint8 packet[MIDI_PACKET_SIZE];
+        uint8 *dst = packet;
         *dst++ = cmd;
         for(uint8 i = 0; i < r; ++i) {
             *dst++ = *midi_send_ptr++;
@@ -168,22 +167,21 @@ void handle_midi_packet()
 
         // Get flash
         case sysex_request_get_flash: {
-            if(!load_config(&save_buffer)) {
-                memset(save_buffer.data, 0xff, sizeof(save_buffer.data));
-            }
-            hexdump("READ", save_buffer.data, FLASH_LEN);
+            load_config();
+            hexdump("READ", (uint8 *)&config, sizeof(config));
             uint8 *buf = init_sysex_response(sysex_response_get_flash);
-            bytes_to_bits7(save_buffer.data, 0, FLASH_LEN, buf);
+            bytes_to_bits7((uint8 *)&config, 0, sizeof(config), buf);
             midi_send_sysex(FLASH_7BIT_LEN);
         } break;
 
         // Set flash
         case sysex_request_set_flash: {
-            bits7_to_bytes(midi_recv_buffer, 5, FLASH_LEN, save_buffer.data);
-            hexdump("WRITE", save_buffer.data, FLASH_LEN);
+
+            bits7_to_bytes(midi_recv_buffer, 5, FLASH_LEN, (uint8 *)&config);
+            hexdump("WRITE", (uint8 *)&config, FLASH_LEN);
             uint8 *buf = init_sysex_response(sysex_response_set_flash_ack);
             *buf = 0x01;
-            if(!save_config(&save_buffer)) {
+            if(!save_config()) {
                 putstr("Error saving flash\n");
                 *buf = 0xff;
             }
@@ -201,7 +199,7 @@ static void sysex_parse_add(uint8 length)
     if(length > (sizeof(midi_recv_buffer) - sysex_recv_length)) {
         sysex_recv_length = 0;
     } else {
-        memcpy(midi_recv_buffer + sysex_recv_length, Ep2Buffer + sysex_recv_packet_offset + 1, length);
+        memcpy(midi_recv_buffer + sysex_recv_length, endpoint_2_in_buffer + sysex_recv_packet_offset + 1, length);
         sysex_recv_length += length;
     }
 }
@@ -214,7 +212,7 @@ void process_midi_packet_in(uint8 length)
 
     while(sysex_recv_packet_offset < length) {
 
-        uint8 cmd = Ep2Buffer[sysex_recv_packet_offset];
+        uint8 cmd = endpoint_2_in_buffer[sysex_recv_packet_offset];
 
         switch(cmd) {
 

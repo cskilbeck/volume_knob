@@ -19,7 +19,7 @@ static uint8 const *descriptor = 0;
 static uint8 setup_request;
 static uint16 setup_len;
 
-#define usb_setup_buffer ((PUSB_SETUP_REQ)Ep0Buffer)
+#define usb_setup_buffer ((PUSB_SETUP_REQ)endpoint_0_buffer)
 
 // Device descriptor
 __code uint8 const device_descriptor[] = {
@@ -128,14 +128,14 @@ void usb_device_int_config()
 
 void usb_device_endpoint_config()
 {
-    UEP1_DMA = (uint16)Ep1Buffer;    // Point point 1 Send data transmission address
-    UEP2_DMA = (uint16)Ep2Buffer;    // Writer 2 in data transmission address
-    UEP2_3_MOD = 0xCC;               // Endpoint 2/3 Single Single Single Receiving Fail
+    UEP1_DMA = (uint16)endpoint_1_buffer;       // Point point 1 Send data transmission address
+    UEP2_DMA = (uint16)endpoint_2_in_buffer;    // Writer 2 in data transmission address (endpoint_2_out_buffer must immediately follow endpoint_2_in_buffer)
+    UEP2_3_MOD = 0xCC;                          // Endpoint 2/3 Single Single Single Receiving Fail
     UEP2_CTRL =
         bUEP_AUTO_TOG | UEP_T_RES_NAK | UEP_R_RES_ACK;    // Writing 2 automatically flip the synchronous flag position, IN transaction returns NAK, out of ACK
 
     UEP1_CTRL = bUEP_AUTO_TOG | UEP_T_RES_NAK;    // Point 1 automatically flip the synchronization flag bit, IN transaction returns NAK
-    UEP0_DMA = (uint16)Ep0Buffer;                 // Point 0 data transmission address
+    UEP0_DMA = (uint16)endpoint_0_buffer;         // Point 0 data transmission address
     UEP4_1_MOD = 0X40;                            // Point point 1 upload the buffer area; endpoint 0 single 64 bytes receiving and receiving buffer
     UEP0_CTRL = UEP_R_RES_ACK | UEP_T_RES_NAK;    // Flip manually, out of OUT transaction back to ACK, IN transaction returns Nak
 }
@@ -225,7 +225,7 @@ void usb_irq_handler(void) __interrupt(INT_NO_USB)    // USB interrupt service p
                             setup_len = len;    // Limit total length
                         }
                         len = setup_len >= DEFAULT_ENDP0_SIZE ? DEFAULT_ENDP0_SIZE : setup_len;    // This transmission length
-                        memcpy(Ep0Buffer, descriptor, len);                                        // Load upload data
+                        memcpy(endpoint_0_buffer, descriptor, len);                                // Load upload data
                         setup_len -= len;
                         descriptor += len;
                         break;
@@ -235,7 +235,7 @@ void usb_irq_handler(void) __interrupt(INT_NO_USB)    // USB interrupt service p
                         break;
 
                     case USB_GET_CONFIGURATION:
-                        Ep0Buffer[0] = usb_config;
+                        endpoint_0_buffer[0] = usb_config;
                         if(setup_len >= 1) {
                             len = 1;
                         }
@@ -345,8 +345,8 @@ void usb_irq_handler(void) __interrupt(INT_NO_USB)    // USB interrupt service p
                         }
                         break;
                     case USB_GET_STATUS:
-                        Ep0Buffer[0] = 0x00;
-                        Ep0Buffer[1] = 0x00;
+                        endpoint_0_buffer[0] = 0x00;
+                        endpoint_0_buffer[1] = 0x00;
                         if(setup_len >= 2) {
                             len = 2;
                         } else {
@@ -377,7 +377,7 @@ void usb_irq_handler(void) __interrupt(INT_NO_USB)    // USB interrupt service p
             switch(setup_request) {
             case USB_GET_DESCRIPTOR:
                 len = setup_len >= DEFAULT_ENDP0_SIZE ? DEFAULT_ENDP0_SIZE : setup_len;    // This transmission length
-                memcpy(Ep0Buffer, descriptor, len);                                        // Load upload data
+                memcpy(endpoint_0_buffer, descriptor, len);                                // Load upload data
                 setup_len -= len;
                 descriptor += len;
                 UEP0_T_LEN = len;

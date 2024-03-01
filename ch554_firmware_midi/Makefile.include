@@ -49,7 +49,7 @@ clean:
 
 $(REL_FILES): Makefile Makefile.include
 
-.DEFAULT_GOAL := all
-all: $(TARGET).bin
+.DEFAULT_GOAL := build
+build: $(TARGET).bin
 
 print-% : ; @echo $* = $($*)
