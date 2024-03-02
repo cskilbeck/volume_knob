@@ -55,6 +55,7 @@ function constrainTo7Bits(event) {
 
 .small_text {
     font-size: small;
+    color: var(--bs-body-color);
 }
 
 .limit-height ul {
