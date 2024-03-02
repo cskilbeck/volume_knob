@@ -86,27 +86,24 @@ midi.on_config_changed((device) => {
                                 v-on:click='midi.write_flash(device.device_index)'>Save</button>
                         </div>
                         <div class='row p-1 mt-5'>
-                            <button class='btn btn-sm p-1 btn-secondary smaller_text' @click='flashModal = true'>Update
-                                Firmware</button>
-                            <Modal v-model="flashModal" maxwidth="16%" closeable header="Enter update mode?">
+                            <button class='btn btn-sm btn-dark' @click='flashModal = true'>Advanced</button>
+                            <Modal v-model="flashModal" maxwidth="25%" closeable header="Advanced Functions">
                                 <div class="row">
-                                    <div class="col text-center mb-1">
-                                        <p>Are you sure you want to put this device in Firmware Update Mode?</p>
+                                    <div class="col mb-1">
+                                        <p class="text-center  text-warning">Warning! Only mess with this stuff if you're
+                                            quite sure you know what you're doing...</p>
                                         <p>Instructions for performing the firmware update are available <a
                                                 href='https://skilbeck.com' target="_blank"
-                                                rel="noreferrer noopener">here</a></p>
-                                        <p>To get back to normal mode you can unplug the device and plug it back in.</p>
+                                                rel="noreferrer noopener">here.</a>
+                                            To get back to normal mode you can unplug the device and plug it back in.</p>
+                                        <p></p>
                                     </div>
                                 </div>
                                 <div class="row">
                                     <div class="col text-center">
-                                        <button class='btn btn-sm btn-warning'
-                                            v-on:click='midi.flash_mode(device.device_index)'>Yes, do it - let's
-                                            go!</button>
-                                        <div class="col text-center pt-3 mb-2">
-                                            <button class='btn btn-sm btn-primary' @click="flashModal = false">No, I'm not
-                                                sure</button>
-                                        </div>
+                                        <button class='btn btn-sm btn-danger'
+                                            v-on:click='midi.flash_mode(device.device_index)'>Put this device into Firmware
+                                            Update Mode</button>
                                     </div>
                                 </div>
                             </Modal>
@@ -173,9 +170,9 @@ midi.on_config_changed((device) => {
                         <div class="row p-1">
                             <div class="col">
                                 <div class="form-check">
-                                    <label class="form-check-label user-select-none" for="extended_check">Extended
+                                    <label class="form-check-label user-select-none" for="extended_check_rot">Extended
                                         CC</label>
-                                    <input class="form-check-input pull-left" type="checkbox"
+                                    <input class="form-check-input pull-left" type="checkbox" id="extended_check_rot"
                                         v-model="device.config.cf_rotate_extended">
                                 </div>
                             </div>
@@ -254,9 +251,9 @@ midi.on_config_changed((device) => {
                         <div class="row p-1">
                             <div class="col">
                                 <div class="form-check">
-                                    <label class="form-check-label user-select-none" for="extended_check">Extended
+                                    <label class="form-check-label user-select-none" for="extended_check_btn">Extended
                                         CC</label>
-                                    <input class="form-check-input pull-left" type="checkbox"
+                                    <input class="form-check-input pull-left" type="checkbox" id="extended_check_btn"
                                         v-model="device.config.cf_btn_extended">
                                 </div>
                             </div>

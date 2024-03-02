@@ -7,16 +7,19 @@
 #define MIDI_MODEL_NUMBER 0x3322
 
 //////////////////////////////////////////////////////////////////////
+// requests
 
 enum
 {
     sysex_request_device_id = 0x01,
     sysex_request_toggle_led = 0x02,
     sysex_request_get_flash = 0x03,
-    sysex_request_set_flash = 0x04
+    sysex_request_set_flash = 0x04,
+    sysex_request_bootloader = 0x05
 };
 
 //////////////////////////////////////////////////////////////////////
+// responses
 
 enum
 {

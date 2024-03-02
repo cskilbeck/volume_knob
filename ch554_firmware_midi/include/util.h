@@ -13,3 +13,6 @@ extern uint32 chip_id;
 extern uint32 chip_id_28;
 
 void init_chip_id();
+
+void led_flash(uint8 n, uint8 speed);
+void goto_bootloader();

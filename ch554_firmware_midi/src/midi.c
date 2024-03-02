@@ -187,6 +187,10 @@ void handle_midi_packet()
             }
             midi_send_sysex(1);
         } break;
+
+        case sysex_request_bootloader: {
+            goto_bootloader();
+        } break;
         }
     }
     sysex_recv_length = 0;

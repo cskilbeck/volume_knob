@@ -59,6 +59,12 @@ let default_config = {
     cf_acceleration: 0,
 };
 
+const sysex_request_device_id = 0x01;
+const sysex_request_toggle_led = 0x02;
+const sysex_request_get_flash = 0x03;
+const sysex_request_set_flash = 0x04;
+const sysex_request_bootloader = 0x05;
+
 /*
 
 //////////////////////////////////////////////////////////////////////
@@ -282,7 +288,19 @@ function toggle_device_led(index) {
         console.log(`Can't find device ${index}`);
     } else {
         console.log(`Toggle led for device ${device.serial_number.toString(16).toUpperCase()}`);
-        send_midi(device, [0xF0, 0x7E, 0x00, 0x06, 0x02, 0xF7]);
+        send_midi(device, [0xF0, 0x7E, 0x00, 0x06, sysex_request_toggle_led, 0xF7]);
+    }
+}
+
+//////////////////////////////////////////////////////////////////////
+
+function flash_mode(index) {
+    const device = midi_devices.value[index];
+    if (device === undefined) {
+        console.log(`Can't find device ${index}`);
+    } else {
+        console.log(`Toggle led for device ${device.serial_number.toString(16).toUpperCase()}`);
+        send_midi(device, [0xF0, 0x7E, 0x00, 0x06, sysex_request_bootloader, 0xF7]);
     }
 }
 
@@ -359,7 +377,7 @@ function read_flash(index) {
         console.log(`read_flash: No such device ${index}`);
         return;
     }
-    send_midi(device, [0xF0, 0x7E, 0x00, 0x06, 0x03, 0xF7]);
+    send_midi(device, [0xF0, 0x7E, 0x00, 0x06, sysex_request_get_flash, 0xF7]);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -373,7 +391,7 @@ function write_flash(index) {
     }
     let data_7bits = [];
     bytes_to_bits7(bytes_from_config(device.config.value), 0, FLASH_MAX_LEN, data_7bits);
-    send_midi(device, [0xF0, 0x7E, 0x00, 0x06, 0x04].concat(data_7bits).concat([0xF7]));
+    send_midi(device, [0xF0, 0x7E, 0x00, 0x06, sysex_request_set_flash].concat(data_7bits).concat([0xF7]));
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -442,7 +460,7 @@ function init_devices() {
 
         // for looking up the device when the response arrives
         output_ports[device_index] = output;
-        output.send([0xF0, 0x7E, device_index & 0x7f, 0x06, 0x01, 0xF7]);
+        output.send([0xF0, 0x7E, device_index & 0x7f, 0x06, sysex_request_device_id, 0xF7]);
         device_index += 1;
     }
     console.log(`init devices scanned ${device_index} devices`);
@@ -540,6 +558,7 @@ export default {
     on_config_changed,
     on_midi,
     toggle_device_led,
+    flash_mode,
     read_flash,
     write_flash
 }

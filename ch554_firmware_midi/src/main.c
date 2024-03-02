@@ -17,10 +17,6 @@
 
 //////////////////////////////////////////////////////////////////////
 
-typedef void (*BOOTLOADER)(void);
-#define bootloader554 ((BOOTLOADER)0x3800)    // CH551/2/3/4
-#define bootloader559 ((BOOTLOADER)0xF400)    // CH558/9
-
 // #define BOOTLOADER_DELAY 0x300    // about 3 seconds
 #define BOOTLOADER_DELAY 0x80
 
@@ -29,9 +25,6 @@ typedef void (*BOOTLOADER)(void);
 
 #define BOOT_FLASH_LED_COUNT 10
 #define BOOT_FLASH_LED_SPEED 0x40
-
-#define BOOTLOADER_FLASH_LED_COUNT 20
-#define BOOTLOADER_FLASH_LED_SPEED 0x80
 
 #define ROT_CLOCKWISE 2
 #define ROT_ANTI_CLOCKWISE 0
@@ -55,23 +48,6 @@ __xdata uint8 midi_recv_buffer[48];
 __xdata save_buffer_t save_buffer;
 __xdata uint8 queue_buffer[MIDI_QUEUE_LEN * MIDI_PACKET_SIZE];
 __xdata config_t config;
-
-//////////////////////////////////////////////////////////////////////
-// Flash LED
-
-void led_flash(uint8 n, uint8 speed)
-{
-    LED_BIT = 1;
-    while(n-- != 0) {
-        TH2 = speed;
-        TL2 = 0;
-        while(TF2 != 1) {
-        }
-        TF2 = 0;
-        LED_BIT ^= 1;
-    }
-    LED_BIT = 0;
-}
 
 //////////////////////////////////////////////////////////////////////
 
@@ -187,15 +163,8 @@ int main()
                 press_time += 1;
                 if(press_time == BOOTLOADER_DELAY) {
 
-                    // shutdown peripherals
-                    EA = 0;
-                    USB_CTRL = 0;
-                    UDEV_CTRL = 0;
+                    goto_bootloader();
 
-                    led_flash(BOOTLOADER_FLASH_LED_COUNT, BOOTLOADER_FLASH_LED_SPEED);
-
-                    // and jump to bootloader
-                    bootloader554();
                 }
             }
         } else {

@@ -2,6 +2,7 @@
 #include <ch554.h>
 #include "types.h"
 #include "debug.h"
+#include "gpio.h"
 #include "util.h"
 
 #pragma disable_warning 110
@@ -75,4 +76,43 @@ void init_chip_id()
     cip[1] = (chip_id >> 14) & 0x7f;
     cip[2] = (chip_id >> 7) & 0x7f;
     cip[3] = (chip_id >> 0) & 0x7f;
+}
+
+//////////////////////////////////////////////////////////////////////
+// Flash LED
+
+void led_flash(uint8 n, uint8 speed)
+{
+    LED_BIT = 1;
+    while(n-- != 0) {
+        TH2 = speed;
+        TL2 = 0;
+        while(TF2 != 1) {
+        }
+        TF2 = 0;
+        LED_BIT ^= 1;
+    }
+    LED_BIT = 0;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+typedef void (*BOOTLOADER)(void);
+#define bootloader554 ((BOOTLOADER)0x3800)    // CH551/2/3/4
+#define bootloader559 ((BOOTLOADER)0xF400)    // CH558/9
+
+#define BOOTLOADER_FLASH_LED_COUNT 20
+#define BOOTLOADER_FLASH_LED_SPEED 0x80
+
+void goto_bootloader()
+{
+    // shutdown peripherals
+    EA = 0;
+    USB_CTRL = 0;
+    UDEV_CTRL = 0;
+
+    led_flash(BOOTLOADER_FLASH_LED_COUNT, BOOTLOADER_FLASH_LED_SPEED);
+
+    // and jump to bootloader
+    bootloader554();
 }
