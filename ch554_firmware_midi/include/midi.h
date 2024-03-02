@@ -15,7 +15,8 @@ enum
     sysex_request_toggle_led = 0x02,
     sysex_request_get_flash = 0x03,
     sysex_request_set_flash = 0x04,
-    sysex_request_bootloader = 0x05
+    sysex_request_bootloader = 0x05,
+    sysex_request_firmware_version = 0x06,
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -26,7 +27,8 @@ enum
     sysex_response_unused_01 = 0x01,
     sysex_response_device_id = 0x02,
     sysex_response_get_flash = 0x03,
-    sysex_response_set_flash_ack = 0x04
+    sysex_response_set_flash_ack = 0x04,
+    sysex_response_firmware_version = 0x05
 };
 
 //////////////////////////////////////////////////////////////////////

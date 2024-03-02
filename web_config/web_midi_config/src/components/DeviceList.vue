@@ -4,7 +4,7 @@ import Device from './Device.vue'
 
 defineProps({
     devices: {
-        type: Array
+        type: [Array, Object]
     }
 })
 

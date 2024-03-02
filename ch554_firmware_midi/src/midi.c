@@ -8,6 +8,7 @@
 #include "usb.h"
 #include "util.h"
 #include "gpio.h"
+#include "main.h"
 
 uint8 queue_size = 0;
 
@@ -191,6 +192,13 @@ void handle_midi_packet()
         case sysex_request_bootloader: {
             goto_bootloader();
         } break;
+
+        case sysex_request_firmware_version: {
+            uint8 *buf = init_sysex_response(sysex_response_firmware_version);
+            *buf++ = FIRMWARE_VERSION & 0xff;
+            *buf++ = FIRMWARE_VERSION >> 8;
+            midi_send_sysex(2);
+        };
         }
     }
     sysex_recv_length = 0;

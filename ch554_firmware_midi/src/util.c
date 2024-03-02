@@ -4,6 +4,7 @@
 #include "debug.h"
 #include "gpio.h"
 #include "util.h"
+#include "main.h"
 
 #pragma disable_warning 110
 
@@ -100,9 +101,6 @@ void led_flash(uint8 n, uint8 speed)
 typedef void (*BOOTLOADER)(void);
 #define bootloader554 ((BOOTLOADER)0x3800)    // CH551/2/3/4
 #define bootloader559 ((BOOTLOADER)0xF400)    // CH558/9
-
-#define BOOTLOADER_FLASH_LED_COUNT 20
-#define BOOTLOADER_FLASH_LED_SPEED 0x80
 
 void goto_bootloader()
 {

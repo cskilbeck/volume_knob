@@ -14,6 +14,7 @@
 #include "gpio.h"
 #include "encoder.h"
 #include "midi.h"
+#include "main.h"
 
 //////////////////////////////////////////////////////////////////////
 
@@ -22,9 +23,6 @@
 
 #define DEBOUNCE_TIME 0xA0u
 #define T2_DEBOUNCE (0xFFu - DEBOUNCE_TIME)
-
-#define BOOT_FLASH_LED_COUNT 10
-#define BOOT_FLASH_LED_SPEED 0x40
 
 #define ROT_CLOCKWISE 2
 #define ROT_ANTI_CLOCKWISE 0
@@ -68,6 +66,8 @@ void send_cc(uint8 channel, uint8 cc[2], uint16 value, bool is_extended)
     queue_put(packet);
 }
 
+//////////////////////////////////////////////////////////////////////
+
 void do_absolute_rotation(int16 offset)
 {
     int16 cur = config.rot_current_value;
@@ -81,6 +81,8 @@ void do_absolute_rotation(int16 offset)
     send_cc(get_rot_channel(), config.rot_control, cur, (config.flags & cf_rotate_extended) != 0);
 }
 
+//////////////////////////////////////////////////////////////////////
+
 void do_relative_rotation(int16 offset)
 {
     int16 cur = config.rot_zero_point;
@@ -92,6 +94,8 @@ void do_relative_rotation(int16 offset)
     }
     send_cc(get_rot_channel(), config.rot_control, cur, (config.flags & cf_rotate_extended) != 0);
 }
+
+//////////////////////////////////////////////////////////////////////
 
 int main()
 {
@@ -164,7 +168,6 @@ int main()
                 if(press_time == BOOTLOADER_DELAY) {
 
                     goto_bootloader();
-
                 }
             }
         } else {

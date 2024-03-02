@@ -46,17 +46,17 @@ let default_config = {
     rot_current_value: 0,
     btn_value_1: 0,
     btn_value_2: 0,
-    cf_rotate_extended: 0,
-    cf_rotate_relative: 0,
-    cf_led_invert: 0,
-    cf_led_flash_on_rot: 0,
-    cf_led_flash_on_limit: 0,
-    cf_btn_momentary: 0,
-    cf_btn_extended: 0,
-    cf_led_flash_on_click: 0,
-    cf_led_flash_on_release: 0,
-    cf_led_track_button_toggle: 0,
-    cf_acceleration: 0,
+    cf_rotate_extended: false,
+    cf_rotate_relative: false,
+    cf_led_invert: false,
+    cf_led_flash_on_rot: false,
+    cf_led_flash_on_limit: false,
+    cf_btn_momentary: false,
+    cf_btn_extended: false,
+    cf_led_flash_on_click: false,
+    cf_led_flash_on_release: false,
+    cf_led_track_button_toggle: false,
+    cf_acceleration: false
 };
 
 const sysex_request_device_id = 0x01;
@@ -64,6 +64,13 @@ const sysex_request_toggle_led = 0x02;
 const sysex_request_get_flash = 0x03;
 const sysex_request_set_flash = 0x04;
 const sysex_request_bootloader = 0x05;
+const sysex_request_firmware_version = 0x06;
+
+const sysex_response_unused_01 = 0x01;
+const sysex_response_device_id = 0x02;
+const sysex_response_get_flash = 0x03;
+const sysex_response_set_flash_ack = 0x04;
+const sysex_response_firmware_version = 0x05;
 
 /*
 
@@ -357,7 +364,9 @@ function handle_new_device(input_port, data) {
         input: input_port,
         output: output_port,
         name: input_port.name,
-        config: ref({})
+        firmware_version: 0x0000,
+        config: ref({
+        })
     };
     device.config.value = default_config;
     midi_devices.value[reply_index] = device;
@@ -503,12 +512,12 @@ function on_midi_message(input_port, event) {
         switch (data[4]) {
 
             // device ID response
-            case 0x02: {
+            case sysex_response_device_id: {
                 handle_new_device(input_port, data);
             } break;
 
             // read flash memory response
-            case 0x3: {
+            case sysex_response_get_flash: {
                 let d = midi_devices.value[device_index];
                 if (d !== undefined) {
                     let flash_data = [];
@@ -521,14 +530,25 @@ function on_midi_message(input_port, event) {
                     }
                     let s = bytes_to_hex_string(flash_data, FLASH_MAX_LEN);
                     console.log(`Memory for device ${d.serial_str}: ${s}`);
+
+                    // get fw version
+                    send_midi(d, [0xF0, 0x7E, 0x00, 0x06, sysex_request_firmware_version, 0xF7]);
                 }
             } break;
 
             // write flash memory ACK
-            case 0x4: {
+            case sysex_response_set_flash_ack: {
                 let d = midi_devices.value[device_index];
                 if (d !== undefined) {
                     console.log(`Device ${d.serial_str} wrote flash data`);
+                }
+            } break;
+
+            case sysex_response_firmware_version: {
+                let d = midi_devices.value[device_index];
+                if (d !== undefined) {
+                    d.firmware_version = (data[5] & 0x7f) | ((data[6] & 0x7f) << 8);
+                    console.log(`Device ${d.serial_str} has flash version: ${data[6]}.${data[5]}`);
                 }
             } break;
         }

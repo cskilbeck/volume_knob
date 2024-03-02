@@ -63,34 +63,41 @@ midi.on_config_changed((device) => {
                         <h4>{{ device.name }}</h4>
                     </div>
                 </div>
-                <div class='row h6'>
-                    <div class="container text-center fw-lighter font-monospace small text-success">
-                        {{ device.serial_str }}
+                <div class='row mx-4'>
+                    <div class="container small">
+                        Firmware
+                        <span class="text-primary-emphasis font-monospace">v{{ device.firmware_version >> 8
+                        }}.{{ (device.firmware_version & 0x7f).toString(10).padStart(2, '0') }}</span>
+
                     </div>
                 </div>
-                <div class='row p-1'>
-                    <div class="col">
+                <div class='row mx-4'>
+                    <div class="container small">
+                        Serial #
+                        <span class="text-body-secondary font-monospace">{{ device.serial_str }}</span>
                     </div>
-                    <div class="col-7">
-                        <div class='row p-1'>
+                </div>
+                <div class='row mt-1'>
+                    <div class="col mx-5">
+                        <div class='row'>
                             <button class='btn btn-sm btn-primary'
                                 v-on:click='midi.toggle_device_led(device.device_index)'>Toggle
                                 LED</button>
                         </div>
-                        <div class='row p-1'>
+                        <div class='row mt-2'>
                             <button class='btn btn-sm btn-primary'
                                 v-on:click='midi.read_flash(device.device_index)'>Load</button>
                         </div>
-                        <div class='row p-1'>
+                        <div class='row mt-2'>
                             <button class='btn btn-sm btn-primary'
                                 v-on:click='midi.write_flash(device.device_index)'>Save</button>
                         </div>
-                        <div class='row p-1 mt-5'>
+                        <div class='row mt-3'>
                             <button class='btn btn-sm btn-dark' @click='flashModal = true'>Advanced</button>
-                            <Modal v-model="flashModal" maxwidth="25%" closeable header="Advanced Functions">
+                            <Modal v-model="flashModal" maxwidth="20%" closeable header="Advanced Functions">
                                 <div class="row">
                                     <div class="col mb-1">
-                                        <p class="text-center  text-warning">Warning! Only mess with this stuff if you're
+                                        <p class="text-center text-warning">Warning! Only mess with this if you're
                                             quite sure you know what you're doing...</p>
                                         <p>Instructions for performing the firmware update are available <a
                                                 href='https://skilbeck.com' target="_blank"
@@ -108,8 +115,6 @@ midi.on_config_changed((device) => {
                                 </div>
                             </Modal>
                         </div>
-                    </div>
-                    <div class="col">
                     </div>
                 </div>
             </div>
