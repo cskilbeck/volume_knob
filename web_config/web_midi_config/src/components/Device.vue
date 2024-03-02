@@ -60,7 +60,7 @@ midi.on_config_changed((device) => {
             <div class='col-lg-2'>
                 <div class='row'>
                     <div class="container text-center">
-                        <h4>{{ device.name }}</h4>
+                        <h5>{{ device.name }}</h5>
                     </div>
                 </div>
                 <div class='row mx-4'>
@@ -95,7 +95,7 @@ midi.on_config_changed((device) => {
                         <div class='row mt-3'>
                             <button class='btn btn-sm btn-dark' @click='flashModal = true'>Advanced</button>
                             <Modal v-model="flashModal" maxwidth="20%" closeable header="Advanced Functions">
-                                <div class="row">
+                                <div class="row mx-2 my-1">
                                     <div class="col mb-1">
                                         <p class="text-center text-warning">Warning! Only mess with this if you're
                                             quite sure you know what you're doing...</p>
@@ -106,10 +106,10 @@ midi.on_config_changed((device) => {
                                         <p></p>
                                     </div>
                                 </div>
-                                <div class="row">
+                                <div class="row mx-2 my-4">
                                     <div class="col text-center">
                                         <button class='btn btn-sm btn-danger'
-                                            v-on:click='midi.flash_mode(device.device_index)'>Put this device into Firmware
+                                            v-on:click='midi.flash_mode(device.device_index)'>Put device in Firmware
                                             Update Mode</button>
                                     </div>
                                 </div>
