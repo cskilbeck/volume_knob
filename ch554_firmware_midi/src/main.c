@@ -47,6 +47,56 @@ __xdata save_buffer_t save_buffer;
 __xdata uint8 queue_buffer[MIDI_QUEUE_LEN * MIDI_PACKET_SIZE];
 __xdata config_t config;
 
+uint8 button_value_index = 0;
+
+//////////////////////////////////////////////////////////////////////
+// led pulse/fade thing to indicate rotary/button activity
+
+uint8 const led_gamma[256] = { 0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+                               0,   0,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   2,   2,   2,   2,   2,   2,   2,   2,   3,   3,   3,
+                               3,   3,   3,   3,   4,   4,   4,   4,   4,   5,   5,   5,   5,   6,   6,   6,   6,   7,   7,   7,   7,   8,   8,   8,   9,   9,
+                               9,   10,  10,  10,  11,  11,  11,  12,  12,  13,  13,  13,  14,  14,  15,  15,  16,  16,  17,  17,  18,  18,  19,  19,  20,  20,
+                               21,  21,  22,  22,  23,  24,  24,  25,  25,  26,  27,  27,  28,  29,  29,  30,  31,  32,  32,  33,  34,  35,  35,  36,  37,  38,
+                               39,  39,  40,  41,  42,  43,  44,  45,  46,  47,  48,  49,  50,  50,  51,  52,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63,
+                               64,  66,  67,  68,  69,  70,  72,  73,  74,  75,  77,  78,  79,  81,  82,  83,  85,  86,  87,  89,  90,  92,  93,  95,  96,  98,
+                               99,  101, 102, 104, 105, 107, 109, 110, 112, 114, 115, 117, 119, 120, 122, 124, 126, 127, 129, 131, 133, 135, 137, 138, 140, 142,
+                               144, 146, 148, 150, 152, 154, 156, 158, 160, 162, 164, 167, 169, 171, 173, 175, 177, 180, 182, 184, 186, 189, 191, 193, 196, 198,
+                               200, 203, 205, 208, 210, 213, 215, 218, 220, 223, 225, 228, 231, 233, 236, 239, 241, 244, 247, 249, 252, 255 };
+
+uint16 led_brightness = 0;
+bool led_idle = true;
+
+#define LED_FADE_SPEED 3
+
+//////////////////////////////////////////////////////////////////////
+
+void led_update()
+{
+    if(led_brightness <= LED_FADE_SPEED) {
+        LED_BIT = 0;
+        led_idle = true;
+    } else {
+        led_brightness -= LED_FADE_SPEED;
+        LED_BIT = led_gamma[led_brightness >> 7] > TH0;
+    }
+
+    if(led_idle && (config.flags & cf_led_track_button_toggle) != 0) {
+        uint8 on_off = button_value_index;
+        if((config.flags & cf_led_invert) != 0) {
+            on_off = 1 - on_off;
+        }
+        LED_BIT = on_off;
+    }
+}
+
+//////////////////////////////////////////////////////////////////////
+
+inline void led_set_flash()
+{
+    led_idle = false;
+    led_brightness = 32767u;
+}
+
 //////////////////////////////////////////////////////////////////////
 
 void send_cc(uint8 channel, uint8 cc[2], uint16 value, bool is_extended)
@@ -68,17 +118,31 @@ void send_cc(uint8 channel, uint8 cc[2], uint16 value, bool is_extended)
 
 //////////////////////////////////////////////////////////////////////
 
+void send_button_cc()
+{
+    send_cc(get_btn_channel(), config.btn_control, config.btn_value[button_value_index], (config.flags & cf_btn_extended) != 0);
+}
+
+//////////////////////////////////////////////////////////////////////
+
 void do_absolute_rotation(int16 offset)
 {
+    bool at_limit = false;
     int16 cur = config.rot_current_value;
     cur += offset;
     if(cur < (int16)config.rot_limit_low) {
         cur = config.rot_limit_low;
+        at_limit = true;
     } else if(cur > (int16)config.rot_limit_high) {
         cur = config.rot_limit_high;
+        at_limit = true;
     }
     config.rot_current_value = cur;
     send_cc(get_rot_channel(), config.rot_control, cur, (config.flags & cf_rotate_extended) != 0);
+
+    if((config.flags & cf_led_flash_on_rot) != 0 || (at_limit && (config.flags & cf_led_flash_on_limit) != 0)) {
+        led_set_flash();
+    }
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -93,6 +157,10 @@ void do_relative_rotation(int16 offset)
         cur = 0x3fff;
     }
     send_cc(get_rot_channel(), config.rot_control, cur, (config.flags & cf_rotate_extended) != 0);
+
+    if((config.flags & cf_led_flash_on_rot) != 0) {
+        led_set_flash();
+    }
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -206,21 +274,25 @@ int main()
 
                     if(pressed) {
 
-                        uint8 index = 0;
-                        if(is_toggle_mode()) {
+                        if(!is_toggle_mode()) {
+                            button_value_index = 1;
+                        } else {
                             config.flags ^= cf_toggle;
-                            if((config.flags & cf_toggle) != 0) {
-                                index = 1;
-                            }
+                            button_value_index = ((config.flags & cf_toggle) != 0) ? 1 : 0;
                         }
-
-                        send_cc(get_btn_channel(), config.btn_control, config.btn_value[index], (config.flags & cf_btn_extended) != 0);
-                        LED_BIT = !LED_BIT;
+                        send_button_cc();
+                        if((config.flags & cf_led_flash_on_click) != 0) {
+                            led_set_flash();
+                        }
 
                     } else if(released) {
 
                         if(!is_toggle_mode()) {
-                            send_cc(get_btn_channel(), config.btn_control, config.btn_value[1], (config.flags & cf_btn_extended) != 0);
+                            button_value_index = 0;
+                            send_button_cc();
+                        }
+                        if((config.flags & cf_led_flash_on_release) != 0) {
+                            led_set_flash();
                         }
 
                     } else if(direction != 0) {
@@ -235,10 +307,10 @@ int main()
                         } else {
                             do_absolute_rotation(delta);
                         }
-                        LED_BIT = !LED_BIT;
                     }
                 }
             }
         }
+        led_update();
     }
 }
