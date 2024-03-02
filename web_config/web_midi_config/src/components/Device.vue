@@ -1,8 +1,9 @@
 <script setup>
 
-import { watch, getCurrentInstance, toRaw } from 'vue';
+import { watch, getCurrentInstance, ref } from 'vue';
 import { VueToggles } from "vue-toggles";
 import midi from '../Midi.js'
+import Modal from './Modal.vue'
 
 const props = defineProps({
     device: {
@@ -10,6 +11,8 @@ const props = defineProps({
         required: true
     }
 });
+
+const flashModal = ref(false);
 
 // sanitize the values
 
@@ -82,6 +85,32 @@ midi.on_config_changed((device) => {
                             <button class='btn btn-sm btn-primary'
                                 v-on:click='midi.write_flash(device.device_index)'>Save</button>
                         </div>
+                        <div class='row p-1 mt-5'>
+                            <button class='btn btn-sm p-1 btn-secondary smaller_text' @click='flashModal = true'>Update
+                                Firmware</button>
+                            <Modal v-model="flashModal" maxwidth="16%" closeable header="Enter update mode?">
+                                <div class="row">
+                                    <div class="col text-center mb-1">
+                                        <p>Are you sure you want to put this device in Firmware Update Mode?</p>
+                                        <p>Instructions for performing the firmware update are available <a
+                                                href='https://skilbeck.com' target="_blank"
+                                                rel="noreferrer noopener">here</a></p>
+                                        <p>To get back to normal mode you can unplug the device and plug it back in.</p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col text-center">
+                                        <button class='btn btn-sm btn-warning'
+                                            v-on:click='midi.flash_mode(device.device_index)'>Yes, do it - let's
+                                            go!</button>
+                                        <div class="col text-center pt-3 mb-2">
+                                            <button class='btn btn-sm btn-primary' @click="flashModal = false">No, I'm not
+                                                sure</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </Modal>
+                        </div>
                     </div>
                     <div class="col">
                     </div>
@@ -115,8 +144,8 @@ midi.on_config_changed((device) => {
                         <div class="row p-1">
                             <div class="col">
                                 <div class="mt-1 mb-1">
-                                    <VueToggles uncheckedBg="#404040" checkedBg="#404040" :width="110" :height="25"
-                                        fontSize="14" checkedText="Relative" uncheckedText="Absolute"
+                                    <VueToggles uncheckedBg="#353C40" checkedBg="#353C40" :width="110" :height="25"
+                                        dotColor="#202420" fontSize="14" checkedText="Relative" uncheckedText="Absolute"
                                         v-model="device.config.cf_rotate_relative" />
                                 </div>
                             </div>
@@ -197,19 +226,11 @@ midi.on_config_changed((device) => {
                                 </div>
                             </div>
                         </div>
-                        <!-- <div class="row p-1">
-                            <div class="col">
-                                <div class="input-group mb-1">
-                                    <input type="number" class="form-control" v-model.number="device.config.rot_delta">
-                                    <span class="input-group-text user-select-none small_text">Delta</span>
-                                </div>
-                            </div>
-                        </div> -->
                         <div class="row p-1">
                             <div class="col">
                                 <div class="mt-1 mb-1">
-                                    <VueToggles uncheckedBg="#404040" checkedBg="#404040" :width="110" :height="25"
-                                        fontSize="14" checkedText="Momentary" uncheckedText="Toggle"
+                                    <VueToggles uncheckedBg="#353C40" checkedBg="#353C40" :width="110" :height="25"
+                                        dotColor="#202420" fontSize="14" checkedText="Momentary" uncheckedText="Toggle"
                                         v-model="device.config.cf_btn_momentary" />
                                 </div>
                             </div>
@@ -285,5 +306,9 @@ midi.on_config_changed((device) => {
 
 .small_text {
     font-size: smaller;
+}
+
+.smaller_text {
+    font-size: small;
 }
 </style>
