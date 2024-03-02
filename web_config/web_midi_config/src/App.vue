@@ -28,7 +28,7 @@ navigator.requestMIDIAccess({ "sysex": true })
     <header>
       <h5 class="text-center mt-4 mb-4">Tiny USB MIDI Knob Configurator</h5>
     </header>
-    <div class="container container-90">
+    <div class="container container-wide">
       <div class="row mb-4">
         <div class="col">
           Found {{ midi.midi_devices.value.length }} device{{ midi.midi_devices.value.length != 1 ? "s" : "" }}
@@ -71,7 +71,7 @@ navigator.requestMIDIAccess({ "sysex": true })
 </template>
 
 <style>
-.container-90 {
-  min-width: 90%;
+.container-wide {
+  min-width: 80%;
 }
 </style>
