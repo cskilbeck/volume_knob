@@ -38,8 +38,6 @@ watch(props.device.config, (o, n) => {
     c.rot_channel = Math.max(0, Math.min(c.rot_channel, 15));
     c.btn_channel = Math.max(0, Math.min(c.btn_channel, 15));
 
-    console.log(c);
-
     n.value = c;
 });
 
@@ -58,9 +56,9 @@ midi.on_config_changed((device) => {
 
             <!-- Name, Serial, Buttons -->
 
-            <div class='col-lg-2'>
+            <div class='col-lg-2  text-center'>
                 <div class='row'>
-                    <div class="container text-center">
+                    <div class="container">
                         <h5>{{ device.name }}</h5>
                     </div>
                 </div>
@@ -78,8 +76,8 @@ midi.on_config_changed((device) => {
                         <span class="text-body-secondary font-monospace">{{ device.serial_str }}</span>
                     </div>
                 </div>
-                <div class='row mt-1'>
-                    <div class="col mx-5">
+                <div class='row mt-3 mx-5'>
+                    <div class="col mx-3">
                         <div class='row'>
                             <button class='btn btn-sm btn-primary'
                                 v-on:click='midi.toggle_device_led(device.device_index)'>Toggle
@@ -103,7 +101,8 @@ midi.on_config_changed((device) => {
                                         <p>Instructions for performing the firmware update are available <a
                                                 href='https://skilbeck.com' target="_blank"
                                                 rel="noreferrer noopener">here.</a>
-                                            To get back to normal mode you can unplug the device and plug it back in.</p>
+                                            To get back to normal mode you can unplug the device and plug it back in.
+                                        </p>
                                         <p></p>
                                     </div>
                                 </div>
@@ -132,7 +131,7 @@ midi.on_config_changed((device) => {
                             <div class="col">
                                 <div class="input-group mb-1">
                                     <input type="number" class="form-control" v-model.number="device.config.rot_channel">
-                                    <span class="input-group-text user-select-none small_text">Chan</span>
+                                    <span class="input-group-text user-select-none">Chan</span>
                                 </div>
                             </div>
                         </div>
@@ -140,7 +139,7 @@ midi.on_config_changed((device) => {
                             <div class="col">
                                 <div class="input-group mb-1">
                                     <input type="number" class="form-control" v-model.number="device.config.rot_delta">
-                                    <span class="input-group-text user-select-none small_text">Delta</span>
+                                    <span class="input-group-text user-select-none">Delta</span>
                                 </div>
                             </div>
                         </div>
@@ -156,19 +155,19 @@ midi.on_config_changed((device) => {
                         <div class="row p-1" v-show="device.config.cf_rotate_relative">
                             <div class="input-group mb-1">
                                 <input type="number" class="form-control" v-model.number="device.config.rot_zero_point">
-                                <span class="input-group-text user-select-none small_text">Zero</span>
+                                <span class="input-group-text user-select-none">Zero</span>
                             </div>
                         </div>
                         <div class="row p-1" :class="{ hide: device.config.cf_rotate_relative }">
                             <div class="input-group mb-1">
                                 <input type="number" class="form-control" v-model.number="device.config.rot_limit_low">
-                                <span class="input-group-text user-select-none small_text">Min</span>
+                                <span class="input-group-text user-select-none">Min</span>
                             </div>
                         </div>
                         <div class="row p-1" v-show="!device.config.cf_rotate_relative">
                             <div class="input-group mb-1">
                                 <input type="number" class="form-control" v-model.number="device.config.rot_limit_high">
-                                <span class="input-group-text user-select-none small_text">Max</span>
+                                <span class="input-group-text user-select-none">Max</span>
                             </div>
                         </div>
                     </div>
@@ -218,7 +217,7 @@ midi.on_config_changed((device) => {
                             <div class="col">
                                 <div class="input-group mb-1">
                                     <input type="number" class="form-control" v-model.number="device.config.btn_channel">
-                                    <span class="input-group-text user-select-none small_text">Chan</span>
+                                    <span class="input-group-text user-select-none">Chan</span>
                                 </div>
                             </div>
                         </div>
@@ -234,14 +233,14 @@ midi.on_config_changed((device) => {
                         <div class="row p-1">
                             <div class="input-group mb-1">
                                 <input type="number" class="form-control" v-model.number="device.config.btn_value_1">
-                                <span class="input-group-text user-select-none small_text">{{ device.config.cf_btn_momentary
+                                <span class="input-group-text user-select-none">{{ device.config.cf_btn_momentary
                                     ? "OFF" : "A" }}</span>
                             </div>
                         </div>
                         <div class="row p-1">
                             <div class="input-group mb-1">
                                 <input type="number" class="form-control" v-model.number="device.config.btn_value_2">
-                                <span class="input-group-text user-select-none small_text">{{ device.config.cf_btn_momentary
+                                <span class="input-group-text user-select-none">{{ device.config.cf_btn_momentary
                                     ? "ON" : "B" }}</span>
                             </div>
                         </div>
@@ -272,15 +271,68 @@ midi.on_config_changed((device) => {
                 <div class="row">
                     <h5>LED</h5>
                 </div>
-                <div class="row pt-2 border rounded-3 bg-dark">
+                <div class="row pt-2 border rounded-3 bg-dark px-1">
+                    <div class="row mx-1 my-1">
+                        Flash LED when:
+                    </div>
                     <div class="row">
                         <div class="col">
-                            LED controls
+                            <div class="form-check">
+                                <label class="form-check-label user-select-none" for="flash_on_rot">Knob is rotated</label>
+                                <input class="form-check-input pull-left" type="checkbox" id="flash_on_rot"
+                                    v-model="device.config.cf_led_flash_on_rot">
+                            </div>
                         </div>
                     </div>
-                    <div class="row mb-4">
+                    <div class="row">
                         <div class="col">
-                            Go here...
+                            <div class="form-check">
+                                <label class="form-check-label user-select-none" for="flash_on_limit">Rotation value hits
+                                    limit</label>
+                                <input class="form-check-input pull-left" type="checkbox" id="flash_on_limit"
+                                    v-model="device.config.cf_led_flash_on_limit">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <div class="form-check">
+                                <label class="form-check-label user-select-none" for="flash_on_click">Button is
+                                    clicked</label>
+                                <input class="form-check-input pull-left" type="checkbox" id="flash_on_click"
+                                    v-model="device.config.cf_led_flash_on_click">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <div class="form-check">
+                                <label class="form-check-label user-select-none" for="flash_on_release">Button is
+                                    released</label>
+                                <input class="form-check-input pull-left" type="checkbox" id="flash_on_release"
+                                    v-model="device.config.cf_led_flash_on_release">
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="mt-3" />
+                    <div class="row">
+                        <div class="col">
+                            <div class="form-check">
+                                <label class="form-check-label user-select-none" for="track_button_value">LED tracks button
+                                    value</label>
+                                <input class="form-check-input pull-left" type="checkbox" id="track_button_value"
+                                    v-model="device.config.cf_led_track_button_toggle">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col">
+                            <div class="form-check">
+                                <label class="form-check-label user-select-none" for="led_invertflash_on_release">Invert
+                                    LED</label>
+                                <input class="form-check-input pull-left" type="checkbox" id="led_invert"
+                                    v-model="device.config.cf_led_invert">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -294,11 +346,7 @@ midi.on_config_changed((device) => {
     visibility: hidden;
 }
 
-.small_text {
+.input-group-text {
     font-size: smaller;
-}
-
-.xsmall_text {
-    font-size: x-small;
 }
 </style>
