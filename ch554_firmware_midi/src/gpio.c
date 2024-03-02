@@ -15,9 +15,17 @@
 
 void gpio_init(uint8 port, uint8 bit, gpio_state_t state)
 {
-    uint8 oc_mask = (((uint8)state >> 1) & 1) << bit;
-    uint8 pu_mask = ((uint8)state & 1) << bit;
-    uint8 mask_off = ~(1 << bit);
+    uint8 mask_on = 1 << bit;
+    uint8 mask_off = ~mask_on;
+    uint8 oc_mask = 0;
+    uint8 pu_mask = 0;
+    if(state & 2) {
+        oc_mask = mask_on;
+    }
+    if(state & 1) {
+        pu_mask = mask_on;
+    }
+
     switch(port) {
     case PORT1:
         P1_MOD_OC = (P1_MOD_OC & mask_off) | oc_mask;
