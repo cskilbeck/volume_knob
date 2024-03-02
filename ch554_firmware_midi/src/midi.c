@@ -172,14 +172,17 @@ void handle_midi_packet()
             hexdump("READ", (uint8 *)&config, sizeof(config));
             uint8 *buf = init_sysex_response(sysex_response_get_flash);
             bytes_to_bits7((uint8 *)&config, 0, sizeof(config), buf);
-            midi_send_sysex(FLASH_7BIT_LEN);
+
+#define CONFIG_7BIT_LEN (((CONFIG_MAX_LEN * 8) + 6) / 7)
+
+            midi_send_sysex(CONFIG_7BIT_LEN);
         } break;
 
         // Set flash
         case sysex_request_set_flash: {
 
-            bits7_to_bytes(midi_recv_buffer, 5, FLASH_LEN, (uint8 *)&config);
-            hexdump("WRITE", (uint8 *)&config, FLASH_LEN);
+            bits7_to_bytes(midi_recv_buffer, 5, CONFIG_MAX_LEN, (uint8 *)&config);
+            hexdump("WRITE", (uint8 *)&config, CONFIG_MAX_LEN);
             uint8 *buf = init_sysex_response(sysex_response_set_flash_ack);
             *buf = 0x01;
             if(!save_config()) {

@@ -8,7 +8,7 @@
 //////////////////////////////////////////////////////////////////////
 
 static uint32 current_save_index = 1;
-static uint8 current_save_slot = 0;
+static uint8 current_save_offset = 0;
 
 #define DEFAULT_FLAGS (cf_rotate_extended | cf_led_flash_on_rot | cf_btn_momentary | cf_btn_extended | cf_led_track_button_toggle | 0x400)
 
@@ -137,39 +137,40 @@ static bool save_buffer_check_crc(save_buffer_t const *buffer)
 
 bool load_config()
 {
-    bool valid[2] = { false, false };
-    uint32 index[2];
+    uint32 highest_index = 0;
+    uint8 offset_found = 0xff;
 
-    if(read_flash_data(0, sizeof(save_buffer_t), (uint8 *)&save_buffer)) {
-        valid[0] = save_buffer_check_crc(&save_buffer);
-        index[0] = save_buffer.index;
+    // find the save slot with the highest index
+
+    uint8 offset = 0;
+    for(uint8 i = 0; i < FLASH_NUM_SLOTS; ++i) {
+        if(read_flash_data(offset, FLASH_SLOT_SIZE, (uint8 *)&save_buffer) &&    // can load this slot
+           save_buffer_check_crc(&save_buffer) &&                                // and it's valid
+           save_buffer.index > highest_index) {                                  // and it's the most recently saved
+
+            highest_index = save_buffer.index;
+            offset_found = offset;
+        }
+        offset += FLASH_SLOT_SIZE;
     }
 
-    if(read_flash_data(sizeof(save_buffer_t), sizeof(save_buffer_t), (uint8 *)&save_buffer)) {
-        valid[1] = save_buffer_check_crc(&save_buffer);
-        index[1] = save_buffer.index;
-    }
+    // if there was a valid save slot, load it
 
-    if(valid[1] && (index[1] > index[0] || valid[0] == false)) {
-        current_save_index = index[1];
-        current_save_slot = 1;
-        putstr("load slot 1\n");
+    if(offset_found != 0xff &&                                                     // found one
+       read_flash_data(offset_found, FLASH_SLOT_SIZE, (uint8 *)&save_buffer) &&    // and can load it
+       save_buffer_check_crc(&save_buffer)) {                                      // and it's valid
+
+        print_uint8("Load config from offset ", offset_found);
+
+        // prepare for next save
+        current_save_index = highest_index;
+        current_save_offset = offset_found;
         memcpy(&config, save_buffer.data, sizeof(config_t));
         return true;
     }
 
-    if(read_flash_data(0, sizeof(save_buffer_t), (uint8 *)&save_buffer)) {
-        valid[0] = save_buffer_check_crc(&save_buffer);
-        index[0] = save_buffer.index;
-        if(valid[0]) {
-            current_save_index = index[0];
-            current_save_slot = 0;
-            putstr("load slot 0\n");
-            memcpy(&config, save_buffer.data, sizeof(config_t));
-            return true;
-        }
-    }
-    putstr("no save found\n");
+    // no valid save was found, return default_config
+    putstr("no saved config found\n");
     memcpy(&config, &default_config, sizeof(config_t));
     return false;
 }
@@ -179,16 +180,18 @@ bool load_config()
 bool save_config()
 {
     memcpy(&save_buffer.data, &config, sizeof(config_t));
-    uint8 extra = FLASH_LEN - sizeof(config_t);
+    uint8 extra = CONFIG_MAX_LEN - sizeof(config_t);
     if(extra != 0) {
         memset(save_buffer.data + sizeof(config_t), 0, extra);
     }
-    current_save_slot = 1 - current_save_slot;
+    current_save_offset += FLASH_SLOT_SIZE;
+    if(current_save_offset >= FLASH_SIZE) {
+        current_save_offset = 0;
+    }
     current_save_index += 1;
     save_buffer.index = current_save_index;
     save_buffer_set_crc(&save_buffer);
-    hexdump("save to slot", &current_save_slot, 1);
-    hexdump("save index", &current_save_index, 4);
-    uint8 flash_addr = (current_save_slot == 0) ? 0 : sizeof(save_buffer_t);
-    return write_flash_data(flash_addr, sizeof(save_buffer_t), (uint8 *)&save_buffer);
+    print_uint8("save config to offset", current_save_offset);
+    print_uint32("save index", current_save_index);
+    return write_flash_data(current_save_offset, FLASH_SLOT_SIZE, (uint8 *)&save_buffer);
 }
