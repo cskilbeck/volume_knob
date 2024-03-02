@@ -18,8 +18,6 @@ let midi = null;
 
 let midi_devices = ref([]);
 
-let configs = ref([]);
-
 //////////////////////////////////////////////////////////////////////
 // output ports which have been sent a device id request
 // position in the array is device_index
