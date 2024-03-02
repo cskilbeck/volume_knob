@@ -4,6 +4,7 @@ import { watch, getCurrentInstance, ref } from 'vue';
 import { VueToggles } from "vue-toggles";
 import midi from '../Midi.js'
 import Modal from './Modal.vue'
+import CCDropDown from './CCDropDown.vue';
 
 const props = defineProps({
     device: {
@@ -16,30 +17,30 @@ const flashModal = ref(false);
 
 // sanitize the values
 
-watch(props.device, (o, n) => {
-    let t = o;
-    let c = t.config;
+watch(props.device.config, (o, n) => {
+
+    let c = o;
 
     let max_zero_point = c.cf_rotate_extended ? (1 << 14) : (1 << 7);
     let max_high_value = max_zero_point - 1;
-
-    c.rot_control_high = Math.max(0, Math.min(c.rot_control_high, 127));
-    c.rot_control_low = Math.max(0, Math.min(c.rot_control_low, 127));
-    c.rot_zero_point = Math.max(16, Math.min(c.rot_zero_point, max_zero_point));
-    c.rot_delta = Math.max(1, Math.min(c.rot_delta, c.rot_zero_point));
-    c.rot_limit_high = Math.max(2, Math.min(c.rot_limit_high, max_high_value));
-    c.rot_limit_low = Math.max(0, Math.min(c.rot_limit_low, c.rot_limit_high - 1));
-    c.rot_channel = Math.max(0, Math.min(c.rot_channel, 15));
-
     let btn_limit = c.cf_btn_extended ? (1 << 14) : (1 << 7);
 
-    c.btn_control_high = Math.max(0, Math.min(c.btn_control_high, 127));
-    c.btn_control_low = Math.max(0, Math.min(c.btn_control_low, 127));
+    c.rot_zero_point = Math.max(16, Math.min(c.rot_zero_point, max_zero_point));
+
+    c.rot_delta = Math.max(1, Math.min(c.rot_delta, c.rot_zero_point));
+
+    c.rot_limit_high = Math.max(1, Math.min(c.rot_limit_high, max_high_value));
+    c.rot_limit_low = Math.max(0, Math.min(c.rot_limit_low, c.rot_limit_high - 1));
+
     c.btn_value_1 = Math.max(0, Math.min(c.btn_value_1, btn_limit - 1));
     c.btn_value_2 = Math.max(0, Math.min(c.btn_value_2, btn_limit - 1));
+
+    c.rot_channel = Math.max(0, Math.min(c.rot_channel, 15));
     c.btn_channel = Math.max(0, Math.min(c.btn_channel, 15));
 
-    n = t;
+    console.log(c);
+
+    n.value = c;
 });
 
 const instance = getCurrentInstance();
@@ -183,32 +184,25 @@ midi.on_config_changed((device) => {
                             </div>
                         </div>
                         <div class="row p-1">
-                            <div class="input-group mb-1">
-                                <input type="number" class="form-control" v-model.number="device.config.rot_control_high">
-                                <span class="input-group-text user-select-none small_text">{{
-                                    device.config.cf_rotate_extended ?
-                                    'MSB' : 'CC' }}</span>
-                            </div>
+                            <CCDropDown v-model="device.config.rot_control_high" :label="device.config.cf_rotate_extended ?
+                                'MSB' : 'CC'" />
                         </div>
                         <div class="row p-1">
-                            <div class="input-group mb-1" :class="{ hide: !device.config.cf_rotate_extended }">
-                                <input type="number" class="form-control" v-model.number="device.config.rot_control_low">
-                                <span class="input-group-text user-select-none small_text">LSB</span>
-                            </div>
+                            <CCDropDown v-model="device.config.rot_control_low" label="LSB"
+                                :hidden="!device.config.cf_rotate_extended" />
                         </div>
-                        <div class="row p-1">
+                        <div class="row p-1 mb-2 mt-3">
                             <div class="col">
-                                Acceleration
-                            </div>
-                        </div>
-                        <div class="row p-1">
-                            <div class="col">
-                                <select class="form-select form-control small_text" v-model="device.config.cf_acceleration">
-                                    <option value="0" selected>Off</option>
-                                    <option value="1" selected>Low</option>
-                                    <option value="2" selected>Medium</option>
-                                    <option value="3" selected>High</option>
-                                </select>
+                                <div class="input-group">
+                                    <label class="input-group-text" for="inputGroupSelect01">Accel</label>
+                                    <select class="form-select" id="inputGroupSelect01"
+                                        v-model="device.config.cf_acceleration">
+                                        <option selected value="0">Off</option>
+                                        <option value="1">Low</option>
+                                        <option value="2">Medium</option>
+                                        <option value="3">High</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -264,18 +258,12 @@ midi.on_config_changed((device) => {
                             </div>
                         </div>
                         <div class="row p-1">
-                            <div class="input-group mb-1">
-                                <input type="number" class="form-control" v-model.number="device.config.btn_control_high">
-                                <span class="input-group-text user-select-none small_text">{{
-                                    device.config.cf_btn_extended ?
-                                    'MSB' : 'CC' }}</span>
-                            </div>
+                            <CCDropDown v-model="device.config.btn_control_high" :label="device.config.cf_btn_extended ?
+                                'MSB' : 'CC'" />
                         </div>
                         <div class="row p-1">
-                            <div class="input-group mb-1" :class="{ hide: !device.config.cf_btn_extended }">
-                                <input type="number" class="form-control" v-model.number="device.config.btn_control_low">
-                                <span class="input-group-text user-select-none small_text">LSB</span>
-                            </div>
+                            <CCDropDown v-model="device.config.btn_control_low" label="LSB"
+                                :hidden="!device.config.cf_btn_extended" />
                         </div>
                     </div>
                 </div>
@@ -310,7 +298,7 @@ midi.on_config_changed((device) => {
     font-size: smaller;
 }
 
-.smaller_text {
-    font-size: small;
+.xsmall_text {
+    font-size: x-small;
 }
 </style>
