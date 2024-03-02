@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////
 // web midi stuff
 
-import { ref } from 'vue'
+import { ref, toRaw } from 'vue'
 
 const FLASH_MAX_LEN = 26;
 
@@ -555,6 +555,18 @@ function on_midi_message(input_port, event) {
     }
 }
 
+function get_config_json(device_index) {
+    let c = {
+        error: "No such device"
+    };
+    let d = midi_devices.value[device_index];
+    if (d != undefined) {
+        c = Object.assign({}, d.config);
+        delete c.value;
+    }
+    return JSON.stringify(c, null, 4);
+}
+
 let on_config_changed_callback = null;
 
 function on_config_changed(callback) {
@@ -580,5 +592,6 @@ export default {
     flash_device_led,
     flash_mode,
     read_flash,
-    write_flash
+    write_flash,
+    get_config_json
 }

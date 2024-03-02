@@ -34,12 +34,12 @@ navigator.requestMIDIAccess({ "sysex": true })
           Found {{ midi.midi_devices.value.length }} device{{ midi.midi_devices.value.length != 1 ? "s" : "" }}
         </div>
         <div class="col text-center">
-          <button class="btn btn-info btn-sm" @click="midi.init_devices()">
+          <button class="btn btn-secondary btn-sm" @click="midi.init_devices()">
             Scan
           </button>
         </div>
         <div class="col text-end">
-          <button @click="closeableModal = true" class="btn btn-secondary btn-sm">
+          <button @click="closeableModal = true" class="btn btn-tertiary border-secondary btn-sm">
             About
           </button>
           <Modal v-model="closeableModal" maxwidth="30%" closeable

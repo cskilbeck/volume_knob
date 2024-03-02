@@ -5,6 +5,7 @@ import { VueToggles } from "vue-toggles";
 import midi from '../Midi.js'
 import Modal from './Modal.vue'
 import CCDropDown from './CCDropDown.vue';
+import fileDownload from 'js-file-download';
 
 const props = defineProps({
     device: {
@@ -14,6 +15,7 @@ const props = defineProps({
 });
 
 const flashModal = ref(false);
+const importModal = ref(false);
 
 // sanitize the values
 
@@ -48,6 +50,10 @@ midi.on_config_changed((device) => {
     instance?.proxy?.$forceUpdate();
 });
 
+function import_settings() {
+    // use fetch to send the file to some noddy thing on the server which just sends it back
+}
+
 </script>
 
 <template>
@@ -56,43 +62,59 @@ midi.on_config_changed((device) => {
 
             <!-- Name, Serial, Buttons -->
 
-            <div class='col-lg-2  text-center'>
+            <div class='col-lg-3  text-center'>
                 <div class='row'>
-                    <div class="container">
-                        <h5>{{ device.name }}</h5>
+                    <div class='col'>
+                        <div class="container">
+                            <h5>{{ device.name }}</h5>
+                        </div>
                     </div>
                 </div>
-                <div class='row mx-4'>
-                    <div class="container small">
-                        Firmware
-                        <span class="text-primary-emphasis font-monospace">v{{ device.firmware_version >> 8
-                        }}.{{ (device.firmware_version & 0x7f).toString(10).padStart(2, '0') }}</span>
-
+                <div class='row'>
+                    <div class='col'>
+                        <div class="container small">
+                            Firmware
+                            <span class="text-primary-emphasis font-monospace">v{{ device.firmware_version >> 8 }}.{{
+                                (device.firmware_version & 0x7f).toString(10).padStart(2, '0') }}</span>
+                        </div>
                     </div>
                 </div>
-                <div class='row mx-4'>
-                    <div class="container small">
-                        Serial #
-                        <span class="text-body-secondary font-monospace">{{ device.serial_str }}</span>
+                <div class='row'>
+                    <div class='col'>
+                        <div class="container small">
+                            Serial #
+                            <span class="text-body-secondary font-monospace">{{ device.serial_str }}</span>
+                        </div>
                     </div>
                 </div>
-                <div class='row mt-3 mx-5'>
-                    <div class="col mx-3">
-                        <div class='row'>
-                            <button class='btn btn-sm btn-primary'
+                <div class='row mt-1 mx-5'>
+                    <div class="col">
+                        <div class='btn-group-vertical' role="group">
+                            <button class='btn btn-sm btn-outline-secondary text-emphasis btn-dark'
                                 v-on:click='midi.flash_device_led(device.device_index)'>Flash
                                 LED</button>
-                        </div>
-                        <div class='row mt-2'>
-                            <button class='btn btn-sm btn-primary'
+                            <button class='btn btn-sm btn-outline-secondary text-emphasis btn-dark'
                                 v-on:click='midi.read_flash(device.device_index)'>Load</button>
-                        </div>
-                        <div class='row mt-2'>
-                            <button class='btn btn-sm btn-primary'
+                            <button class='btn btn-sm btn-outline-secondary text-emphasis btn-dark'
                                 v-on:click='midi.write_flash(device.device_index)'>Save</button>
-                        </div>
-                        <div class='row mt-3'>
-                            <button class='btn btn-sm btn-dark' @click='flashModal = true'>Advanced</button>
+                            <button class='btn btn-sm btn-outline-secondary text-emphasis btn-dark'
+                                @click="fileDownload(midi.get_config_json(device.device_index), 'midi_knob_settings.json');">Export</button>
+                            <button class='btn btn-sm btn-outline-secondary text-emphasis btn-dark'
+                                @click="importModal = true">Import</button>
+                            <Modal v-model="importModal" maxwidth="20%" closeable header="Import Settings">
+                                <div class="row mx-2 my-2">
+                                    <div class="col mb-2">
+                                        <input type="file" id="import_settings" />
+                                    </div>
+                                </div>
+                                <div class="row mx-2 my-3">
+                                    <div class="col text-center">
+                                        <button class="btn btn-sm btn-primary">Import</button>
+                                    </div>
+                                </div>
+                            </Modal>
+                            <button class='btn btn-sm btn-outline-secondary text-emphasis btn-dark'
+                                @click='flashModal = true'>Advanced</button>
                             <Modal v-model="flashModal" maxwidth="20%" closeable header="Advanced Functions">
                                 <div class="row mx-2 my-1">
                                     <div class="col mb-1">
@@ -119,11 +141,13 @@ midi.on_config_changed((device) => {
                 </div>
             </div>
 
-            <!-- Channel, Delta -->
+            <!-- Rotation -->
 
             <div class='col-lg-3 mx-3'>
                 <div class="row">
-                    <h5>Rotation</h5>
+                    <div class='col'>
+                        <h5>Rotation</h5>
+                    </div>
                 </div>
                 <div class="row pt-2 border rounded-3 bg-dark">
                     <div class="col-lg">
@@ -153,21 +177,27 @@ midi.on_config_changed((device) => {
                             </div>
                         </div>
                         <div class="row p-1" v-show="device.config.cf_rotate_relative">
-                            <div class="input-group mb-1">
-                                <input type="number" class="form-control" v-model.number="device.config.rot_zero_point">
-                                <span class="input-group-text user-select-none">Zero</span>
+                            <div class='col'>
+                                <div class="input-group mb-1">
+                                    <input type="number" class="form-control" v-model.number="device.config.rot_zero_point">
+                                    <span class="input-group-text user-select-none">Zero</span>
+                                </div>
                             </div>
                         </div>
                         <div class="row p-1" :class="{ hide: device.config.cf_rotate_relative }">
-                            <div class="input-group mb-1">
-                                <input type="number" class="form-control" v-model.number="device.config.rot_limit_low">
-                                <span class="input-group-text user-select-none">Min</span>
+                            <div class='col'>
+                                <div class="input-group mb-1">
+                                    <input type="number" class="form-control" v-model.number="device.config.rot_limit_low">
+                                    <span class="input-group-text user-select-none">Min</span>
+                                </div>
                             </div>
                         </div>
                         <div class="row p-1" v-show="!device.config.cf_rotate_relative">
-                            <div class="input-group mb-1">
-                                <input type="number" class="form-control" v-model.number="device.config.rot_limit_high">
-                                <span class="input-group-text user-select-none">Max</span>
+                            <div class='col'>
+                                <div class="input-group mb-1">
+                                    <input type="number" class="form-control" v-model.number="device.config.rot_limit_high">
+                                    <span class="input-group-text user-select-none">Max</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -183,12 +213,16 @@ midi.on_config_changed((device) => {
                             </div>
                         </div>
                         <div class="row p-1">
-                            <CCDropDown v-model="device.config.rot_control_high" :label="device.config.cf_rotate_extended ?
-                                'MSB' : 'CC'" />
+                            <div class='col'>
+                                <CCDropDown v-model="device.config.rot_control_high" :label="device.config.cf_rotate_extended ?
+                                    'MSB' : 'CC'" />
+                            </div>
                         </div>
                         <div class="row p-1">
-                            <CCDropDown v-model="device.config.rot_control_low" label="LSB"
-                                :hidden="!device.config.cf_rotate_extended" />
+                            <div class='col'>
+                                <CCDropDown v-model="device.config.rot_control_low" label="LSB"
+                                    :hidden="!device.config.cf_rotate_extended" />
+                            </div>
                         </div>
                         <div class="row p-1 mb-2 mt-3">
                             <div class="col">
@@ -207,9 +241,14 @@ midi.on_config_changed((device) => {
                     </div>
                 </div>
             </div>
+
+            <!-- Button -->
+
             <div class='col-lg-3 mx-3'>
                 <div class="row">
-                    <h5>Button</h5>
+                    <div class="col">
+                        <h5>Button</h5>
+                    </div>
                 </div>
                 <div class="row pt-2 border rounded-3 bg-dark">
                     <div class="col-lg">
@@ -231,17 +270,21 @@ midi.on_config_changed((device) => {
                             </div>
                         </div>
                         <div class="row p-1">
-                            <div class="input-group mb-1">
-                                <input type="number" class="form-control" v-model.number="device.config.btn_value_1">
-                                <span class="input-group-text user-select-none">{{ device.config.cf_btn_momentary
-                                    ? "OFF" : "A" }}</span>
+                            <div class="col">
+                                <div class="input-group mb-1">
+                                    <input type="number" class="form-control" v-model.number="device.config.btn_value_1">
+                                    <span class="input-group-text user-select-none">{{ device.config.cf_btn_momentary
+                                        ? "OFF" : "A" }}</span>
+                                </div>
                             </div>
                         </div>
                         <div class="row p-1">
-                            <div class="input-group mb-1">
-                                <input type="number" class="form-control" v-model.number="device.config.btn_value_2">
-                                <span class="input-group-text user-select-none">{{ device.config.cf_btn_momentary
-                                    ? "ON" : "B" }}</span>
+                            <div class="col">
+                                <div class="input-group mb-1">
+                                    <input type="number" class="form-control" v-model.number="device.config.btn_value_2">
+                                    <span class="input-group-text user-select-none">{{ device.config.cf_btn_momentary
+                                        ? "ON" : "B" }}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -257,23 +300,36 @@ midi.on_config_changed((device) => {
                             </div>
                         </div>
                         <div class="row p-1">
-                            <CCDropDown v-model="device.config.btn_control_high" :label="device.config.cf_btn_extended ?
-                                'MSB' : 'CC'" />
+                            <div class="col">
+                                <CCDropDown v-model="device.config.btn_control_high" :label="device.config.cf_btn_extended ?
+                                    'MSB' : 'CC'" />
+                            </div>
                         </div>
                         <div class="row p-1">
-                            <CCDropDown v-model="device.config.btn_control_low" label="LSB"
-                                :hidden="!device.config.cf_btn_extended" />
+                            <div class="col">
+                                <CCDropDown v-model="device.config.btn_control_low" label="LSB"
+                                    :hidden="!device.config.cf_btn_extended" />
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class='col-lg-3 mx-3'>
+
+            <!-- LED -->
+
+            <div class='col-lg-2 mx-3'>
                 <div class="row">
-                    <h5>LED</h5>
+                    <div class="col">
+                        <h5>LED</h5>
+                    </div>
                 </div>
                 <div class="row pt-2 border rounded-3 bg-dark px-1">
-                    <div class="row mx-1 my-1">
-                        Flash LED when:
+                    <div class="col">
+                        <div class="row mx-1 my-1">
+                            <div class="col">
+                                Flash LED when:
+                            </div>
+                        </div>
                     </div>
                     <div class="row">
                         <div class="col">
@@ -348,6 +404,11 @@ midi.on_config_changed((device) => {
 
 .smaller-text {
     font-size: smaller;
+}
+
+.slim-button {
+    padding-top: 0px !important;
+    padding-bottom: 2px !important;
 }
 
 .input-group-text {

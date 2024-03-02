@@ -44,7 +44,7 @@ function constrainTo7Bits(event) {
                 </li>
             </ul>
         </div>
-        <div class="row mx-1 small_text text-primary-emphasis">{{ cc_names.get_cc_name(model) }}</div>
+        <div class="row mx-1 small_text text-success">{{ cc_names.get_cc_name(model) }}</div>
     </div>
 </template>
 
