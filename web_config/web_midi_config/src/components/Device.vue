@@ -80,7 +80,7 @@ midi.on_config_changed((device) => {
                     <div class="col mx-3">
                         <div class='row'>
                             <button class='btn btn-sm btn-primary'
-                                v-on:click='midi.toggle_device_led(device.device_index)'>Toggle
+                                v-on:click='midi.flash_device_led(device.device_index)'>Flash
                                 LED</button>
                         </div>
                         <div class='row mt-2'>

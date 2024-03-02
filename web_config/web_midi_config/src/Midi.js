@@ -289,7 +289,7 @@ function bits7_to_bytes(src_data, offset, len, dest) {
 
 //////////////////////////////////////////////////////////////////////
 
-function toggle_device_led(index) {
+function flash_device_led(index) {
     const device = midi_devices.value[index];
     if (device === undefined) {
         console.log(`Can't find device ${index}`);
@@ -577,7 +577,7 @@ export default {
     on_midi_message,
     on_config_changed,
     on_midi,
-    toggle_device_led,
+    flash_device_led,
     flash_mode,
     read_flash,
     write_flash

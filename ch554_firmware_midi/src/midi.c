@@ -163,7 +163,7 @@ void handle_midi_packet()
 
         // toggle led
         case sysex_request_toggle_led:
-            LED_BIT = !LED_BIT;
+            led_set_flash();
             break;
 
         // Get flash

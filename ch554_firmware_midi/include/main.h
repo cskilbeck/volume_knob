@@ -7,3 +7,5 @@
 
 #define BOOT_FLASH_LED_COUNT 10
 #define BOOT_FLASH_LED_SPEED 0x40
+
+void led_set_flash();
