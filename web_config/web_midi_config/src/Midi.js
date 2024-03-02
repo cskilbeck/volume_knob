@@ -294,7 +294,7 @@ function flash_device_led(index) {
     if (device === undefined) {
         console.log(`Can't find device ${index}`);
     } else {
-        console.log(`Toggle led for device ${device.serial_number.toString(16).toUpperCase()}`);
+        console.log(`Flash led for device ${device.serial_number.toString(16).toUpperCase()}`);
         send_midi(device, [0xF0, 0x7E, 0x00, 0x06, sysex_request_toggle_led, 0xF7]);
     }
 }
@@ -306,7 +306,7 @@ function flash_mode(index) {
     if (device === undefined) {
         console.log(`Can't find device ${index}`);
     } else {
-        console.log(`Toggle led for device ${device.serial_number.toString(16).toUpperCase()}`);
+        console.log(`Enter flash mode for device ${device.serial_number.toString(16).toUpperCase()}`);
         send_midi(device, [0xF0, 0x7E, 0x00, 0x06, sysex_request_bootloader, 0xF7]);
     }
 }

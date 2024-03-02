@@ -298,7 +298,7 @@ midi.on_config_changed((device) => {
                         <div class="col">
                             <div class="form-check">
                                 <label class="form-check-label user-select-none" for="flash_on_click">Button is
-                                    clicked</label>
+                                    pressed</label>
                                 <input class="form-check-input pull-left" type="checkbox" id="flash_on_click"
                                     v-model="device.config.cf_led_flash_on_click">
                             </div>
