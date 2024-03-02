@@ -194,7 +194,7 @@ midi.on_config_changed((device) => {
                             <div class="col">
                                 <div class="input-group">
                                     <label class="input-group-text" for="inputGroupSelect01">Accel</label>
-                                    <select class="form-select" id="inputGroupSelect01"
+                                    <select class="form-select smaller-text" id="inputGroupSelect01"
                                         v-model="device.config.cf_acceleration">
                                         <option selected value="0">Off</option>
                                         <option value="1">Low</option>
@@ -344,6 +344,10 @@ midi.on_config_changed((device) => {
 <style>
 .hide {
     visibility: hidden;
+}
+
+.smaller-text {
+    font-size: smaller;
 }
 
 .input-group-text {
