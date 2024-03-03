@@ -95,17 +95,23 @@ function import_settings() {
                 <div class='row mt-1 mx-5'>
                     <div class="col">
                         <div class='btn-group-vertical' role="group">
-                            <button class='btn btn-sm btn-outline-secondary text-emphasis'
+                            <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
                                 v-on:click='midi.flash_device_led(device.device_index)'>Flash
                                 LED</button>
-                            <button class='btn btn-sm btn-outline-secondary text-emphasis'
-                                v-on:click='midi.read_flash(device.device_index)'>Load</button>
-                            <button class='btn btn-sm btn-outline-secondary text-emphasis'
-                                v-on:click='midi.write_flash(device.device_index)'>Save</button>
-                            <button class='btn btn-sm btn-outline-secondary text-emphasis'
-                                @click="fileDownload(midi.get_config_json(device.device_index), 'midi_knob_settings.json');">Export</button>
-                            <button class='btn btn-sm btn-outline-secondary text-emphasis'
-                                @click="importModal = true">Import</button>
+                            <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
+                                v-on:click='midi.read_flash(device.device_index)'>
+                                <div class='px-3'>Read
+                                    from device</div>
+                            </button>
+                            <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
+                                v-on:click='midi.write_flash(device.device_index)'>Store
+                                to device</button>
+                            <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
+                                @click="fileDownload(midi.get_config_json(device.device_index), 'midi_knob_settings.json');">Export
+                                config</button>
+                            <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
+                                @click="importModal = true">Import
+                                config</button>
                             <Modal v-model="importModal" maxwidth="20%" closeable header="Import Settings">
                                 <div class="row mx-2 my-2">
                                     <div class="col mb-2">
@@ -123,7 +129,7 @@ function import_settings() {
                                     </div>
                                 </div>
                             </Modal>
-                            <button class='btn btn-sm btn-outline-secondary text-emphasis'
+                            <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
                                 @click='flashModal = true'>Advanced</button>
                             <Modal v-model="flashModal" maxwidth="20%" closeable header="Advanced Functions">
                                 <div class="row mx-2 my-1">
@@ -182,7 +188,7 @@ function import_settings() {
                             <div class="col">
                                 <div class="mt-1 mb-1">
                                     <Toggle v-model="device.config.cf_rotate_relative" :pixelsHigh="26" :dotSize="0.7"
-                                        :marginPixels="6" :rounded="1" :pixelsWide="100">
+                                        :marginPixels="6" :rounded="0.4" :pixelsWide="100">
                                         <template #checked-text>Relative</template>
 
                                         <template #unchecked-text>Absolute</template>
@@ -282,7 +288,7 @@ function import_settings() {
                             <div class="col">
                                 <div class="mt-1 mb-1">
                                     <Toggle v-model="device.config.cf_btn_momentary" :pixelsHigh="26" :pixelsWide="110"
-                                        :dotSize="0.7" :marginPixels="6" :rounded="1">
+                                        :dotSize="0.7" :marginPixels="6" :rounded="0.4">
 
                                         <template #checked-text>Momentary</template>
 

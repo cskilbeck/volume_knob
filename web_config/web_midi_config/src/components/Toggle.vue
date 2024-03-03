@@ -80,8 +80,7 @@ function dotBorder() {
 }
 
 .slider {
-    border: 0px solid;
-    border-color: var(--bs-border-color);
+    border: var(--bs-border-color) 1px solid;
     position: absolute;
     cursor: pointer;
     top: 0;
@@ -105,7 +104,7 @@ function dotBorder() {
     top: 50%;
     border-radius: v-bind('(dotSize() * props.rounded * 0.5) + "px"');
     background-color: var(--bs-body-bg);
-    transform: v-bind('"translate(" + dotBorder() + "px, -50%)"');
+    transform: v-bind('"translate(" + (dotBorder()) + "px, -50%)"');
     transition: 0.2s;
 }
 
@@ -127,7 +126,7 @@ input+.slider span {
 }
 
 input:checked+.slider:before {
-    transform: v-bind('"translate(" + (props.pixelsWide - dotSize() - dotBorder()) + "px, -50%)"');
+    transform: v-bind('"translate(" + (props.pixelsWide - dotSize() - dotBorder() - 1) + "px, -50%)"');
 }
 
 /* Checked text on the right */
@@ -135,7 +134,7 @@ input:checked+.slider span.checked-text {
     opacity: 100%;
     right: 100%;
     transition: 0.2s;
-    transform: v-bind('"translate(" + (props.pixelsWide - (dotBorder() + dotSize() + props.marginPixels)) + "px, -50%)"');
+    transform: v-bind('"translate(" + (props.pixelsWide - (dotBorder() + dotSize() + props.marginPixels + 1)) + "px, -50%)"');
 }
 
 /* Checked text hidden on the left */
