@@ -54,13 +54,6 @@ midi.on_config_changed((device) => {
     force_update();
 });
 
-function toggler_style() {
-    let btn = document.getElementById("canonical-button")
-    if (btn) {
-        return window.getComputedStyle(btn);
-    }
-}
-
 function import_settings() {
     // use fetch to send the file to some noddy thing on the server which just sends it back
     // do some prompt when it comes back in case it takes a while
@@ -69,7 +62,6 @@ function import_settings() {
 </script>
 
 <template>
-    <button class="btn" id="canonical-button">foo</button>
     <div class="container border rounded-3 py-3">
         <div class='row p-2 pb-3'>
 
@@ -190,7 +182,7 @@ function import_settings() {
                             <div class="col">
                                 <div class="mt-1 mb-1">
                                     <Toggle v-model="device.config.cf_rotate_relative" :pixelsHigh="26" :dotSize="0.7"
-                                        :rounded="1" :pixelsWide="110">
+                                        :marginPixels="6" :rounded="1" :pixelsWide="100">
                                         <template #checked-text>Relative</template>
 
                                         <template #unchecked-text>Absolute</template>
@@ -289,8 +281,8 @@ function import_settings() {
                         <div class="row p-1">
                             <div class="col">
                                 <div class="mt-1 mb-1">
-                                    <Toggle v-model="device.config.cf_btn_momentary" :pixelsHigh="32" :pixelsWide="140"
-                                        :dotSize="0.75" :marginPixels="8" :rounded="1">
+                                    <Toggle v-model="device.config.cf_btn_momentary" :pixelsHigh="26" :pixelsWide="110"
+                                        :dotSize="0.7" :marginPixels="6" :rounded="1">
 
                                         <template #checked-text>Momentary</template>
 
@@ -444,12 +436,6 @@ function import_settings() {
 .slim-button {
     padding-top: 0px !important;
     padding-bottom: 2px !important;
-}
-
-#canonical-button {
-    display: none;
-    background-color: var(--bs-secondary-bg);
-    color: var(--bs-body-color);
 }
 
 .input-group-text {

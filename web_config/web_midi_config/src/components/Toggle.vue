@@ -113,10 +113,6 @@ input:checked+.slider {
     background-color: var(--bs-secondary-bg);
 }
 
-input:checked+.slider:before {
-    transform: v-bind('"translate(" + (props.pixelsWide - dotSize() - dotBorder()) + "px, -50%)"');
-}
-
 span.unchecked-text {
     user-select: none;
 }
@@ -130,6 +126,10 @@ input+.slider span {
     top: 50%;
 }
 
+input:checked+.slider:before {
+    transform: v-bind('"translate(" + (props.pixelsWide - dotSize() - dotBorder()) + "px, -50%)"');
+}
+
 /* Checked text on the right */
 input:checked+.slider span.checked-text {
     opacity: 100%;
@@ -141,8 +141,8 @@ input:checked+.slider span.checked-text {
 /* Checked text hidden on the left */
 input+.slider span.checked-text {
     opacity: 0%;
-    transition: 0.2s;
     right: 100%;
+    transition: 0.2s;
     transform: v-bind('"translate(" + (dotBorder() - props.marginPixels) + "px, -50%"');
 }
 

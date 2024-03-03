@@ -10,7 +10,7 @@
                         <div class="card-header h5 text-center pt-2">
                             {{ header }}
                             <button v-if="closeable" @click='$emit("update:modelValue", false)'
-                                class="btn btn-text float-end fs-6 pt-0 pb-0">✖</button>
+                                class="btn btn-text btn-close float-end"></button>
                         </div>
                         <div class="card-body">
                             <slot></slot>
