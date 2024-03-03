@@ -3,6 +3,7 @@
 //////////////////////////////////////////////////////////////////////
 
 import DeviceList from './components/DeviceList.vue'
+import DarkMode from './components/DarkMode.vue'
 import Modal from './components/Modal.vue'
 import midi from './Midi.js'
 import { ref } from 'vue'
@@ -30,15 +31,18 @@ navigator.requestMIDIAccess({ "sysex": true })
     </header>
     <div class="container container-wide">
       <div class="row mb-4">
-        <div class="col">
+        <div class="col-2">
           Found {{ midi.midi_devices.value.length }} device{{ midi.midi_devices.value.length != 1 ? "s" : "" }}
         </div>
-        <div class="col text-center">
-          <button class="btn btn-secondary btn-sm" @click="midi.init_devices()">
+        <div class="col-8 text-center">
+          <button class="btn border tertiary-bg btn-sm" @click="midi.init_devices()">
             Scan
           </button>
         </div>
-        <div class="col text-end">
+        <div class='col-1 text-end'>
+          <DarkMode />
+        </div>
+        <div class="col-1 text-end">
           <button @click="closeableModal = true" class="btn btn-tertiary border-secondary btn-sm">
             About
           </button>
@@ -71,6 +75,14 @@ navigator.requestMIDIAccess({ "sysex": true })
 </template>
 
 <style>
+.tertiary-bg {
+  background-color: var(--bs-tertiary-bg);
+}
+
+.tertiary-bg:hover {
+  background-color: var(--bs-secondary-bg)
+}
+
 .container-wide {
   min-width: 80%;
 }

@@ -45,19 +45,32 @@ watch(props.device.config, (o, n) => {
 
 const instance = getCurrentInstance();
 
+function force_update() {
+    instance?.proxy?.$forceUpdate();
+}
+
 midi.on_config_changed((device) => {
     props.device.config = device.config;
-    instance?.proxy?.$forceUpdate();
+    force_update();
 });
+
+function toggler_style() {
+    let btn = document.getElementById("canonical-button")
+    if (btn) {
+        return window.getComputedStyle(btn);
+    }
+}
 
 function import_settings() {
     // use fetch to send the file to some noddy thing on the server which just sends it back
+    // do some prompt when it comes back in case it takes a while
 }
 
 </script>
 
 <template>
-    <div class="container bg-black border rounded-3 py-3">
+    <button class="btn" id="canonical-button">foo</button>
+    <div class="container border rounded-3 py-3">
         <div class='row p-2 pb-3'>
 
             <!-- Name, Serial, Buttons -->
@@ -90,16 +103,16 @@ function import_settings() {
                 <div class='row mt-1 mx-5'>
                     <div class="col">
                         <div class='btn-group-vertical' role="group">
-                            <button class='btn btn-sm btn-outline-secondary text-emphasis btn-dark'
+                            <button class='btn btn-sm btn-outline-secondary text-emphasis'
                                 v-on:click='midi.flash_device_led(device.device_index)'>Flash
                                 LED</button>
-                            <button class='btn btn-sm btn-outline-secondary text-emphasis btn-dark'
+                            <button class='btn btn-sm btn-outline-secondary text-emphasis'
                                 v-on:click='midi.read_flash(device.device_index)'>Load</button>
-                            <button class='btn btn-sm btn-outline-secondary text-emphasis btn-dark'
+                            <button class='btn btn-sm btn-outline-secondary text-emphasis'
                                 v-on:click='midi.write_flash(device.device_index)'>Save</button>
-                            <button class='btn btn-sm btn-outline-secondary text-emphasis btn-dark'
+                            <button class='btn btn-sm btn-outline-secondary text-emphasis'
                                 @click="fileDownload(midi.get_config_json(device.device_index), 'midi_knob_settings.json');">Export</button>
-                            <button class='btn btn-sm btn-outline-secondary text-emphasis btn-dark'
+                            <button class='btn btn-sm btn-outline-secondary text-emphasis'
                                 @click="importModal = true">Import</button>
                             <Modal v-model="importModal" maxwidth="20%" closeable header="Import Settings">
                                 <div class="row mx-2 my-2">
@@ -112,8 +125,13 @@ function import_settings() {
                                         <button class="btn btn-sm btn-primary">Import</button>
                                     </div>
                                 </div>
+                                <div class="row mx-2 my-3">
+                                    <div class="col text-center">
+                                        This is not yet implemented, sorry
+                                    </div>
+                                </div>
                             </Modal>
-                            <button class='btn btn-sm btn-outline-secondary text-emphasis btn-dark'
+                            <button class='btn btn-sm btn-outline-secondary text-emphasis'
                                 @click='flashModal = true'>Advanced</button>
                             <Modal v-model="flashModal" maxwidth="20%" closeable header="Advanced Functions">
                                 <div class="row mx-2 my-1">
@@ -149,12 +167,13 @@ function import_settings() {
                         <h5>Rotation</h5>
                     </div>
                 </div>
-                <div class="row pt-2 border rounded-3 bg-dark">
+                <div class="row pt-2 border rounded-3">
                     <div class="col-lg">
                         <div class="row p-1">
                             <div class="col">
                                 <div class="input-group mb-1">
-                                    <input type="number" class="form-control" v-model.number="device.config.rot_channel">
+                                    <input type="number" class="form-control"
+                                        v-model.number="device.config.rot_channel">
                                     <span class="input-group-text user-select-none">Chan</span>
                                 </div>
                             </div>
@@ -170,8 +189,11 @@ function import_settings() {
                         <div class="row p-1">
                             <div class="col">
                                 <div class="mt-1 mb-1">
-                                    <VueToggles uncheckedBg="#353C40" checkedBg="#353C40" :width="110" :height="25"
-                                        dotColor="#202420" fontSize="14" checkedText="Relative" uncheckedText="Absolute"
+                                    <VueToggles :width="110" :height="25" fontSize="14" checkedText="Relative"
+                                        :checkedTextColor="toggler_style()?.color"
+                                        :uncheckedTextColor="toggler_style()?.color"
+                                        :checkedBg="toggler_style()?.backgroundColor"
+                                        :uncheckedBg="toggler_style()?.backgroundColor" uncheckedText="Absolute"
                                         v-model="device.config.cf_rotate_relative" />
                                 </div>
                             </div>
@@ -179,7 +201,8 @@ function import_settings() {
                         <div class="row p-1" v-show="device.config.cf_rotate_relative">
                             <div class='col'>
                                 <div class="input-group mb-1">
-                                    <input type="number" class="form-control" v-model.number="device.config.rot_zero_point">
+                                    <input type="number" class="form-control"
+                                        v-model.number="device.config.rot_zero_point">
                                     <span class="input-group-text user-select-none">Zero</span>
                                 </div>
                             </div>
@@ -187,7 +210,8 @@ function import_settings() {
                         <div class="row p-1" :class="{ hide: device.config.cf_rotate_relative }">
                             <div class='col'>
                                 <div class="input-group mb-1">
-                                    <input type="number" class="form-control" v-model.number="device.config.rot_limit_low">
+                                    <input type="number" class="form-control"
+                                        v-model.number="device.config.rot_limit_low">
                                     <span class="input-group-text user-select-none">Min</span>
                                 </div>
                             </div>
@@ -195,7 +219,8 @@ function import_settings() {
                         <div class="row p-1" v-show="!device.config.cf_rotate_relative">
                             <div class='col'>
                                 <div class="input-group mb-1">
-                                    <input type="number" class="form-control" v-model.number="device.config.rot_limit_high">
+                                    <input type="number" class="form-control"
+                                        v-model.number="device.config.rot_limit_high">
                                     <span class="input-group-text user-select-none">Max</span>
                                 </div>
                             </div>
@@ -215,7 +240,7 @@ function import_settings() {
                         <div class="row p-1">
                             <div class='col'>
                                 <CCDropDown v-model="device.config.rot_control_high" :label="device.config.cf_rotate_extended ?
-                                    'MSB' : 'CC'" />
+                                'MSB' : 'CC'" />
                             </div>
                         </div>
                         <div class="row p-1">
@@ -250,12 +275,13 @@ function import_settings() {
                         <h5>Button</h5>
                     </div>
                 </div>
-                <div class="row pt-2 border rounded-3 bg-dark">
+                <div class="row pt-2 border rounded-3">
                     <div class="col-lg">
                         <div class="row p-1">
                             <div class="col">
                                 <div class="input-group mb-1">
-                                    <input type="number" class="form-control" v-model.number="device.config.btn_channel">
+                                    <input type="number" class="form-control"
+                                        v-model.number="device.config.btn_channel">
                                     <span class="input-group-text user-select-none">Chan</span>
                                 </div>
                             </div>
@@ -263,8 +289,11 @@ function import_settings() {
                         <div class="row p-1">
                             <div class="col">
                                 <div class="mt-1 mb-1">
-                                    <VueToggles uncheckedBg="#353C40" checkedBg="#353C40" :width="110" :height="25"
-                                        dotColor="#202420" fontSize="14" checkedText="Momentary" uncheckedText="Toggle"
+                                    <VueToggles :width="110" :height="25" fontSize="14" checkedText="Momentary"
+                                        :checkedTextColor="toggler_style()?.color"
+                                        :uncheckedTextColor="toggler_style()?.color"
+                                        :checkedBg="toggler_style()?.backgroundColor"
+                                        :uncheckedBg="toggler_style()?.backgroundColor" uncheckedText="Toggle"
                                         v-model="device.config.cf_btn_momentary" />
                                 </div>
                             </div>
@@ -272,18 +301,20 @@ function import_settings() {
                         <div class="row p-1">
                             <div class="col">
                                 <div class="input-group mb-1">
-                                    <input type="number" class="form-control" v-model.number="device.config.btn_value_1">
+                                    <input type="number" class="form-control"
+                                        v-model.number="device.config.btn_value_1">
                                     <span class="input-group-text user-select-none">{{ device.config.cf_btn_momentary
-                                        ? "OFF" : "A" }}</span>
+                                ? "OFF" : "A" }}</span>
                                 </div>
                             </div>
                         </div>
                         <div class="row p-1">
                             <div class="col">
                                 <div class="input-group mb-1">
-                                    <input type="number" class="form-control" v-model.number="device.config.btn_value_2">
+                                    <input type="number" class="form-control"
+                                        v-model.number="device.config.btn_value_2">
                                     <span class="input-group-text user-select-none">{{ device.config.cf_btn_momentary
-                                        ? "ON" : "B" }}</span>
+                                ? "ON" : "B" }}</span>
                                 </div>
                             </div>
                         </div>
@@ -302,7 +333,7 @@ function import_settings() {
                         <div class="row p-1">
                             <div class="col">
                                 <CCDropDown v-model="device.config.btn_control_high" :label="device.config.cf_btn_extended ?
-                                    'MSB' : 'CC'" />
+                                'MSB' : 'CC'" />
                             </div>
                         </div>
                         <div class="row p-1">
@@ -323,9 +354,9 @@ function import_settings() {
                         <h5>LED</h5>
                     </div>
                 </div>
-                <div class="row pt-2 border rounded-3 bg-dark px-1">
+                <div class="row pt-2 border rounded-3 px-1">
                     <div class="col">
-                        <div class="row mx-1 my-1">
+                        <div class="row my-1">
                             <div class="col">
                                 Flash LED when:
                             </div>
@@ -334,7 +365,8 @@ function import_settings() {
                     <div class="row">
                         <div class="col">
                             <div class="form-check">
-                                <label class="form-check-label user-select-none" for="flash_on_rot">Knob is rotated</label>
+                                <label class="form-check-label user-select-none" for="flash_on_rot">Knob is
+                                    rotated</label>
                                 <input class="form-check-input pull-left" type="checkbox" id="flash_on_rot"
                                     v-model="device.config.cf_led_flash_on_rot">
                             </div>
@@ -343,7 +375,8 @@ function import_settings() {
                     <div class="row">
                         <div class="col">
                             <div class="form-check">
-                                <label class="form-check-label user-select-none" for="flash_on_limit">Rotation value hits
+                                <label class="form-check-label user-select-none" for="flash_on_limit">Rotation value
+                                    hits
                                     limit</label>
                                 <input class="form-check-input pull-left" type="checkbox" id="flash_on_limit"
                                     v-model="device.config.cf_led_flash_on_limit">
@@ -374,7 +407,8 @@ function import_settings() {
                     <div class="row">
                         <div class="col">
                             <div class="form-check">
-                                <label class="form-check-label user-select-none" for="track_button_value">LED tracks button
+                                <label class="form-check-label user-select-none" for="track_button_value">LED tracks
+                                    button
                                     value</label>
                                 <input class="form-check-input pull-left" type="checkbox" id="track_button_value"
                                     v-model="device.config.cf_led_track_button_toggle">
@@ -409,6 +443,12 @@ function import_settings() {
 .slim-button {
     padding-top: 0px !important;
     padding-bottom: 2px !important;
+}
+
+#canonical-button {
+    display: none;
+    background-color: var(--bs-secondary-bg);
+    color: var(--bs-body-color);
 }
 
 .input-group-text {
