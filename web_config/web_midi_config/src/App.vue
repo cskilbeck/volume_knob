@@ -30,20 +30,20 @@ navigator.requestMIDIAccess({ "sysex": true })
       <h5 class="text-center mt-4 mb-4">Tiny USB MIDI Knob Configurator</h5>
     </header>
     <div class="container container-wide">
-      <div class="row mb-4">
+      <div class="row mb-3">
         <div class="col-2">
-          Found {{ midi.midi_devices.value.length }} device{{ midi.midi_devices.value.length != 1 ? "s" : "" }}
+          <span>
+            Found {{ midi.midi_devices.value.length }} device{{ midi.midi_devices.value.length != 1 ? "s" : "" }}
+          </span>
         </div>
         <div class="col-8 text-center">
           <button class="btn border tertiary-bg btn-sm" @click="midi.init_devices()">
             Scan
           </button>
         </div>
-        <div class='col-1 text-end'>
+        <div class="col-2 text-end">
           <DarkMode />
-        </div>
-        <div class="col-1 text-end">
-          <button @click="closeableModal = true" class="btn btn-tertiary border-secondary btn-sm">
+          <button @click="closeableModal = true" class="btn tertiary-bg border btn-sm">
             About
           </button>
           <Modal v-model="closeableModal" maxwidth="30%" closeable

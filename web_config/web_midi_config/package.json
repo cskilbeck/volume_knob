@@ -10,8 +10,7 @@
   },
   "dependencies": {
     "js-file-download": "^0.4.12",
-    "vue": "^3.4.15",
-    "vue-toggles": "^2.1.0"
+    "vue": "^3.4.15"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.3",

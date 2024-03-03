@@ -1,7 +1,7 @@
 <script setup>
 
 import { watch, getCurrentInstance, ref } from 'vue';
-import { VueToggles } from "vue-toggles";
+import Toggle from './Toggle.vue'
 import midi from '../Midi.js'
 import Modal from './Modal.vue'
 import CCDropDown from './CCDropDown.vue';
@@ -189,12 +189,12 @@ function import_settings() {
                         <div class="row p-1">
                             <div class="col">
                                 <div class="mt-1 mb-1">
-                                    <VueToggles :width="110" :height="25" fontSize="14" checkedText="Relative"
-                                        :checkedTextColor="toggler_style()?.color"
-                                        :uncheckedTextColor="toggler_style()?.color"
-                                        :checkedBg="toggler_style()?.backgroundColor"
-                                        :uncheckedBg="toggler_style()?.backgroundColor" uncheckedText="Absolute"
-                                        v-model="device.config.cf_rotate_relative" />
+                                    <Toggle v-model="device.config.cf_rotate_relative" :pixelsHigh="26" :dotSize="0.7"
+                                        :rounded="1" :pixelsWide="110">
+                                        <template #checked-text>Relative</template>
+
+                                        <template #unchecked-text>Absolute</template>
+                                    </Toggle>
                                 </div>
                             </div>
                         </div>
@@ -289,12 +289,13 @@ function import_settings() {
                         <div class="row p-1">
                             <div class="col">
                                 <div class="mt-1 mb-1">
-                                    <VueToggles :width="110" :height="25" fontSize="14" checkedText="Momentary"
-                                        :checkedTextColor="toggler_style()?.color"
-                                        :uncheckedTextColor="toggler_style()?.color"
-                                        :checkedBg="toggler_style()?.backgroundColor"
-                                        :uncheckedBg="toggler_style()?.backgroundColor" uncheckedText="Toggle"
-                                        v-model="device.config.cf_btn_momentary" />
+                                    <Toggle v-model="device.config.cf_btn_momentary" :pixelsHigh="32" :pixelsWide="140"
+                                        :dotSize="0.75" :marginPixels="8" :rounded="1">
+
+                                        <template #checked-text>Momentary</template>
+
+                                        <template #unchecked-text>Toggle</template>
+                                    </Toggle>
                                 </div>
                             </div>
                         </div>
