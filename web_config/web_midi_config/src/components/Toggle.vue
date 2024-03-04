@@ -1,40 +1,100 @@
 <script setup>
 
-import { ref, watchEffect } from 'vue';
+import { onMounted, ref, watchEffect, computed } from 'vue';
 
 const props = defineProps({
     modelValue: {
         type: Boolean,
-        required: true
+        required: true,
+        description: "The model value"
     },
-    pixelsWide: {
+    checkedText: {
+        type: String,
+        required: false,
+        default: "",
+        description: "Checked text"
+    },
+    uncheckedText: {
+        type: String,
+        required: false,
+        default: "",
+        description: "Unchecked text"
+    },
+    pillSize: {
         type: Number,
         required: false,
-        default: 128
-    },
-    pixelsHigh: {
-        type: Number,
-        required: false,
-        default: 32
-    },
-    dotSize: {
-        type: Number,
-        required: false,
-        default: 0.75
+        default: 0.75,
+        description: "The pill size, 0..1 where 1 = same size as vertical extent"
     },
     marginPixels: {
         type: Number,
         required: false,
-        default: 4
+        default: 6,
+        description: "Horizontal spacing between pill and text"
+    },
+    borderPixels: {
+        type: Number,
+        required: false,
+        default: 1,
+        description: "Thickness of the border in pixels"
     },
     rounded: {
         type: Number,
         required: false,
-        default: 0
+        default: 1,
+        description: "How rounded, 0..1 where 0 = square, 1 = rounded"
+    },
+    transitionTime: {
+        type: Number,
+        required: false,
+        default: 0.3,
+        description: "How long transition between checked/unchecked takes"
+    },
+    checkedPillColor: {
+        type: String,
+        required: false,
+        default: "White",
+        description: "Color of the pill when checked"
+    },
+    uncheckedPillColor: {
+        type: String,
+        required: false,
+        default: "White",
+        description: "Color of the pill when unchecked"
+    },
+    checkedTextColor: {
+        type: String,
+        required: false,
+        default: "White",
+        description: "Color of the text when checked"
+    },
+    uncheckedTextColor: {
+        type: String,
+        required: false,
+        default: "White",
+        description: "Color of the text when unchecked"
+    },
+    checkedBackgroundColor: {
+        type: String,
+        required: false,
+        default: "#45F",
+        description: "Background color when checked"
+    },
+    uncheckedBackgroundColor: {
+        type: String,
+        required: false,
+        default: "#555",
+        description: "Background color when unchecked"
+    },
+    borderColor: {
+        type: String,
+        required: false,
+        default: "#AAA",
+        description: "Border color"
     }
 });
 
-let isChecked = ref(false);
+const isChecked = ref(false);
 
 const emits = defineEmits(["update:modelValue"]);
 
@@ -42,25 +102,64 @@ watchEffect(function () {
     isChecked.value = props.modelValue;
 });
 
-function dotSize() {
-    return props.pixelsHigh * props.dotSize;
+let ready = ref(false);
+
+const theLabel = ref(null);
+const labelWidth = ref(0);
+const labelHeight = ref(0);
+const trans = computed(() => { return ready.value ? props.transitionTime : 0 });
+const pixelsWide = computed(() => { return labelWidth.value; });
+const pixelsHigh = computed(() => { return labelHeight.value; });
+const dotSize = computed(() => { return getDotSize(); });
+const dotBorder = computed(() => { return getDotBorder(); });
+
+function updateDimensions() {
+    let wpx = "0px";
+    let hpx = "0px";
+    if (theLabel.value) {
+        wpx = getComputedStyle(theLabel.value).width;
+        hpx = getComputedStyle(theLabel.value).height;
+
+        // this is nasty...
+        setTimeout(() => { ready.value = true; }, 0);
+    }
+    // wpx,hpx are in the format "#px" - is it guaranteed?
+    labelWidth.value = wpx.substring(0, wpx.length - 2) | 0;
+    labelHeight.value = hpx.substring(0, hpx.length - 2) | 0;
 }
 
-function dotBorder() {
-    return props.pixelsHigh * 0.5 - dotSize() * 0.5;
+function getDotSize() {
+    return (labelHeight.value - props.borderPixels * 2) * props.pillSize;
 }
+
+function getDotBorder() {
+    return ((labelHeight.value - props.pillSize) - getDotSize()) * 0.5;
+}
+
+// hmph, 50% not quite exactly right, not sure why
+const v_offset = "-48%";
+
+const resizeObserver = new ResizeObserver((entries) => {
+
+    updateDimensions();
+});
+
+onMounted(() => {
+    resizeObserver.observe(theLabel.value);
+
+});
 
 </script>
 
 <template>
-    <label class="switch">
+    <label class="switch" ref="theLabel">
         <input v-model="isChecked" type="checkbox" @change="emits('update:modelValue', isChecked)">
         <span class="slider">
-            <span class='checked-text'>
-                <slot name='checked-text'></slot>
+            <span class='checked-text-span'>
+                {{ checkedText }}
             </span>
-            <span class='unchecked-text'>
-                <slot name='unchecked-text'></slot>
+            <span class='unchecked-text-span'>
+                {{ uncheckedText }}
             </span>
         </span>
     </label>
@@ -69,10 +168,12 @@ function dotBorder() {
 <style scoped>
 .switch {
     position: relative;
-    display: inline-block;
-    width: v-bind('props.pixelsWide + "px"');
-    height: v-bind('props.pixelsHigh + "px"');
     font-size: smaller;
+    display: block;
+    margin: 0px;
+    padding: 0px;
+    width: 100%;
+    height: 100%;
 }
 
 .switch input {
@@ -80,17 +181,18 @@ function dotBorder() {
 }
 
 .slider {
-    border: var(--bs-border-color) 1px solid;
+    border: v-bind('props.borderColor') v-bind('(props.borderPixels) + "px"') solid;
     position: absolute;
     cursor: pointer;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: var(--bs-secondary-bg);
-    transition: 0.2s;
+    background-color: v-bind('`${props.uncheckedBackgroundColor}`');
+    transition: transform v-bind('`${trans}s`'),
+    background-color v-bind('`${trans}s`');
     overflow: hidden;
-    border-radius: v-bind('(props.pixelsHigh * props.rounded * 0.5) + "px"');
+    border-radius: v-bind('(pixelsHigh * props.rounded * 0.5) + "px"');
 }
 
 .slider:before {
@@ -98,64 +200,61 @@ function dotBorder() {
     content: "";
     margin: 0px;
     padding: 0px;
-    height: v-bind('dotSize() + "px"');
-    width: v-bind('dotSize() + "px"');
+    height: v-bind('dotSize + "px"');
+    width: v-bind('dotSize + "px"');
     left: 0%;
     top: 50%;
-    border-radius: v-bind('(dotSize() * props.rounded * 0.5) + "px"');
-    background-color: var(--bs-body-bg);
-    transform: v-bind('"translate(" + (dotBorder()) + "px, -50%)"');
-    transition: 0.2s;
+    border-radius: v-bind('(dotSize * props.rounded * 0.5) + "px"');
+    background-color: v-bind('`${props.uncheckedPillColor}`');
+    transform: v-bind('`translate(${dotBorder - props.borderPixels}px, ${v_offset})`');
+    transition: transform v-bind('`${trans}s`'),
+    background-color v-bind('`${trans}s`');
 }
 
 input:checked+.slider {
-    background-color: var(--bs-secondary-bg);
-}
-
-span.unchecked-text {
-    user-select: none;
-}
-
-span.checked-text {
-    user-select: none;
+    background-color: v-bind('`${props.checkedBackgroundColor}`');
 }
 
 input+.slider span {
     position: absolute;
     top: 50%;
+    user-select: none;
 }
 
 input:checked+.slider:before {
-    transform: v-bind('"translate(" + (props.pixelsWide - dotSize() - dotBorder() - 1) + "px, -50%)"');
+    background-color: v-bind('`${props.checkedPillColor}`');
+    transform: v-bind('`translate(${pixelsWide - (dotBorder + dotSize + props.borderPixels)}px, ${v_offset})`');
 }
 
-/* Checked text on the right */
-input:checked+.slider span.checked-text {
-    opacity: 100%;
-    right: 100%;
-    transition: 0.2s;
-    transform: v-bind('"translate(" + (props.pixelsWide - (dotBorder() + dotSize() + props.marginPixels + 1)) + "px, -50%)"');
-}
-
-/* Checked text hidden on the left */
-input+.slider span.checked-text {
+/* unchecked: checked text hidden on the left */
+input+.slider span.checked-text-span {
     opacity: 0%;
     right: 100%;
-    transition: 0.2s;
-    transform: v-bind('"translate(" + (dotBorder() - props.marginPixels) + "px, -50%"');
+    color: v-bind('props.checkedTextColor');
+    transition: transform v-bind('`${trans}s,`') opacity v-bind('`${trans}s`');
+    transform: v-bind('`translate(${dotBorder - props.marginPixels - props.borderPixels}px, ${v_offset}`');
 }
 
-/* Unchecked text on the left */
-input+.slider span.unchecked-text {
+/* unchecked: unchecked text shown on the right */
+input+.slider span.unchecked-text-span {
     opacity: 100%;
-    transition: 0.2s;
-    transform: v-bind('"translate(" + (dotBorder() + dotSize() + props.marginPixels) + "px, -50%)"');
+    color: v-bind('props.uncheckedTextColor');
+    transition: transform v-bind('`${trans}s,`') opacity v-bind('`${trans}s`');
+    transform: v-bind('`translate(${dotBorder + dotSize + props.marginPixels - props.borderPixels}px, ${v_offset})`');
 }
 
-/* Unchecked text hidden on the right */
-input:checked+.slider span.unchecked-text {
+/* checked: checked text shown on the left */
+input:checked+.slider span.checked-text-span {
+    opacity: 100%;
+    right: 100%;
+    transition: transform v-bind('`${trans}s,`') opacity v-bind('`${trans}s`');
+    transform: v-bind('`translate(${pixelsWide - (dotBorder + dotSize + props.marginPixels + props.borderPixels)}px, ${v_offset})`');
+}
+
+/* checked: unchecked text hidden on the right */
+input:checked+.slider span.unchecked-text-span {
     opacity: 0%;
-    transition: 0.2s;
-    transform: v-bind('"translate(" + (props.pixelsWide - dotBorder() + props.marginPixels) + "px, -50%)"');
+    transition: transform v-bind('`${trans}s,`') opacity v-bind('`${trans}s`');
+    transform: v-bind('`translate(${pixelsWide - dotBorder + props.marginPixels - props.borderPixels}px, ${v_offset})`');
 }
 </style>

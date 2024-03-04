@@ -1,10 +1,13 @@
 <script setup>
 
 import { watch, getCurrentInstance, ref } from 'vue';
+
 import Toggle from './Toggle.vue'
-import midi from '../Midi.js'
 import Modal from './Modal.vue'
 import CCDropDown from './CCDropDown.vue';
+
+import midi from '../Midi.js'
+
 import fileDownload from 'js-file-download';
 
 const props = defineProps({
@@ -24,18 +27,19 @@ watch(props.device.config, (o, n) => {
     let c = o;
 
     let max_zero_point = c.cf_rotate_extended ? (1 << 14) : (1 << 7);
-    let max_high_value = max_zero_point - 1;
-    let btn_limit = c.cf_btn_extended ? (1 << 14) : (1 << 7);
 
     c.rot_zero_point = Math.max(16, Math.min(c.rot_zero_point, max_zero_point));
-
     c.rot_delta = Math.max(1, Math.min(c.rot_delta, c.rot_zero_point));
 
-    c.rot_limit_high = Math.max(1, Math.min(c.rot_limit_high, max_high_value));
+    let max_rot_value = max_zero_point - 1;
+
+    c.rot_limit_high = Math.max(1, Math.min(c.rot_limit_high, max_rot_value));
     c.rot_limit_low = Math.max(0, Math.min(c.rot_limit_low, c.rot_limit_high - 1));
 
-    c.btn_value_1 = Math.max(0, Math.min(c.btn_value_1, btn_limit - 1));
-    c.btn_value_2 = Math.max(0, Math.min(c.btn_value_2, btn_limit - 1));
+    let max_btn_value = c.cf_btn_extended ? (1 << 14) : (1 << 7);
+
+    c.btn_value_1 = Math.max(0, Math.min(c.btn_value_1, max_btn_value - 1));
+    c.btn_value_2 = Math.max(0, Math.min(c.btn_value_2, max_btn_value - 1));
 
     c.rot_channel = Math.max(0, Math.min(c.rot_channel, 15));
     c.btn_channel = Math.max(0, Math.min(c.btn_channel, 15));
@@ -137,7 +141,7 @@ function import_settings() {
                                         <p class="text-center text-warning">Warning! Only mess with this if you're
                                             quite sure you know what you're doing...</p>
                                         <p>Instructions for performing the firmware update are available <a
-                                                href='https://skilbeck.com' target="_blank"
+                                                href='https://skilbeck.com/tiny-usb-midi-knob' target="_blank"
                                                 rel="noreferrer noopener">here.</a>
                                             To get back to normal mode you can unplug the device and plug it back in.
                                         </p>
@@ -184,16 +188,16 @@ function import_settings() {
                                 </div>
                             </div>
                         </div>
-                        <div class="row p-1">
-                            <div class="col">
-                                <div class="mt-1 mb-1">
-                                    <Toggle v-model="device.config.cf_rotate_relative" :pixelsHigh="26" :dotSize="0.7"
-                                        :marginPixels="6" :rounded="0.4" :pixelsWide="100">
-                                        <template #checked-text>Relative</template>
-
-                                        <template #unchecked-text>Absolute</template>
-                                    </Toggle>
-                                </div>
+                        <div class="row mx-4 mt-2 mb-1">
+                            <div class="col" style="height:1.5rem;margin: 0px;padding: 0px;">
+                                <Toggle v-model="device.config.cf_rotate_relative"
+                                    :checked-text-color='"var(--bs-btn-color)"'
+                                    :unchecked-text-color='"var(--bs-btn-color)"'
+                                    :checked-background-color='"var(--bs-secondary-bg)"'
+                                    :unchecked-background-color='"var(--bs-secondary-bg)"'
+                                    :border-color='"var(--bs-border-color)"' :unchecked-pill-color='"var(--bs-body-bg)"'
+                                    :checked-pill-color='"var(--bs-body-bg)"' :checked-text='"Relative"'
+                                    :unchecked-text='"Absolute"' />
                             </div>
                         </div>
                         <div class="row p-1" v-show="device.config.cf_rotate_relative">
@@ -238,7 +242,8 @@ function import_settings() {
                         <div class="row p-1">
                             <div class='col'>
                                 <CCDropDown v-model="device.config.rot_control_high" :label="device.config.cf_rotate_extended ?
-                                'MSB' : 'CC'" />
+                                'MSB' : 'CC'
+                                " />
                             </div>
                         </div>
                         <div class="row p-1">
@@ -284,17 +289,16 @@ function import_settings() {
                                 </div>
                             </div>
                         </div>
-                        <div class="row p-1">
-                            <div class="col">
-                                <div class="mt-1 mb-1">
-                                    <Toggle v-model="device.config.cf_btn_momentary" :pixelsHigh="26" :pixelsWide="110"
-                                        :dotSize="0.7" :marginPixels="6" :rounded="0.4">
-
-                                        <template #checked-text>Momentary</template>
-
-                                        <template #unchecked-text>Toggle</template>
-                                    </Toggle>
-                                </div>
+                        <div class="row mx-4 mt-2 mb-1">
+                            <div class="col" style="height:1.5rem;margin: 0px;padding: 0px;">
+                                <Toggle v-model="device.config.cf_btn_momentary"
+                                    :checked-text-color='"var(--bs-btn-color)"'
+                                    :unchecked-text-color='"var(--bs-btn-color)"'
+                                    :checked-background-color='"var(--bs-secondary-bg)"'
+                                    :unchecked-background-color='"var(--bs-secondary-bg)"'
+                                    :border-color='"var(--bs-border-color)"' :unchecked-pill-color='"var(--bs-body-bg)"'
+                                    :checked-pill-color='"var(--bs-body-bg)"' :checked-text='"Momentary"'
+                                    :unchecked-text='"Toggle"' />
                             </div>
                         </div>
                         <div class="row p-1">
@@ -302,8 +306,9 @@ function import_settings() {
                                 <div class="input-group mb-1">
                                     <input type="number" class="form-control"
                                         v-model.number="device.config.btn_value_1">
-                                    <span class="input-group-text user-select-none">{{ device.config.cf_btn_momentary
-                                ? "OFF" : "A" }}</span>
+                                    <span class="input-group-text user-select-none">{{
+                                device.config.cf_btn_momentary
+                                    ? "OFF" : "A" }}</span>
                                 </div>
                             </div>
                         </div>
@@ -312,8 +317,9 @@ function import_settings() {
                                 <div class="input-group mb-1">
                                     <input type="number" class="form-control"
                                         v-model.number="device.config.btn_value_2">
-                                    <span class="input-group-text user-select-none">{{ device.config.cf_btn_momentary
-                                ? "ON" : "B" }}</span>
+                                    <span class="input-group-text user-select-none">{{
+                                device.config.cf_btn_momentary
+                                    ? "ON" : "B" }}</span>
                                 </div>
                             </div>
                         </div>
@@ -332,7 +338,8 @@ function import_settings() {
                         <div class="row p-1">
                             <div class="col">
                                 <CCDropDown v-model="device.config.btn_control_high" :label="device.config.cf_btn_extended ?
-                                'MSB' : 'CC'" />
+                                'MSB' : 'CC'
+                                " />
                             </div>
                         </div>
                         <div class="row p-1">
