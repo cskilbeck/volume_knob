@@ -18,9 +18,6 @@
 
 //////////////////////////////////////////////////////////////////////
 
-// #define BOOTLOADER_DELAY 0x300    // about 3 seconds
-#define BOOTLOADER_DELAY 0x80
-
 #define DEBOUNCE_TIME 0xA0u
 #define T2_DEBOUNCE (0xFFu - DEBOUNCE_TIME)
 
@@ -109,10 +106,8 @@ void send_cc(uint8 channel, uint8 cc[2], uint16 value, bool is_extended)
         packet[3] = (value >> 7) & 0x7F;
         queue_put(packet);
         packet[2] = cc[1];
-        packet[3] = value & 0x7F;
-    } else {
-        packet[3] = value;
     }
+    packet[3] = value & 0x7f;
     queue_put(packet);
 }
 
@@ -233,7 +228,7 @@ int main()
             if(TF0 == 1) {
                 TF0 = 0;
                 press_time += 1;
-                if(press_time == BOOTLOADER_DELAY) {
+                if(press_time == BOOTLOADER_BUTTON_DELAY) {
 
                     goto_bootloader();
                 }

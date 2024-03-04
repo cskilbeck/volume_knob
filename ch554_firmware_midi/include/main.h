@@ -8,4 +8,7 @@
 #define BOOT_FLASH_LED_COUNT 10
 #define BOOT_FLASH_LED_SPEED 0x40
 
+#define BOOTLOADER_BUTTON_DELAY 0x2000    // about 30 seconds
+// #define BOOTLOADER_BUTTON_DELAY 0x80
+
 void led_set_flash();

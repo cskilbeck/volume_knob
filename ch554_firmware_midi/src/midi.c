@@ -1,3 +1,7 @@
+//////////////////////////////////////////////////////////////////////
+//
+// WCHISPTOOL download: https://www.wch-ic.com/downloads/WCHISPTool_Setup_exe.html
+
 #include <string.h>
 #include "ch554.h"
 #include "types.h"
