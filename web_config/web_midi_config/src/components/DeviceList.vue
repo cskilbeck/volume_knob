@@ -11,7 +11,7 @@ defineProps({
 </script>
 
 <template>
-    <div class="row" v-for="device in devices?.value">
+    <div class="row" v-for="device in devices.value">
         <Device :device="device" />
     </div>
 </template>

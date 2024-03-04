@@ -2,7 +2,6 @@
 
 <script setup>
 
-import { watch } from 'vue';
 import cc_names from '../cc_names.js';
 
 const model = defineModel();

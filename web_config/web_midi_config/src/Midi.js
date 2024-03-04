@@ -586,7 +586,6 @@ export default {
     midi,
     midi_devices,
     init_devices,
-    on_midi_message,
     on_config_changed,
     on_midi,
     flash_device_led,
