@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, getCurrentInstance } from 'vue';
+import { ref, onMounted } from 'vue';
 
 const setTheme = (theme) => {
     localStorage.setItem('user-theme', theme);

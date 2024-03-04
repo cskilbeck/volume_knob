@@ -145,8 +145,7 @@ void handle_midi_packet()
        midi_recv_buffer[3] == 0x06 &&                      // machine control command
        midi_recv_buffer[sysex_recv_length - 1] == 0xF7)    // sysex terminator
     {
-
-        hexdump("MIDI", midi_recv_buffer, sysex_recv_length);
+        hexdump("SYSEX", midi_recv_buffer, sysex_recv_length);
 
         switch(midi_recv_buffer[4]) {
 
@@ -223,10 +222,11 @@ static void sysex_parse_add(uint8 length)
 
 void process_midi_packet_in(uint8 length)
 {
+    hexdump("midi_in", endpoint_2_in_buffer, length);
+
     sysex_recv_packet_offset = 0;
 
     while(sysex_recv_packet_offset < length) {
-
         uint8 cmd = endpoint_2_in_buffer[sysex_recv_packet_offset];
 
         switch(cmd) {
