@@ -27,11 +27,11 @@ watch(props.device.config, (o, n) => {
     let c = o;
 
     let max_zero_point = c.cf_rotate_extended ? (1 << 14) : (1 << 7);
+    let max_rot_value = max_zero_point - 1;
 
     c.rot_zero_point = Math.max(16, Math.min(c.rot_zero_point, max_zero_point));
-    c.rot_delta = Math.max(1, Math.min(c.rot_delta, c.rot_zero_point));
 
-    let max_rot_value = max_zero_point - 1;
+    c.rot_delta = Math.max(1, Math.min(c.rot_delta, c.cf_rotate_relative ? c.rot_zero_point : max_rot_value));
 
     c.rot_limit_high = Math.max(1, Math.min(c.rot_limit_high, max_rot_value));
     c.rot_limit_low = Math.max(0, Math.min(c.rot_limit_low, c.rot_limit_high - 1));
@@ -306,9 +306,9 @@ function import_settings() {
                                 <div class="input-group mb-1">
                                     <input type="number" class="form-control"
                                         v-model.number="device.config.btn_value_1">
-                                    <span class="input-group-text user-select-none">{{
-                                device.config.cf_btn_momentary
-                                    ? "OFF" : "A" }}</span>
+                                    <span class="input-group-text user-select-none">
+                                        {{ device.config.cf_btn_momentary ? "OFF" : "A" }}
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -317,9 +317,9 @@ function import_settings() {
                                 <div class="input-group mb-1">
                                     <input type="number" class="form-control"
                                         v-model.number="device.config.btn_value_2">
-                                    <span class="input-group-text user-select-none">{{
-                                device.config.cf_btn_momentary
-                                    ? "ON" : "B" }}</span>
+                                    <span class="input-group-text user-select-none">
+                                        {{ device.config.cf_btn_momentary ? "ON" : "B" }}
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -337,9 +337,8 @@ function import_settings() {
                         </div>
                         <div class="row p-1">
                             <div class="col">
-                                <CCDropDown v-model="device.config.btn_control_high" :label="device.config.cf_btn_extended ?
-                                'MSB' : 'CC'
-                                " />
+                                <CCDropDown v-model="device.config.btn_control_high"
+                                    :label="device.config.cf_btn_extended ? 'MSB' : 'CC'" />
                             </div>
                         </div>
                         <div class="row p-1">
