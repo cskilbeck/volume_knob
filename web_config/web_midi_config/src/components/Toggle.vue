@@ -41,7 +41,7 @@ const props = defineProps({
     rounded: {
         type: Number,
         required: false,
-        default: 1,
+        default: 0.5,
         description: "How rounded, 0..1 where 0 = square, 1 = rounded"
     },
     transitionTime: {

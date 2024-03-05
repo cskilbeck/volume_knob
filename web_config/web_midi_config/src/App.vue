@@ -15,7 +15,7 @@ const closeableModal = ref(false);
 navigator.requestMIDIAccess({ "sysex": true })
   .then(
     async (main_midi_object) => {
-      midi.on_midi(main_midi_object);
+      midi.on_midi_startup(main_midi_object);
     },
     (err) => {
       console.log(`requestMIDIAccess failed: ${err}`);

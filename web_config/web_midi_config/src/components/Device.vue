@@ -19,6 +19,7 @@ const props = defineProps({
 
 const flashModal = ref(false);
 const importModal = ref(false);
+const disconnectModal = ref(false);
 
 // sanitize the values
 
@@ -63,99 +64,86 @@ function import_settings() {
     // do some prompt when it comes back in case it takes a while
 }
 
+function toggleConnection(device) {
+    if (!device.active) {
+        midi.toggle_device_connection(device.device_index)
+    } else {
+        disconnectModal.value = true;
+    }
+}
+
+function reload_page() {
+    location.reload(true);
+}
+
 </script>
 
 <template>
     <div class="container border rounded-3 py-3">
-        <div class='row p-2 pb-3'>
+        <div class='row p-1 pb-1'>
 
             <!-- Name, Serial, Buttons -->
 
-            <div class='col-lg-3  text-center'>
+            <div class='col-lg-3'>
                 <div class='row'>
-                    <div class='col'>
+                    <div class='col-6'>
                         <div class="container">
                             <h5>{{ device.name }}</h5>
                         </div>
                     </div>
                 </div>
-                <div class='row'>
-                    <div class='col'>
-                        <div class="container small">
+                <div class='row mt-1'>
+                    <div class="col-6 text-center">
+                        <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
+                            @click='toggleConnection(device)'>
+                            {{ !device.active ? 'Connect' : 'Disconnect' }}
+                        </button>
+                        <div class="small mt-3" :class="{ hide: !device.active }">
                             Firmware
-                            <span class="text-primary-emphasis font-monospace">v{{ device.firmware_version >> 8 }}.{{
-                                (device.firmware_version & 0x7f).toString(10).padStart(2, '0') }}</span>
+                            <span class="text-primary-emphasis font-monospace">
+                                v{{ device.firmware_version >> 8 }}.{{ (device.firmware_version &
+                                0x7f).toString(10).padStart(2, '0') }}
+                            </span>
                         </div>
-                    </div>
-                </div>
-                <div class='row'>
-                    <div class='col'>
-                        <div class="container small">
+                        <div class="small" :class="{ hide: !device.active }">
                             Serial #
                             <span class="text-body-secondary font-monospace">{{ device.serial_str }}</span>
                         </div>
                     </div>
-                </div>
-                <div class='row mt-1 mx-5'>
-                    <div class="col">
-                        <div class='btn-group-vertical' role="group">
+                    <div class="col-6">
+                        <div class='btn-group-vertical' role="group" v-if='device.active'>
+
                             <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
-                                v-on:click='midi.flash_device_led(device.device_index)'>Flash
-                                LED</button>
+                                v-on:click='midi.flash_device_led(device.device_index)'>
+                                <span class="mx-2">Flash LED</span>
+                            </button>
+
                             <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
                                 v-on:click='midi.read_flash(device.device_index)'>
-                                <div class='px-3'>Read
-                                    from device</div>
+                                <span class="mx-2">Read from device</span>
                             </button>
+
                             <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
-                                v-on:click='midi.write_flash(device.device_index)'>Store
-                                to device</button>
+                                v-on:click='midi.write_flash(device.device_index)'>
+                                <span class="mx-2">Store to device</span>
+                            </button>
+
                             <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
-                                @click="fileDownload(midi.get_config_json(device.device_index), 'midi_knob_settings.json');">Export
-                                config</button>
+                                v-if='device.active || 1'
+                                @click="fileDownload(midi.get_config_json(device.device_index), 'midi_knob_settings.json');">
+                                <span class="mx-2">Export config</span>
+                            </button>
+
                             <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
-                                @click="importModal = true">Import
-                                config</button>
-                            <Modal v-model="importModal" maxwidth="20%" closeable header="Import Settings">
-                                <div class="row mx-2 my-2">
-                                    <div class="col mb-2">
-                                        <input type="file" id="import_settings" />
-                                    </div>
-                                </div>
-                                <div class="row mx-2 my-3">
-                                    <div class="col text-center">
-                                        <button class="btn btn-sm btn-primary">Import</button>
-                                    </div>
-                                </div>
-                                <div class="row mx-2 my-3">
-                                    <div class="col text-center">
-                                        This is not yet implemented, sorry
-                                    </div>
-                                </div>
-                            </Modal>
+                                @click="importModal = true">
+                                <span class="mx-2">Read from device</span>
+                            </button>
+
                             <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
-                                @click='flashModal = true'>Advanced</button>
-                            <Modal v-model="flashModal" maxwidth="20%" closeable header="Advanced Functions">
-                                <div class="row mx-2 my-1">
-                                    <div class="col mb-1">
-                                        <p class="text-center text-warning">Warning! Only mess with this if you're
-                                            quite sure you know what you're doing...</p>
-                                        <p>Instructions for performing the firmware update are available <a
-                                                href='https://skilbeck.com/tiny-usb-midi-knob' target="_blank"
-                                                rel="noreferrer noopener">here.</a>
-                                            To get back to normal mode you can unplug the device and plug it back in.
-                                        </p>
-                                        <p></p>
-                                    </div>
-                                </div>
-                                <div class="row mx-2 my-4">
-                                    <div class="col text-center">
-                                        <button class='btn btn-sm btn-danger'
-                                            v-on:click='midi.flash_mode(device.device_index)'>Put device in Firmware
-                                            Update Mode</button>
-                                    </div>
-                                </div>
-                            </Modal>
+                                @click='flashModal = true'>
+                                <span class="mx-2">Advanced</span>
+                            </button>
+
                         </div>
                     </div>
                 </div>
@@ -163,7 +151,7 @@ function import_settings() {
 
             <!-- Rotation -->
 
-            <div class='col-lg-3 mx-3'>
+            <div v-if='device.active' class='col-lg-3 mx-3'>
                 <div class="row">
                     <div class='col'>
                         <h5>Rotation</h5>
@@ -272,7 +260,7 @@ function import_settings() {
 
             <!-- Button -->
 
-            <div class='col-lg-3 mx-3'>
+            <div v-if='device.active' class='col-lg-3 mx-3'>
                 <div class="row">
                     <div class="col">
                         <h5>Button</h5>
@@ -353,7 +341,7 @@ function import_settings() {
 
             <!-- LED -->
 
-            <div class='col-lg-2 mx-3'>
+            <div v-if='device.active' class='col-lg-2 mx-3'>
                 <div class="row">
                     <div class="col">
                         <h5>LED</h5>
@@ -433,6 +421,68 @@ function import_settings() {
                 </div>
             </div>
         </div>
+
+        <!-- Modals -->
+
+        <Modal v-model="flashModal" maxwidth="20%" closeable header="Advanced Functions">
+            <div class="row mx-2 my-1">
+                <div class="col mb-1">
+                    <p class="text-center text-warning">Warning! Only mess with this if you're
+                        quite sure you know what you're doing...</p>
+                    <p>Instructions for performing the firmware update are available
+                        <a href='https://skilbeck.com/tiny-usb-midi-knob' target="_blank" rel="noreferrer noopener">
+                            here.
+                        </a>
+                        To get back to normal mode you can unplug the device and plug it back in.
+                    </p>
+                    <p></p>
+                </div>
+            </div>
+            <div class="row mx-2 my-4">
+                <div class="col text-center">
+                    <button class='btn btn-sm btn-danger' v-on:click='midi.flash_mode(device.device_index)'>
+                        Put device in Firmware Update Mode
+                    </button>
+                </div>
+            </div>
+        </Modal>
+
+        <Modal v-model="importModal" maxwidth="20%" closeable header="Import Settings">
+            <div class="row mx-2 my-2">
+                <div class="col mb-2">
+                    <input type="file" id="import_settings" />
+                </div>
+            </div>
+            <div class="row mx-2 my-3">
+                <div class="col text-center">
+                    <button class="btn btn-sm btn-primary">
+                        Import
+                    </button>
+                </div>
+            </div>
+            <div class="row mx-2 my-3">
+                <div class="col text-center">
+                    This is not yet implemented, sorry
+                </div>
+            </div>
+        </Modal>
+
+        <Modal v-model="disconnectModal" maxwidth="20%" closeable header="Disconnect">
+            <div class="row mx-2">
+                <div class="col text-center">
+                    Sorry, I can't seem to make disconnect work. You can reload the page to disconnect all devices
+                    though...
+                </div>
+            </div>
+            <div class="row mt-4 mb-2">
+                <div class="col text-center">
+                    <button class="btn btn-primary btn-sm" @click="reload_page()">
+                        Reload this page
+                    </button>
+                </div>
+            </div>
+        </Modal>
+
     </div>
 </template>
 

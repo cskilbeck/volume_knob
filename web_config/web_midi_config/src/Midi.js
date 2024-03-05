@@ -323,16 +323,16 @@ const MIDI_MODEL_NUMBER_HIGH = 0x33;
 
 //////////////////////////////////////////////////////////////////////
 
-function handle_new_device(input_port, data) {
+function on_device_id_response(input_port, data) {
 
     let reply_index = data[2];
-    let output_port = output_ports[reply_index];
-    if (output_port == undefined) {
+    let device = midi_devices.value[reply_index];
+    if (device == undefined) {
         console.log(`Midi from unknown device: ${device.name}`);
         return;
     }
 
-    console.log(`New device on ${output_port.id} / ${input_port.id} ?`);
+    console.log(`New device on ${device.output.id} / ${input_port.id} ?`);
 
     // check MANUFACTURER, FAMILY, MODEL
     if (!(data[5] == MIDI_MANUFACTURER_ID &&
@@ -352,26 +352,14 @@ function handle_new_device(input_port, data) {
     let b2 = data[12] || 0;
     let b3 = data[13] || 0;
 
-    let serial_number = b3 | (b2 << 7) | (b1 << 14) | (b0 << 21);
-    let serial_str = serial_number.toString(16).toUpperCase()
+    device.serial_number = b3 | (b2 << 7) | (b1 << 14) | (b0 << 21);
+    device.serial_str = device.serial_number.toString(16).toUpperCase();
 
     // add a new device to the array of midi_devices
 
-    let device = {
-        device_index: reply_index,
-        serial_number: serial_number,
-        serial_str: serial_str,
-        input: input_port,
-        output: output_port,
-        name: input_port.name,
-        firmware_version: 0x0000,
-        config: ref({
-        })
-    };
-    device.config.value = default_config;
-    midi_devices.value[reply_index] = device;
-
     console.log(`Found device ${device.name}, serial # ${device.serial_str}, ${midi_devices.value.length} device(s) so far...`);
+
+    device.input = input_port;
 
     // get the config
     read_flash(reply_index);
@@ -457,22 +445,66 @@ function init_devices() {
 
     console.log(`${midi.inputs.size} inputs, ${midi.outputs.size} outputs`);
 
+    // initial setup of callbacks for midi messages
+
     for (const input of midi.inputs.values()) {
         console.log(`Found ${input.name} at ${input.id}`);
-        input.onmidimessage = function (event) {
-            on_midi_message(input, event);
-        };
+        input.addEventListener("midimessage", on_midi_message);
     }
 
+    // midi_devices[] is based on output ports
+    // inputs get assigned when replies come back
+
     for (const output of midi.outputs.values()) {
+
         console.log(`Found ${output.name} at ${output.id}`);
 
+        let device = {
+            device_index: device_index,
+            serial_number: 0,
+            serial_str: "#######",
+            input: null,
+            output: output,
+            name: output.name,
+            firmware_version: 0x0000,
+            config: ref({})
+        };
+        device.config.value = default_config;
+
+        Object.defineProperty(device, 'active', {
+            get() {
+                return this.input != null && this.input.state == 'connected';
+            }
+        });
+
+        midi_devices.value[device_index] = device;
+
         // for looking up the device when the response arrives
-        output_ports[device_index] = output;
-        output.send([0xF0, 0x7E, device_index & 0x7f, 0x06, sysex_request_device_id, 0xF7]);
+        //output_ports[device_index] = output;
+        //output.send([0xF0, 0x7E, device_index & 0x7f, 0x06, sysex_request_device_id, 0xF7]);
+
         device_index += 1;
     }
     console.log(`init devices scanned ${device_index} devices`);
+    console.log(midi_devices);
+}
+
+//////////////////////////////////////////////////////////////////////
+
+function toggle_device_connection(device_index) {
+    console.log(`Toggle device ${device_index} connection`);
+    let d = midi_devices.value[device_index];
+    console.log(d);
+    if (d != null) {
+        if (d.active) {
+            console.log(`Closing ${d.input.name}:${d.input.state}`);
+            d.input.close();
+            d.output.close();
+            console.log("Closed");
+        } else {
+            d.output.send([0xF0, 0x7E, device_index & 0x7f, 0x06, sysex_request_device_id, 0xF7]);
+        }
+    }
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -499,7 +531,11 @@ function get_sysex_device_index(data) {
 
 //////////////////////////////////////////////////////////////////////
 
-function on_midi_message(input_port, event) {
+function on_midi_message(event) {
+
+    let input_port = event.target;
+
+    console.log(event);
 
     const data = event.data;
 
@@ -513,7 +549,7 @@ function on_midi_message(input_port, event) {
 
             // device ID response
             case sysex_response_device_id: {
-                handle_new_device(input_port, data);
+                on_device_id_response(input_port, data);
             } break;
 
             // read flash memory response
@@ -555,6 +591,8 @@ function on_midi_message(input_port, event) {
     }
 }
 
+//////////////////////////////////////////////////////////////////////
+
 function get_config_json(device_index) {
     let c = {
         error: "No such device"
@@ -567,27 +605,48 @@ function get_config_json(device_index) {
     return JSON.stringify(c, null, 4);
 }
 
+//////////////////////////////////////////////////////////////////////
+
 let on_config_changed_callback = null;
 
 function on_config_changed(callback) {
     on_config_changed_callback = callback;
 }
 
-function on_midi(midi_obj) {
+//////////////////////////////////////////////////////////////////////
+
+function on_midi_startup(midi_obj) {
+
     midi = midi_obj;
+
     midi.addEventListener('statechange', function (event) {
+
         console.log(`statechange: ${event.port.name} (${event.port.id}): ${event.port.state}`);
-        init_devices();
+
+        if (event.port.state == 'disconnected') {
+            for (let device of midi_devices.value) {
+                if (device.input && device.input.id == event.port.id) {
+                    device.input = null;
+                } else if (device.output && device.output.id == event.port.id) {
+                    device.output = null;
+                }
+            }
+        } else if (event.port.state == 'connected') {
+            for (let device of midi_devices.value) {
+            }
+        }
     });
-    init_devices();
 }
+
+//////////////////////////////////////////////////////////////////////
 
 export default {
     midi,
     midi_devices,
+    on_midi_startup,
     init_devices,
+    toggle_device_connection,
     on_config_changed,
-    on_midi,
     flash_device_led,
     flash_mode,
     read_flash,
