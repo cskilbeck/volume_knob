@@ -41,7 +41,7 @@ const props = defineProps({
     rounded: {
         type: Number,
         required: false,
-        default: 0.5,
+        default: 1,
         description: "How rounded, 0..1 where 0 = square, 1 = rounded"
     },
     transitionTime: {
@@ -206,7 +206,7 @@ onMounted(() => {
     top: 50%;
     border-radius: v-bind('(dotSize * props.rounded * 0.5) + "px"');
     background-color: v-bind('`${props.uncheckedPillColor}`');
-    transform: v-bind('`translate(${dotBorder - props.borderPixels}px, ${v_offset})`');
+    transform: v-bind('`translate(${dotBorder - props.borderPixels + 0.5}px, ${v_offset})`');
     transition: transform v-bind('`${trans}s`'),
     background-color v-bind('`${trans}s`');
 }
