@@ -109,7 +109,11 @@ void timer0_irq_handler(void) __interrupt(INT_NO_TMR0)
 
 //////////////////////////////////////////////////////////////////////
 // Send a control change notification
-// Could be 7 bit or 14 bit value
+//
+//  if is_extended
+//      send 14 bit value as two midi packets
+//  else
+//      send 7 bit value as a single midi packet
 
 void send_cc(uint8 channel, uint8 cc[2], uint16 value, bool is_extended)
 {
@@ -147,38 +151,47 @@ void send_button_cc()
 
 //////////////////////////////////////////////////////////////////////
 
+int16 rotation_velocity = 0;
+uint8 deceleration_ticks = 0;
+
 void do_absolute_rotation(int16 offset)
 {
     bool at_limit = false;
-    int16 cur = config.rot_current_value;
-    cur += offset;
-    if(cur < (int16)config.rot_limit_low) {
+    int32 cur = config.rot_current_value;
+    cur += (int32)offset * (rotation_velocity + 1);
+    if(cur < (int32)config.rot_limit_low) {
         cur = config.rot_limit_low;
         at_limit = true;
-    } else if(cur > (int16)config.rot_limit_high) {
+    } else if(cur > (int32)config.rot_limit_high) {
         cur = config.rot_limit_high;
         at_limit = true;
     }
-    config.rot_current_value = cur;
+    config.rot_current_value = (int16)cur;
     send_cc(get_rot_channel(), config.rot_control, cur, (config.flags & cf_rotate_extended) != 0);
 
     if((config.flags & cf_led_flash_on_rot) != 0 || (at_limit && (config.flags & cf_led_flash_on_limit) != 0)) {
         led_set_flash();
     }
+    print_uint16("VEL", rotation_velocity);
 }
 
 //////////////////////////////////////////////////////////////////////
 
 void do_relative_rotation(int16 offset)
 {
-    int16 cur = config.rot_zero_point;
-    cur += offset;
+    int32 cur = config.rot_zero_point;
+    cur += (int32)offset * (rotation_velocity + 1);
+    int16 cur_limit = 0x7f;
+    bool extended = (config.flags & cf_rotate_extended) != 0;
+    if(extended) {
+        cur_limit = 0x3fff;
+    }
     if(cur < 0) {
         cur = 0;
-    } else if(cur > 0x3fff) {
-        cur = 0x3fff;
+    } else if(cur > cur_limit) {
+        cur = cur_limit;
     }
-    send_cc(get_rot_channel(), config.rot_control, cur, (config.flags & cf_rotate_extended) != 0);
+    send_cc(get_rot_channel(), config.rot_control, (int16)cur, extended);
 
     if((config.flags & cf_led_flash_on_rot) != 0) {
         led_set_flash();
@@ -265,6 +278,7 @@ int main()
         }
 
         if(tick) {
+            deceleration_ticks += 1;
             tick = 0;
             if(button_state) {
                 press_time += 1;
@@ -344,6 +358,16 @@ int main()
                             do_relative_rotation(delta);
                         } else {
                             do_absolute_rotation(delta);
+                        }
+
+                        rotation_velocity += get_acceleration() << 2;
+                        deceleration_ticks = 0;
+
+                    } else {
+                        if(deceleration_ticks == 50) {
+                            deceleration_ticks = 0;
+                            rotation_velocity >>= 1;
+                            putstr("!");
                         }
                     }
                 }
