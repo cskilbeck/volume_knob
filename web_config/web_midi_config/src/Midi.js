@@ -563,10 +563,9 @@ function on_midi_message(event) {
                     let flash_data = [];
                     bits7_to_bytes(data, 5, FLASH_MAX_LEN, flash_data);
                     console.log(`FLASH: ${bytes_to_hex_string(flash_data, flash_data.length, " ")}`);
-                    let cfg = config_from_bytes(flash_data);
                     d.config.value = config_from_bytes(flash_data);
-                    if (on_config_changed_callback != null) {
-                        on_config_changed_callback(d);
+                    if (on_config_loaded_callback != null) {
+                        on_config_loaded_callback(d);
                     }
                     let s = bytes_to_hex_string(flash_data, FLASH_MAX_LEN);
                     console.log(`Memory for device ${d.serial_str}: ${s}`);
@@ -581,6 +580,9 @@ function on_midi_message(event) {
                 let d = midi_devices.value[device_index];
                 if (d !== undefined) {
                     console.log(`Device ${d.serial_str} wrote flash data`);
+                    if (on_config_saved_callback != null) {
+                        on_config_saved_callback(d);
+                    }
                 }
             } break;
 
@@ -611,10 +613,18 @@ function get_config_json(device_index) {
 
 //////////////////////////////////////////////////////////////////////
 
-let on_config_changed_callback = null;
+let on_config_loaded_callback = null;
 
-function on_config_changed(callback) {
-    on_config_changed_callback = callback;
+function on_config_loaded(callback) {
+    on_config_loaded_callback = callback;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+let on_config_saved_callback = null;
+
+function on_config_saved(callback) {
+    on_config_saved_callback = callback;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -651,7 +661,8 @@ export default {
     on_midi_startup,
     init_devices,
     toggle_device_connection,
-    on_config_changed,
+    on_config_loaded,
+    on_config_saved,
     flash_device_led,
     flash_mode,
     read_flash,

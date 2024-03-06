@@ -1,6 +1,6 @@
 <script setup>
 
-import { watch, getCurrentInstance, ref } from 'vue';
+import { toRaw, watch, getCurrentInstance, ref } from 'vue';
 
 import Toggle from './Toggle.vue'
 import Modal from './Modal.vue'
@@ -21,11 +21,35 @@ const flashModal = ref(false);
 const importModal = ref(false);
 const disconnectModal = ref(false);
 
+let config_loaded = false;
+let config_changed = ref(false);
+
 // sanitize the values
+
+function shallowEqual(object1, object2) {
+
+    const keys1 = Object.keys(object1);
+    const keys2 = Object.keys(object2);
+
+    if (keys1.length !== keys2.length) {
+        return false;
+    }
+
+    for (let key of keys1) {
+        if (key != 'value') {
+            if (object1[key] != object2[key]) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+let loaded_config = {};
 
 watch(props.device.config, (o, n) => {
 
-    let c = o;
+    let c = o.value;
 
     let max_zero_point = c.cf_rotate_extended ? (1 << 14) : (1 << 7);
     let max_rot_value = max_zero_point - 1;
@@ -46,6 +70,10 @@ watch(props.device.config, (o, n) => {
     c.btn_channel = Math.max(0, Math.min(c.btn_channel, 15));
 
     n.value = c;
+
+    config_changed.value = config_loaded && !shallowEqual(toRaw(c), loaded_config);
+    config_loaded = true;
+
 });
 
 const instance = getCurrentInstance();
@@ -54,26 +82,25 @@ function force_update() {
     instance?.proxy?.$forceUpdate();
 }
 
-midi.on_config_changed((device) => {
+midi.on_config_loaded((device) => {
     props.device.config = device.config;
-    force_update();
+    Object.assign(loaded_config, toRaw(props.device.config));
+    config_changed.value = false;
 });
 
-function import_settings() {
-    // use fetch to send the file to some noddy thing on the server which just sends it back
-    // do some prompt when it comes back in case it takes a while
-}
+midi.on_config_saved((device) => {
+    Object.assign(loaded_config, toRaw(props.device.config));
+    config_changed.value = false;
+});
+
 
 function toggleConnection(device) {
     if (!device.active) {
         midi.toggle_device_connection(device.device_index)
+        config_changed.value = false;
     } else {
         disconnectModal.value = true;
     }
-}
-
-function reload_page() {
-    location.reload(true);
 }
 
 </script>
@@ -124,7 +151,8 @@ function reload_page() {
                             </button>
 
                             <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
-                                @click='midi.write_flash(device.device_index)'>
+                                :class="{ 'red-text': config_changed }"
+                                @click='midi.write_flash(device.device_index); config_changed = false'>
                                 <span class="mx-2">Store to device</span>
                             </button>
 
@@ -496,6 +524,17 @@ function reload_page() {
 
 .smaller-text {
     font-size: smaller;
+}
+
+
+[data-bs-theme='light'] .red-text {
+    color: #C06000;
+    font-weight: 600;
+}
+
+[data-bs-theme='dark'] .red-text {
+    color: orange;
+    font-weight: 600;
 }
 
 .slim-button {
