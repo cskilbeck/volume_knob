@@ -114,17 +114,17 @@ function reload_page() {
                         <div class='btn-group-vertical' role="group" v-if='device.active'>
 
                             <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
-                                v-on:click='midi.flash_device_led(device.device_index)'>
+                                @click='midi.flash_device_led(device.device_index)'>
                                 <span class="mx-2">Flash LED</span>
                             </button>
 
                             <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
-                                v-on:click='midi.read_flash(device.device_index)'>
+                                @click='midi.read_flash(device.device_index)'>
                                 <span class="mx-2">Read from device</span>
                             </button>
 
                             <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
-                                v-on:click='midi.write_flash(device.device_index)'>
+                                @click='midi.write_flash(device.device_index)'>
                                 <span class="mx-2">Store to device</span>
                             </button>
 
@@ -440,7 +440,8 @@ function reload_page() {
             </div>
             <div class="row mx-2 my-4">
                 <div class="col text-center">
-                    <button class='btn btn-sm btn-danger' v-on:click='midi.flash_mode(device.device_index)'>
+                    <button class='btn btn-sm btn-danger'
+                        @click='midi.flash_mode(device.device_index); flashModal = false'>
                         Put device in Firmware Update Mode
                     </button>
                 </div>

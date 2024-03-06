@@ -86,4 +86,8 @@ navigator.requestMIDIAccess({ "sysex": true })
 .container-wide {
   min-width: 80%;
 }
+
+body {
+  transition: background-color 0.2s, color 0.2s;
+}
 </style>
