@@ -457,7 +457,7 @@ function toggleConnection(device) {
         <Modal v-model="flashModal" maxwidth="25%" closeable header="Advanced Functions">
             <div class="row mx-2 my-1">
                 <div class="col">
-                    <p class="text-center text-warning">Warning! Only click this if you
+                    <p class="text-center red-text">Warning! Only click this if you
                         know what you're doing</p>
                     <p class="text-center">
                         Instructions for firmware updating are
