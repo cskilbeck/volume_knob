@@ -79,7 +79,7 @@ function reload_page() {
 </script>
 
 <template>
-    <div class="container border rounded-3 py-3">
+    <div class="container border rounded-3 py-3 bg-device border-secondary bg-secondary-subtle">
         <div class='row p-1 pb-1'>
 
             <!-- Name, Serial, Buttons -->
@@ -98,14 +98,14 @@ function reload_page() {
                             @click='toggleConnection(device)'>
                             {{ !device.active ? 'Connect' : 'Disconnect' }}
                         </button>
-                        <div class="small mt-3" :class="{ hide: !device.active }">
+                        <div class="small mt-3" v-if="device.active">
                             Firmware
                             <span class="text-primary-emphasis font-monospace">
                                 v{{ device.firmware_version >> 8 }}.{{ (device.firmware_version &
                                 0x7f).toString(10).padStart(2, '0') }}
                             </span>
                         </div>
-                        <div class="small" :class="{ hide: !device.active }">
+                        <div class="small" v-if="device.active">
                             Serial #
                             <span class="text-body-secondary font-monospace">{{ device.serial_str }}</span>
                         </div>
@@ -151,13 +151,13 @@ function reload_page() {
 
             <!-- Rotation -->
 
-            <div v-if='device.active' class='col-lg-3 mx-3'>
-                <div class="row">
+            <div v-if='device.active' class='col-lg-3 mx-3 bg-body border border-secondary rounded'>
+                <div class="row pt-2">
                     <div class='col'>
                         <h5>Rotation</h5>
                     </div>
                 </div>
-                <div class="row pt-2 border rounded-3">
+                <div class="row pt-2">
                     <div class="col-lg">
                         <div class="row p-1">
                             <div class="col">
@@ -181,10 +181,11 @@ function reload_page() {
                                 <Toggle v-model="device.config.cf_rotate_relative"
                                     :checked-text-color='"var(--bs-btn-color)"'
                                     :unchecked-text-color='"var(--bs-btn-color)"'
-                                    :checked-background-color='"var(--bs-secondary-bg)"'
-                                    :unchecked-background-color='"var(--bs-secondary-bg)"'
-                                    :border-color='"var(--bs-border-color)"' :unchecked-pill-color='"var(--bs-body-bg)"'
-                                    :checked-pill-color='"var(--bs-body-bg)"' :checked-text='"Relative"'
+                                    :checked-background-color='"var(--bs-tertiary-bg)"'
+                                    :unchecked-background-color='"var(--bs-tertiary-bg)"'
+                                    :border-color='"var(--bs-border-color)"'
+                                    :unchecked-pill-color='"var(--bs-border-color)"'
+                                    :checked-pill-color='"var(--bs-border-color)"' :checked-text='"Relative"'
                                     :unchecked-text='"Absolute"' />
                             </div>
                         </div>
@@ -217,7 +218,7 @@ function reload_page() {
                         </div>
                     </div>
                     <div class='col-lg'>
-                        <div class="row p-1">
+                        <div class="row px-2">
                             <div class="col">
                                 <div class="form-check">
                                     <label class="form-check-label user-select-none" for="extended_check_rot">Extended
@@ -260,13 +261,13 @@ function reload_page() {
 
             <!-- Button -->
 
-            <div v-if='device.active' class='col-lg-3 mx-3'>
-                <div class="row">
+            <div v-if='device.active' class='col-lg-3 mx-3 bg-body border border-secondary rounded'>
+                <div class="row pt-2">
                     <div class="col">
                         <h5>Button</h5>
                     </div>
                 </div>
-                <div class="row pt-2 border rounded-3">
+                <div class="row pt-2">
                     <div class="col-lg">
                         <div class="row p-1">
                             <div class="col">
@@ -282,10 +283,11 @@ function reload_page() {
                                 <Toggle v-model="device.config.cf_btn_momentary"
                                     :checked-text-color='"var(--bs-btn-color)"'
                                     :unchecked-text-color='"var(--bs-btn-color)"'
-                                    :checked-background-color='"var(--bs-secondary-bg)"'
-                                    :unchecked-background-color='"var(--bs-secondary-bg)"'
-                                    :border-color='"var(--bs-border-color)"' :unchecked-pill-color='"var(--bs-body-bg)"'
-                                    :checked-pill-color='"var(--bs-body-bg)"' :checked-text='"Momentary"'
+                                    :checked-background-color='"var(--bs-tertiary-bg)"'
+                                    :unchecked-background-color='"var(--bs-tertiary-bg)"'
+                                    :border-color='"var(--bs-border-color)"'
+                                    :unchecked-pill-color='"var(--bs-border-color)"'
+                                    :checked-pill-color='"var(--bs-border-color)"' :checked-text='"Momentary"'
                                     :unchecked-text='"Toggle"' />
                             </div>
                         </div>
@@ -313,7 +315,7 @@ function reload_page() {
                         </div>
                     </div>
                     <div class="col-lg">
-                        <div class="row p-1">
+                        <div class="row px-2">
                             <div class="col">
                                 <div class="form-check">
                                     <label class="form-check-label user-select-none" for="extended_check_btn">Extended
@@ -341,13 +343,13 @@ function reload_page() {
 
             <!-- LED -->
 
-            <div v-if='device.active' class='col-lg-2 mx-3'>
-                <div class="row">
+            <div v-if='device.active' class='col-lg-2 mx-3 bg-body border border-secondary rounded'>
+                <div class="row pt-2">
                     <div class="col">
                         <h5>LED</h5>
                     </div>
                 </div>
-                <div class="row pt-2 border rounded-3 px-1">
+                <div class="row px-1">
                     <div class="col">
                         <div class="row my-1">
                             <div class="col">
@@ -503,5 +505,9 @@ function reload_page() {
 
 .input-group-text {
     font-size: smaller;
+}
+
+.bg-device {
+    background-color: var(--bs-body-bg);
 }
 </style>

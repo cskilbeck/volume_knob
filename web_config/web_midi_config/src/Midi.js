@@ -14,9 +14,11 @@ let midi = null;
 // all the midi devices and configs which have responded to device id requests
 // position in the array is device_index
 
-// configs in a separate array for reactivity purposes
-
 let midi_devices = ref([]);
+
+// if a scan has been done (for show/hide device count)
+
+let scanned = ref({});
 
 //////////////////////////////////////////////////////////////////////
 // output ports which have been sent a device id request
@@ -443,6 +445,8 @@ function init_devices() {
     output_ports = [];
     device_index = 0;
 
+    scanned.done = true;
+
     console.log(`${midi.inputs.size} inputs, ${midi.outputs.size} outputs`);
 
     // initial setup of callbacks for midi messages
@@ -643,6 +647,7 @@ function on_midi_startup(midi_obj) {
 export default {
     midi,
     midi_devices,
+    scanned,
     on_midi_startup,
     init_devices,
     toggle_device_connection,

@@ -32,18 +32,19 @@ navigator.requestMIDIAccess({ "sysex": true })
     <div class="container container-wide">
       <div class="row mb-3">
         <div class="col-2">
-          <span>
-            Found {{ midi.midi_devices.value.length }} device{{ midi.midi_devices.value.length != 1 ? "s" : "" }}
+          <span v-show='midi.scanned.done'>
+            Found {{ midi.midi_devices.value.length }}
+            device{{ midi.midi_devices.value.length != 1 ? "s" : "" }}
           </span>
         </div>
         <div class="col-8 text-center">
-          <button class="btn border tertiary-bg btn-sm" @click="midi.init_devices()">
+          <button class="btn border border-secondary tertiary-bg btn-sm" @click="midi.init_devices()">
             Scan
           </button>
         </div>
         <div class="col-2 text-end">
           <DarkMode />
-          <button @click="closeableModal = true" class="btn tertiary-bg border btn-sm">
+          <button @click="closeableModal = true" class="btn tertiary-bg border border-secondary btn-sm">
             About
           </button>
           <Modal v-model="closeableModal" maxwidth="30%" closeable
