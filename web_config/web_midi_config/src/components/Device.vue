@@ -136,7 +136,7 @@ function reload_page() {
 
                             <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
                                 @click="importModal = true">
-                                <span class="mx-2">Read from device</span>
+                                <span class="mx-2">Import config</span>
                             </button>
 
                             <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
@@ -424,21 +424,22 @@ function reload_page() {
 
         <!-- Modals -->
 
-        <Modal v-model="flashModal" maxwidth="20%" closeable header="Advanced Functions">
+        <Modal v-model="flashModal" maxwidth="25%" closeable header="Advanced Functions">
             <div class="row mx-2 my-1">
-                <div class="col mb-1">
-                    <p class="text-center text-warning">Warning! Only mess with this if you're
-                        quite sure you know what you're doing...</p>
-                    <p>Instructions for performing the firmware update are available
+                <div class="col">
+                    <p class="text-center text-warning">Warning! Only click this if you
+                        know what you're doing</p>
+                    <p class="text-center">
+                        Instructions for firmware updating are
                         <a href='https://skilbeck.com/tiny-usb-midi-knob' target="_blank" rel="noreferrer noopener">
-                            here.
-                        </a>
-                        To get back to normal mode you can unplug the device and plug it back in.
+                            available here</a>.
                     </p>
-                    <p></p>
+                    <p class="text-center">
+                        To get back to normal mode, unplug and plug it back in.
+                    </p>
                 </div>
             </div>
-            <div class="row mx-2 my-4">
+            <div class="row mx-2 my-2">
                 <div class="col text-center">
                     <button class='btn btn-sm btn-danger'
                         @click='midi.flash_mode(device.device_index); flashModal = false'>
@@ -450,8 +451,8 @@ function reload_page() {
 
         <Modal v-model="importModal" maxwidth="20%" closeable header="Import Settings">
             <div class="row mx-2 my-2">
-                <div class="col mb-2">
-                    <input type="file" id="import_settings" />
+                <div class="col mb-2 text-center">
+                    <input class="btn btn-sm border" type="file" id="import_settings" />
                 </div>
             </div>
             <div class="row mx-2 my-3">

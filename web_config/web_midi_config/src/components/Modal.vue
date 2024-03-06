@@ -48,10 +48,14 @@ const emit = defineEmits();
                     class="modal1-dialog h-100 overflow-auto align-items-center d-flex z3">
                     <div class="card px-0" :class="(container == null) ? 'container' : `container-${container}`"
                         :style="(maxwidth != null) ? `max-width: ${maxwidth}` : null">
-                        <div class="card-header h5 text-center pt-2">
-                            {{ header }}
-                            <button v-if="closeable" @click='$emit("update:modelValue", false)'
-                                class="btn btn-text btn-close float-end"></button>
+                        <div class="card-header h5 text-center py-2">
+                            <span>
+                                {{ header }}
+                            </span>
+                            <span class="position-absolute top-0 end-0 my-2 mx-2">
+                                <button v-if="closeable" @click='$emit("update:modelValue", false)'
+                                    class="btn btn-text btn-close float-end"></button>
+                            </span>
                         </div>
                         <div class="card-body">
                             <slot></slot>
