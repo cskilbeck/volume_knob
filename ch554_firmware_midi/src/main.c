@@ -18,7 +18,7 @@
 
 //////////////////////////////////////////////////////////////////////
 
-#define DEBOUNCE_TIME 0x20u
+#define DEBOUNCE_TIME 0x10u
 #define T2_DEBOUNCE (0xFFu - DEBOUNCE_TIME)
 
 #define ROT_CLOCKWISE 2
