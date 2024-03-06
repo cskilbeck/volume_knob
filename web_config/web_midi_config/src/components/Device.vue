@@ -469,17 +469,16 @@ function reload_page() {
             </div>
         </Modal>
 
-        <Modal v-model="disconnectModal" maxwidth="20%" closeable header="Disconnect">
+        <Modal v-model="disconnectModal" maxwidth="25%" closeable header="Disconnect">
             <div class="row mx-2">
                 <div class="col text-center">
-                    Sorry, I can't seem to make disconnect work. You can reload the page to disconnect all devices
-                    though...
+                    Sorry, I can't seem to make disconnect work. You have to close the tab to disconnect all devices.
                 </div>
             </div>
             <div class="row mt-4 mb-2">
                 <div class="col text-center">
-                    <button class="btn btn-primary btn-sm" @click="reload_page()">
-                        Reload this page
+                    <button class="btn btn-primary btn-sm" @click="disconnectModal = false">
+                        Bummer
                     </button>
                 </div>
             </div>
