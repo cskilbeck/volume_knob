@@ -100,17 +100,40 @@ inline void led_set_flash()
 
 //////////////////////////////////////////////////////////////////////
 
+void timer0_irq_handler(void) __interrupt(INT_NO_TMR0)
+{
+    TL0 = TIMER0_LOW;
+    TH0 = TIMER0_HIGH;
+    tick = 1;
+}
+
+//////////////////////////////////////////////////////////////////////
+// Send a control change notification
+// Could be 7 bit or 14 bit value
+
 void send_cc(uint8 channel, uint8 cc[2], uint16 value, bool is_extended)
 {
     uint8 packet[MIDI_PACKET_SIZE];
+
+    // CC header
     packet[0] = 0x0B;
     packet[1] = 0xB0 | channel;
+
+    // cc[0] is the value to send (or MSB of value)
     packet[2] = cc[0];
+
+    // send MSB first if extended mode
     if(is_extended) {
+
+        // send MSB of value
         packet[3] = (value >> 7) & 0x7F;
         queue_put(packet);
+
+        // cc[1] is LSB of value
         packet[2] = cc[1];
     }
+
+    // send value (or LSB of value)
     packet[3] = value & 0x7f;
     queue_put(packet);
 }
@@ -142,15 +165,6 @@ void do_absolute_rotation(int16 offset)
     if((config.flags & cf_led_flash_on_rot) != 0 || (at_limit && (config.flags & cf_led_flash_on_limit) != 0)) {
         led_set_flash();
     }
-}
-
-//////////////////////////////////////////////////////////////////////
-
-void timer0_irq_handler(void) __interrupt(INT_NO_TMR0)
-{
-    TL0 = TIMER0_LOW;
-    TH0 = TIMER0_HIGH;
-    tick = 1;
 }
 
 //////////////////////////////////////////////////////////////////////
