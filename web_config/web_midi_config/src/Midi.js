@@ -186,8 +186,6 @@ function config_from_bytes(bytes) {
     config.cf_led_track_button_toggle = (flags & 0x0200) != 0;
     config.cf_acceleration = (flags & 0x0C00) >> 10;
 
-    console.log(config);
-
     return config;
 }
 
@@ -431,7 +429,7 @@ function bytes_to_hex_string(data, len, separator) {
 // send some data to a midi device
 
 function send_midi(midi_device, data) {
-    console.log(`SEND: ${bytes_to_hex_string(data, data.length, " ")}`);
+    // console.log(`SEND: ${bytes_to_hex_string(data, data.length, " ")}`);
     midi_device.output.send(data);
 }
 
@@ -490,7 +488,7 @@ function init_devices() {
         device_index += 1;
     }
     console.log(`init devices scanned ${device_index} devices`);
-    console.log(midi_devices);
+    // console.log(midi_devices);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -498,7 +496,6 @@ function init_devices() {
 function toggle_device_connection(device_index) {
     console.log(`Toggle device ${device_index} connection`);
     let d = midi_devices.value[device_index];
-    console.log(d);
     if (d != null) {
         if (d.active) {
             console.log(`Closing ${d.input.name}:${d.input.state}`);
@@ -539,11 +536,11 @@ function on_midi_message(event) {
 
     let input_port = event.target;
 
-    console.log(event);
+    // console.log(event);
 
     const data = event.data;
 
-    console.log(`RECV: ${bytes_to_hex_string(data, data.length, " ")}`);
+    // console.log(`RECV: ${bytes_to_hex_string(data, data.length, " ")}`);
 
     let device_index = get_sysex_device_index(data);
 
@@ -562,7 +559,6 @@ function on_midi_message(event) {
                 if (d !== undefined) {
                     let flash_data = [];
                     bits7_to_bytes(data, 5, FLASH_MAX_LEN, flash_data);
-                    console.log(`FLASH: ${bytes_to_hex_string(flash_data, flash_data.length, " ")}`);
                     d.config.value = config_from_bytes(flash_data);
                     if (on_config_loaded_callback != null) {
                         on_config_loaded_callback(d);
