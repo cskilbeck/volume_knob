@@ -21,7 +21,6 @@ const flashModal = ref(false);
 const importModal = ref(false);
 const disconnectModal = ref(false);
 
-let config_loaded = false;
 let config_changed = ref(false);
 
 // sanitize the values
@@ -36,16 +35,14 @@ function shallowEqual(object1, object2) {
     }
 
     for (let key of keys1) {
-        if (key != 'value') {
-            if (object1[key] != object2[key]) {
-                return false;
-            }
+        if (key != 'value' && object1[key] != object2[key]) {
+            return false;
         }
     }
     return true;
 }
 
-let loaded_config = {};
+let loaded_config = null;
 
 watch(props.device.config, (o, n) => {
 
@@ -71,8 +68,7 @@ watch(props.device.config, (o, n) => {
 
     n.value = c;
 
-    config_changed.value = config_loaded && !shallowEqual(toRaw(c), loaded_config);
-    config_loaded = true;
+    config_changed.value = loaded_config != null && !shallowEqual(toRaw(c), loaded_config);
 
 });
 
@@ -83,14 +79,14 @@ function force_update() {
 }
 
 midi.on_config_loaded((device) => {
-    props.device.config = device.config;
-    Object.assign(loaded_config, toRaw(props.device.config));
     config_changed.value = false;
+    loaded_config = Object.assign({}, toRaw(device.config));
+    props.device.config = device.config;
 });
 
 midi.on_config_saved((device) => {
-    Object.assign(loaded_config, toRaw(props.device.config));
     config_changed.value = false;
+    loaded_config = Object.assign({}, toRaw(device.config));
 });
 
 
