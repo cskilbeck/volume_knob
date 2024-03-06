@@ -44,26 +44,31 @@ __xdata save_buffer_t save_buffer;
 __xdata uint8 queue_buffer[MIDI_QUEUE_LEN * MIDI_PACKET_SIZE];
 __xdata config_t config;
 
+// timer 0 irq sets this flag
+
+volatile uint8 tick;
+
 uint8 button_value_index = 0;
 
 //////////////////////////////////////////////////////////////////////
 // led pulse/fade thing to indicate rotary/button activity
 
-uint8 const led_gamma[256] = { 0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-                               0,   0,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   2,   2,   2,   2,   2,   2,   2,   2,   3,   3,   3,
-                               3,   3,   3,   3,   4,   4,   4,   4,   4,   5,   5,   5,   5,   6,   6,   6,   6,   7,   7,   7,   7,   8,   8,   8,   9,   9,
-                               9,   10,  10,  10,  11,  11,  11,  12,  12,  13,  13,  13,  14,  14,  15,  15,  16,  16,  17,  17,  18,  18,  19,  19,  20,  20,
-                               21,  21,  22,  22,  23,  24,  24,  25,  25,  26,  27,  27,  28,  29,  29,  30,  31,  32,  32,  33,  34,  35,  35,  36,  37,  38,
-                               39,  39,  40,  41,  42,  43,  44,  45,  46,  47,  48,  49,  50,  50,  51,  52,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63,
-                               64,  66,  67,  68,  69,  70,  72,  73,  74,  75,  77,  78,  79,  81,  82,  83,  85,  86,  87,  89,  90,  92,  93,  95,  96,  98,
-                               99,  101, 102, 104, 105, 107, 109, 110, 112, 114, 115, 117, 119, 120, 122, 124, 126, 127, 129, 131, 133, 135, 137, 138, 140, 142,
-                               144, 146, 148, 150, 152, 154, 156, 158, 160, 162, 164, 167, 169, 171, 173, 175, 177, 180, 182, 184, 186, 189, 191, 193, 196, 198,
-                               200, 203, 205, 208, 210, 213, 215, 218, 220, 223, 225, 228, 231, 233, 236, 239, 241, 244, 247, 249, 252, 255 };
+uint8 const led_gamma[256] = {
+    0u,   0u,   0u,   0u,   0u,   0u,   0u,   0u,   0u,   0u,   0u,   0u,   0u,   0u,   0u,   0u,   0u,   0u,   0u,   0u,   0u,   0u,   0u,   0u,   0u,   0u,
+    0u,   0u,   1u,   1u,   1u,   1u,   1u,   1u,   1u,   1u,   1u,   1u,   1u,   1u,   1u,   2u,   2u,   2u,   2u,   2u,   2u,   2u,   2u,   3u,   3u,   3u,
+    3u,   3u,   3u,   3u,   4u,   4u,   4u,   4u,   4u,   5u,   5u,   5u,   5u,   6u,   6u,   6u,   6u,   7u,   7u,   7u,   7u,   8u,   8u,   8u,   9u,   9u,
+    9u,   10u,  10u,  10u,  11u,  11u,  11u,  12u,  12u,  13u,  13u,  13u,  14u,  14u,  15u,  15u,  16u,  16u,  17u,  17u,  18u,  18u,  19u,  19u,  20u,  20u,
+    21u,  21u,  22u,  22u,  23u,  24u,  24u,  25u,  25u,  26u,  27u,  27u,  28u,  29u,  29u,  30u,  31u,  32u,  32u,  33u,  34u,  35u,  35u,  36u,  37u,  38u,
+    39u,  39u,  40u,  41u,  42u,  43u,  44u,  45u,  46u,  47u,  48u,  49u,  50u,  50u,  51u,  52u,  54u,  55u,  56u,  57u,  58u,  59u,  60u,  61u,  62u,  63u,
+    64u,  66u,  67u,  68u,  69u,  70u,  72u,  73u,  74u,  75u,  77u,  78u,  79u,  81u,  82u,  83u,  85u,  86u,  87u,  89u,  90u,  92u,  93u,  95u,  96u,  98u,
+    99u,  101u, 102u, 104u, 105u, 107u, 109u, 110u, 112u, 114u, 115u, 117u, 119u, 120u, 122u, 124u, 126u, 127u, 129u, 131u, 133u, 135u, 137u, 138u, 140u, 142u,
+    144u, 146u, 148u, 150u, 152u, 154u, 156u, 158u, 160u, 162u, 164u, 167u, 169u, 171u, 173u, 175u, 177u, 180u, 182u, 184u, 186u, 189u, 191u, 193u, 196u, 198u,
+    200u, 203u, 205u, 208u, 210u, 213u, 215u, 218u, 220u, 223u, 225u, 228u, 231u, 233u, 236u, 239u, 241u, 244u, 247u, 249u, 252u, 255u
+};
 
 uint16 led_brightness = 0;
-bool led_idle = true;
 
-#define LED_FADE_SPEED 3
+#define LED_FADE_SPEED 4
 
 //////////////////////////////////////////////////////////////////////
 
@@ -71,13 +76,13 @@ void led_update()
 {
     if(led_brightness <= LED_FADE_SPEED) {
         LED_BIT = 0;
-        led_idle = true;
+        led_brightness = 0;
     } else {
         led_brightness -= LED_FADE_SPEED;
-        LED_BIT = led_gamma[led_brightness >> 7] > TH0;
+        LED_BIT = led_gamma[led_brightness >> 8] > TL2;
     }
 
-    if(led_idle && (config.flags & cf_led_track_button_toggle) != 0) {
+    if(led_brightness == 0 && (config.flags & cf_led_track_button_toggle) != 0) {
         uint8 on_off = button_value_index;
         if((config.flags & cf_led_invert) != 0) {
             on_off = 1 - on_off;
@@ -90,8 +95,7 @@ void led_update()
 
 inline void led_set_flash()
 {
-    led_idle = false;
-    led_brightness = 32767u;
+    led_brightness = 65535u;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -142,6 +146,15 @@ void do_absolute_rotation(int16 offset)
 
 //////////////////////////////////////////////////////////////////////
 
+void timer0_irq_handler(void) __interrupt(INT_NO_TMR0)
+{
+    TL0 = TIMER0_LOW;
+    TH0 = TIMER0_HIGH;
+    tick = 1;
+}
+
+//////////////////////////////////////////////////////////////////////
+
 void do_relative_rotation(int16 offset)
 {
     int16 cur = config.rot_zero_point;
@@ -183,10 +196,25 @@ int main()
 
     load_config();
 
+    // init timer2 - all default values
     TL2 = 0;
     TH2 = 0;
     TF2 = 0;
 
+    // timer0 16 bit mode
+    TMOD = (TMOD & ~MASK_T0_MOD) | 0x01;
+
+    TL0 = TIMER0_LOW;
+    TH0 = TIMER0_HIGH;
+
+    // clear overflow flags
+    TF0 = 0;
+
+    // enable irq
+    ET0 = 1;
+    EA = 1;
+
+    // enable the timers
     TR0 = 1;
     TR2 = 1;
 
@@ -206,8 +234,6 @@ int main()
 
     int8 turn_value = ROTARY_DIRECTION - 1;
 
-    uint8 toggle = 0;
-
     while(1) {
 
         // read/debounce the button
@@ -224,19 +250,22 @@ int main()
             button_state = new_state;
         }
 
-        if(button_state) {
-            if(TF0 == 1) {
-                TF0 = 0;
+        if(tick) {
+            tick = 0;
+            if(button_state) {
                 press_time += 1;
                 if(press_time == BOOTLOADER_BUTTON_DELAY) {
 
                     goto_bootloader();
                 }
+            } else {
+                press_time = 0;
             }
-        } else {
-            press_time = 0;
         }
 
+        if(released) {
+            print_uint16("BUTTON HELD", press_time);
+        }
         // read the rotary encoder (returns -1, 0 or 1)
         int8 direction = read_encoder();
 
