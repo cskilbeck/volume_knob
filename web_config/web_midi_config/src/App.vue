@@ -53,7 +53,7 @@ navigator.requestMIDIAccess({ "sysex": true })
     </div>
     <Modal v-model="closeableModal" maxwidth="30%" closeable header="It's a Configurator for the Tiny USB Midi Knob">
       <div class="row">
-        <div class="col text-center h5">
+        <div class="col text-center h5 mt-2">
           Crafted with care by <a class="" href="https://twitter.com/cskilbeck" target="_blank"
             rel="noreferrer noopener">@cskilbeck</a>
         </div>
