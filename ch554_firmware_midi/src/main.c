@@ -172,7 +172,6 @@ void do_absolute_rotation(int16 offset)
     if((config.flags & cf_led_flash_on_rot) != 0 || (at_limit && (config.flags & cf_led_flash_on_limit) != 0)) {
         led_set_flash();
     }
-    print_uint16("VEL", rotation_velocity);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -291,9 +290,6 @@ int main()
             }
         }
 
-        if(released) {
-            print_uint16("BUTTON HELD", press_time);
-        }
         // read the rotary encoder (returns -1, 0 or 1)
         int8 direction = read_encoder();
 
@@ -360,14 +356,20 @@ int main()
                             do_absolute_rotation(delta);
                         }
 
-                        rotation_velocity += get_acceleration() << 2;
+                        int16 limit = (config.flags & cf_rotate_extended) ? 0x3fff : 0x7f;
+
+                        rotation_velocity += get_acceleration();
+
+                        if(rotation_velocity >= limit) {
+                            rotation_velocity = limit;
+                        }
+
                         deceleration_ticks = 0;
 
                     } else {
                         if(deceleration_ticks == 50) {
                             deceleration_ticks = 0;
                             rotation_velocity >>= 1;
-                            putstr("!");
                         }
                     }
                 }

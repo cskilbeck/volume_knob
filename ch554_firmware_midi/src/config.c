@@ -10,6 +10,8 @@
 static uint32 current_save_index = 1;
 static uint8 current_save_offset = 0;
 
+static uint8 const accel_values[2][4] = { { 0, 2, 10, 25 }, { 0, 20, 50, 100 } };
+
 #define DEFAULT_FLAGS (cf_rotate_extended | cf_led_flash_on_rot | cf_btn_momentary | cf_btn_extended | cf_led_track_button_toggle | 0x400)
 
 // 03,23
@@ -194,4 +196,13 @@ bool save_config()
     print_uint8("save config to offset", current_save_offset);
     print_uint32("save index", current_save_index);
     return write_flash_data(current_save_offset, FLASH_SLOT_SIZE, (uint8 *)&save_buffer);
+}
+
+//////////////////////////////////////////////////////////////////////
+
+uint8 get_acceleration()
+{
+    uint8 accel_index = (config.flags >> 10) & 3;
+    uint8 accel_table = (config.flags & cf_rotate_extended) ? 1 : 0;
+    return accel_values[accel_table][accel_index];
 }

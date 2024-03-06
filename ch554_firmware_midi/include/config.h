@@ -128,10 +128,7 @@ inline bool is_toggle_mode()
     return (config.flags & cf_btn_momentary) == 0;
 }
 
-inline bool get_acceleration()
-{
-    return (config.flags >> 10) & 3;
-}
+uint8 get_acceleration();
 
 //////////////////////////////////////////////////////////////////////
 
