@@ -393,7 +393,7 @@ function toggleConnection(device) {
                                     <input type="number" class="form-control"
                                         v-model.number="device.config.btn_value_a_14">
                                     <span class="input-group-text user-select-none">
-                                        {{ btn_momentary ? "OFF?" : "A?" }}
+                                        {{ btn_momentary ? "ON" : "A" }}
                                     </span>
                                 </div>
                             </div>
@@ -402,7 +402,7 @@ function toggleConnection(device) {
                                     <input type="number" class="form-control"
                                         v-model.number="device.config.btn_value_a_7">
                                     <span class="input-group-text user-select-none">
-                                        {{ btn_momentary ? "OFF" : "A" }}
+                                        {{ btn_momentary ? "ON" : "A" }}
                                     </span>
                                 </div>
                             </div>
@@ -413,7 +413,7 @@ function toggleConnection(device) {
                                     <input type="number" class="form-control"
                                         v-model.number="device.config.btn_value_b_14">
                                     <span class="input-group-text user-select-none">
-                                        {{ btn_momentary ? "OFF!" : "B!" }}
+                                        {{ btn_momentary ? "OFF" : "B" }}
                                     </span>
                                 </div>
                             </div>

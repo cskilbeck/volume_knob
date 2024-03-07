@@ -115,11 +115,6 @@ inline uint8 get_btn_channel()
     return config.channels >> 4;
 }
 
-inline bool is_toggle_mode()
-{
-    return (config.flags & cf_btn_momentary) == 0;
-}
-
 inline bool config_flag(uint16 mask)
 {
     return (config.flags & mask) != 0;

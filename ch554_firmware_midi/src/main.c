@@ -142,13 +142,19 @@ void send_cc(uint8 channel, uint8 cc_msb, uint8 cc_lsb, uint16 value, bool is_ex
 
 //////////////////////////////////////////////////////////////////////
 
-void send_button_cc()
+typedef enum
+{
+    value_a = 0,
+    value_b = 1
+} which_value_t;
+
+void send_button_cc(which_value_t val)
 {
     bool extended = config_flag(cf_btn_extended);
 
     uint16 value = extended ? config.btn_value_a_14 : config.btn_value_a_7;
 
-    if(config_flag(cf_toggle)) {
+    if(val == value_b) {
 
         value = extended ? config.btn_value_b_14 : config.btn_value_b_7;
     }
@@ -325,19 +331,26 @@ int main()
 
                     if(pressed) {
 
-                        if(is_toggle_mode()) {
-                            config.flags ^= cf_toggle;
+                        config.flags ^= cf_toggle;
+
+                        which_value_t value = value_a;
+                        if(!config_flag(cf_btn_momentary)) {
+                            if(config_flag(cf_toggle)) {
+                                value = value_b;
+                            }
                         }
-                        send_button_cc();
+                        send_button_cc(value);
+
                         if(config_flag(cf_led_flash_on_click)) {
                             led_set_flash();
                         }
 
                     } else if(released) {
 
-                        if(!is_toggle_mode()) {
-                            send_button_cc();
+                        if(config_flag(cf_btn_momentary)) {
+                            send_button_cc(value_b);
                         }
+
                         if(config_flag(cf_led_flash_on_release)) {
                             led_set_flash();
                         }
