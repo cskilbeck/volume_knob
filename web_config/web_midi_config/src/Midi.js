@@ -504,19 +504,6 @@ function toggle_device_connection(device_index) {
 
 //////////////////////////////////////////////////////////////////////
 
-function is_null_or_undefined(x) {
-    return x === null || x === undefined;
-}
-
-//////////////////////////////////////////////////////////////////////
-
-function array_compare(a, b) {
-    return a.length === b.length &&
-        a.every((element, index) => element === b[index]);
-}
-
-//////////////////////////////////////////////////////////////////////
-
 function get_sysex_device_index(data) {
     if (data[0] == 0xF0 && data[1] == 0x7E && data[3] == 0x07 && data[data.length - 1] == 0xF7) {
         return data[2];
@@ -525,6 +512,8 @@ function get_sysex_device_index(data) {
 }
 
 //////////////////////////////////////////////////////////////////////
+
+let value = 0;
 
 function on_midi_message(event) {
 
@@ -536,52 +525,80 @@ function on_midi_message(event) {
 
     // console.log(`RECV: ${bytes_to_hex_string(data, data.length, " ")}`);
 
-    let device_index = get_sysex_device_index(data);
+    let midi_thing = data[0] & 0xf0;
 
-    if (device_index != undefined) {
+    switch (midi_thing) {
 
-        switch (data[4]) {
+        // B0 is control change
+        case 0xB0: {
 
-            // device ID response
-            case sysex_response_device_id: {
-                on_device_id_response(input_port, data);
-            } break;
+            let cc = data[1];
+            let val = data[2] & 0x7f;
 
-            // read flash memory response
-            case sysex_response_get_flash: {
-                let d = midi_devices.value[device_index];
-                if (d !== undefined) {
-                    let flash_data = bits7_to_bytes(data, 5, CONFIG_LEN);
-                    d.config.value = config_from_bytes(flash_data);
-                    if (on_config_loaded_callback != null) {
-                        on_config_loaded_callback(d);
-                    }
-                    let s = bytes_to_hex_string(flash_data, CONFIG_LEN);
-                    console.log(`Memory for device ${d.serial_str}: ${s}`);
+            console.log(`CC[${cc}] = ${val}`);
 
-                    // get fw version
-                    send_midi(d, [0xF0, 0x7E, 0x00, 0x06, sysex_request_firmware_version, 0xF7]);
+            if (32 >= cc && cc < 64) {
+                value = (value & 0x7f) | (val << 7);
+            } else {
+                value = (value & 0x3f80) | val;
+            }
+
+            if (on_rotate_callback != null) {
+                on_rotate_callback(value);
+            }
+        } break;
+
+        // F0 is sysex
+        case 0xF0: {
+
+            let device_index = get_sysex_device_index(data);
+
+            if (device_index !== undefined) {
+
+                switch (data[4]) {
+
+                    // device ID response
+                    case sysex_response_device_id: {
+                        on_device_id_response(input_port, data);
+                    } break;
+
+                    // read flash memory response
+                    case sysex_response_get_flash: {
+                        let d = midi_devices.value[device_index];
+                        if (d !== undefined) {
+                            let flash_data = bits7_to_bytes(data, 5, CONFIG_LEN);
+                            d.config.value = config_from_bytes(flash_data);
+                            if (on_config_loaded_callback != null) {
+                                on_config_loaded_callback(d);
+                            }
+                            let s = bytes_to_hex_string(flash_data, CONFIG_LEN);
+                            console.log(`Memory for device ${d.serial_str}: ${s}`);
+
+                            // get fw version
+                            send_midi(d, [0xF0, 0x7E, 0x00, 0x06, sysex_request_firmware_version, 0xF7]);
+                        }
+                    } break;
+
+                    // write flash memory ACK
+                    case sysex_response_set_flash_ack: {
+                        let d = midi_devices.value[device_index];
+                        if (d !== undefined) {
+                            console.log(`Device ${d.serial_str} wrote flash data`);
+                            if (on_config_saved_callback != null) {
+                                on_config_saved_callback(d);
+                            }
+                        }
+                    } break;
+
+                    case sysex_response_firmware_version: {
+                        let d = midi_devices.value[device_index];
+                        if (d !== undefined) {
+                            d.firmware_version = (data[5] & 0x7f) | ((data[6] & 0x7f) << 8);
+                            console.log(`Device ${d.serial_str} has flash version: ${data[6]}.${data[5]}`);
+                        }
+                    } break;
                 }
-            } break;
-
-            // write flash memory ACK
-            case sysex_response_set_flash_ack: {
-                let d = midi_devices.value[device_index];
-                if (d !== undefined) {
-                    console.log(`Device ${d.serial_str} wrote flash data`);
-                    if (on_config_saved_callback != null) {
-                        on_config_saved_callback(d);
-                    }
-                }
-            } break;
-
-            case sysex_response_firmware_version: {
-                let d = midi_devices.value[device_index];
-                if (d !== undefined) {
-                    d.firmware_version = (data[5] & 0x7f) | ((data[6] & 0x7f) << 8);
-                    console.log(`Device ${d.serial_str} has flash version: ${data[6]}.${data[5]}`);
-                }
-            } break;
+            }
         }
     }
 }
@@ -614,6 +631,14 @@ let on_config_saved_callback = null;
 
 function on_config_saved(callback) {
     on_config_saved_callback = callback;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+let on_rotate_callback = null;
+
+function on_rotate(callback) {
+    on_rotate_callback = callback;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -652,6 +677,7 @@ export default {
     toggle_device_connection,
     on_config_loaded,
     on_config_saved,
+    on_rotate,
     flash_device_led,
     flash_mode,
     read_flash,

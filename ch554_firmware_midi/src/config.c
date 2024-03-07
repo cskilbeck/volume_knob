@@ -10,7 +10,7 @@
 static uint32 current_save_index = 1;
 static uint8 current_save_offset = 0;
 
-static uint8 const accel_values[2][4] = { { 0, 2, 10, 25 }, { 0, 20, 50, 100 } };
+static uint8 const accel_values[2][4] = { { 0, 1, 2, 3 }, { 0, 20, 40, 80 } };
 
 #define DEFAULT_FLAGS cf_led_flash_on_limit | cf_led_flash_on_click | cf_acceleration_lsb
 

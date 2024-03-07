@@ -139,6 +139,29 @@ midi.on_config_saved((device) => {
     stored_config = Object.assign({}, toRaw(device.config));
 });
 
+let default_matrix = rotation_matrix(50, 50, -150);
+const rot_matrix = ref(default_matrix);
+
+function rotation_matrix(cx, cy, angle) {
+    let a = angle * 3.14159265 / 180;
+    let c = Math.cos(a);
+    let s = Math.sin(a);
+    return `matrix(${c}, ${s}, ${-s}, ${c}, ${cx * (1 - c) + cy * s}, ${cy * (1 - c) - cx * s})`;
+}
+
+midi.on_rotate((value) => {
+    console.log(`VALUE: ${value.toString(16).padStart(4, "0")}`);
+    // 7pm (0) = 210 degrees
+    // 5pm (3fff) = 150 degrees
+
+    value = 1 - (value / 16383);
+
+    let lower = -150;
+    let upper = 150;
+    let range = upper - lower;
+    rot_matrix.value = rotation_matrix(50, 50, upper - value * range);
+});
+
 // this doesn't work - port.close() does nothing
 
 function toggleConnection(device) {
@@ -182,6 +205,18 @@ function toggleConnection(device) {
                         <div class="small" v-if="device.active">
                             Serial #
                             <span class="text-body-secondary font-monospace">{{ device.serial_str }}</span>
+                        </div>
+                        <div class="row text-center" v-if="device.active">
+                            <div class="col">
+                                <svg width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+                                    <g id="preview-knob-outline">
+                                        <ellipse ry="30" rx="30" id="svg_1" cy="50" cx="50" />
+                                    </g>
+                                    <g id="preview-knob-tick">
+                                        <path :transform="rot_matrix" d="M 50 45 V 30" />
+                                    </g>
+                                </svg>
+                            </div>
                         </div>
                     </div>
                     <div class="col-6">
@@ -593,5 +628,18 @@ function toggleConnection(device) {
 
 .bg-device {
     background-color: var(--bs-body-bg);
+}
+
+#preview-knob-outline {
+    stroke: var(--bs-secondary-border-subtle);
+    fill: var(--bs-body-bg);
+    stroke-width: 4;
+    stroke-linecap: round;
+}
+
+#preview-knob-tick {
+    stroke: var(--bs-secondary-color);
+    stroke-width: 6;
+    stroke-linecap: round;
 }
 </style>
