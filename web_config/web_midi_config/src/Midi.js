@@ -3,7 +3,9 @@
 
 import { ref, toRaw } from 'vue'
 
-const FLASH_MAX_LEN = 26;
+const CONFIG_LEN = 26;
+
+const CONFIG_VERSION = 0x07
 
 //////////////////////////////////////////////////////////////////////
 // main web midi object
@@ -33,34 +35,6 @@ let device_index = 0;
 
 //////////////////////////////////////////////////////////////////////
 
-let default_config = {
-    version: 0,
-    rot_control_high: 0,
-    rot_control_low: 0,
-    btn_control_high: 0,
-    btn_control_low: 0,
-    rot_channel: 0,
-    btn_channel: 0,
-    rot_zero_point: 0,
-    rot_delta: 0,
-    rot_limit_low: 0,
-    rot_limit_high: 0,
-    rot_current_value: 0,
-    btn_value_1: 0,
-    btn_value_2: 0,
-    cf_rotate_extended: false,
-    cf_rotate_relative: false,
-    cf_led_invert: false,
-    cf_led_flash_on_rot: false,
-    cf_led_flash_on_limit: false,
-    cf_btn_momentary: false,
-    cf_btn_extended: false,
-    cf_led_flash_on_click: false,
-    cf_led_flash_on_release: false,
-    cf_led_track_button_toggle: false,
-    cf_acceleration: false
-};
-
 const sysex_request_device_id = 0x01;
 const sysex_request_toggle_led = 0x02;
 const sysex_request_get_flash = 0x03;
@@ -74,217 +48,248 @@ const sysex_response_get_flash = 0x03;
 const sysex_response_set_flash_ack = 0x04;
 const sysex_response_firmware_version = 0x05;
 
-/*
-
 //////////////////////////////////////////////////////////////////////
-// flags in config.cf_flags
+// config flags
 
-typedef enum config_flags
-{
+const flags = {
+
     // rotate modifies both CC MSB and LSB
-    cf_rotate_extended = 0x0001,
+    cf_rotate_extended: 0x0001,
 
     // rotate sends relative changes
-    cf_rotate_relative = 0x0002,
+    cf_rotate_relative: 0x0002,
 
     // led on means off and vice versa
-    cf_led_invert = 0x0004,
+    cf_led_invert: 0x0004,
 
     // flash when knob is rotated
-    cf_led_flash_on_rot = 0x0008,
+    cf_led_flash_on_rot: 0x0008,
 
     // flash when rotation limit is hit (if not cf_rotate_relative)
-    cf_led_flash_on_limit = 0x0010,
+    cf_led_flash_on_limit: 0x0010,
 
     // btn sets value1/value2 based on state of button rather than toggling between them
-    cf_btn_momentary = 0x0020,
+    cf_btn_momentary: 0x0020,
 
     // button modifies both CC MSB and LSB
-    cf_btn_extended = 0x0040,
+    cf_btn_extended: 0x0040,
 
     // flash led when button is clicked
-    cf_led_flash_on_click = 0x0080,
+    cf_led_flash_on_click: 0x0080,
 
     // flash led when button is released
-    cf_led_flash_on_release = 0x0100,
+    cf_led_flash_on_release: 0x0100,
 
     // led tracks state of button
-    cf_led_track_button_toggle = 0x0200,
+    cf_led_track_button_toggle: 0x0200,
 
-    // two bits for acceleration (so 4 options: off, low, med, high)
-    cf_acceleration_lsb = 0x0400,
-    cf_acceleration_msb = 0x0800,
+    // two bits for acceleration (so 4 options: off; low; med; high)
+    cf_acceleration_lsb: 0x0400,
+    cf_acceleration_msb: 0x0800,
+
+    // current button toggle state
+    cf_toggle: 0x1000,
+
+    // button's second value ('released') tracks rotation value (for e.g. mute/unmute)
+    cf_button_tracks_rotation: 0x2000
 };
 
 //////////////////////////////////////////////////////////////////////
-// sizeof config_t must be FLASH_LEN
 
-typedef struct config
-{
-    // 0  uint8 version;
-    // 1  uint8 rot_control[2];
-    // 3  uint8 btn_control[2];
-    // 5  uint16 btn_value[2];
-    // 9  uint8 channels;
-    // 10 uint16 rot_zero_point;
-    // 12 uint16 rot_delta;
-    // 14 uint16 rot_limit_low;
-    // 16 uint16 rot_limit_high;
-    // 18 uint16 rot_current_value;
-    // 20 uint16 flags;
-    // 22 uint8 pad[FLASH_LEN - 20];
+let default_config = {
+    version: CONFIG_VERSION,                  // config struct version - must be 1st byte!
+    rot_control_msb: 7,          // Control Change index MSB,LSB for knob
+    rot_control_lsb: 39,         // Control Change index MSB,LSB for knob
+    btn_control_msb: 3,          // Control Change index MSB,LSB for button
+    btn_control_lsb: 35,         // Control Change index MSB,LSB for button
+    btn_value_a_14: 0x3fff,      // 1st,2nd button values or pressed/released values if cf_btn_momentary (14 bit mode)
+    btn_value_b_14: 0,           // 1st,2nd button values or pressed/released values if cf_btn_momentary (14 bit mode)
+    btn_value_a_7: 0x7f,         // 1st,2nd button values or pressed/released values if cf_btn_momentary (7 bit mode)
+    btn_value_b_7: 0,            // 1st,2nd button values or pressed/released values if cf_btn_momentary (7 bit mode)
+    channels: 0,                 // rotate channel in low nibble, button in high nibble
+    rot_zero_point: 0x40,        // Zero point in relative mode (forced 7 bit mode)
+    rot_delta_14: 1,             // How much to change by (14 bit mode)
+    rot_delta_7: 1,              // How much to change by(7 bit mode)
+    rot_current_value_14: 0,     // current value (in absolute mode) (14 bit mode)
+    rot_current_value_7: 0,      // current value (in absolute mode) (7 bit mode)
 
-} config_t;
-
-*/
+    flags: flags.cf_led_flash_on_limit | flags.cf_led_flash_on_click | flags.cf_acceleration_lsb                  // flags, see enum above
+};
 
 //////////////////////////////////////////////////////////////////////
-// this is a super nasty
-// the temptation is to build a system for keeping the structure
-// declaration in the firmware source code in sync with this stuff
-// rather than all this hard coded offset nonsense, which would
-// involve some fiddly kind of macro / include thingy. Maybe...
+// this is for marshalling the config struct to/from a byte array
+// ugh, have to keep this in sync with firmware/config.h
+// can't parse it directly because can't read or include files
+// a tool to convert the C struct into this config_map would work but... no
+
+// this assumes fields are laid out in order with no padding!!!
+
+let config_map = [
+    ["uint8", "version"],
+    ["uint8", "rot_control_msb"],
+    ["uint8", "rot_control_lsb"],
+    ["uint8", "btn_control_msb"],
+    ["uint8", "btn_control_lsb"],
+    ["uint16", "btn_value_a_14"],
+    ["uint16", "btn_value_b_14"],
+    ["uint8", "btn_value_a_7"],
+    ["uint8", "btn_value_b_7"],
+    ["uint8", "channels"],
+    ["uint8", "rot_zero_point"],
+    ["uint16", "rot_delta_14"],
+    ["uint8", "rot_delta_7"],
+    ["uint16", "rot_current_value_14"],
+    ["uint8", "rot_current_value_7"],
+    ["uint16", "flags"],
+];
+
+// similar source code synchronization problem with the flags
+
+//////////////////////////////////////////////////////////////////////
+// this is super nasty - marshal/unmarshal from bytes to config struct
 
 function config_from_bytes(bytes) {
 
     let config = default_config;
 
-    config.version = bytes[0] & 0xff;
-    config.rot_control_high = bytes[1] & 0x7f;
-    config.rot_control_low = bytes[2] & 0x7f;
-    config.btn_control_high = bytes[3] & 0x7f;
-    config.btn_control_low = bytes[4] & 0x7f;
-    config.btn_value_1 = bytes[5] & 0xff;
-    config.btn_value_1 |= (bytes[6] << 8) & 0x3f;
-    config.btn_value_2 = bytes[7] & 0xff;
-    config.btn_value_2 |= (bytes[8] << 8) & 0x3f;
-    config.rot_channel = bytes[9] & 0xf;
-    config.btn_channel = (bytes[9] >> 4) & 0xf;
-    config.rot_zero_point = bytes[10] & 0xff;
-    config.rot_zero_point |= (bytes[11] & 0x3f) << 8;
-    config.rot_delta = bytes[12] & 0xff;
-    config.rot_delta |= (bytes[13] & 0x3f) << 8;
-    config.rot_limit_low = bytes[14] & 0xff;
-    config.rot_limit_low |= (bytes[15] & 0x3f) << 8;
-    config.rot_limit_high = bytes[16] & 0xff;
-    config.rot_limit_high |= (bytes[17] & 0x3f) << 8;
-    config.rot_current_value = bytes[18] & 0xff;
-    config.rot_current_value |= (bytes[19] & 0x3f) << 8;
+    if (bytes[0] != CONFIG_VERSION) {
+        return default_config;
+    }
 
-    let flags = bytes[20] & 0xff;
-    flags |= (bytes[21] & 0xff) << 8;
+    if (bytes.BYTES_PER_ELEMENT != 1) {
+        return default_config;
+    }
 
-    config.cf_rotate_extended = (flags & 0x0001) != 0;
-    config.cf_rotate_relative = (flags & 0x0002) != 0;
-    config.cf_led_invert = (flags & 0x0004) != 0;
-    config.cf_led_flash_on_rot = (flags & 0x0008) != 0;
-    config.cf_led_flash_on_limit = (flags & 0x0010) != 0;
-    config.cf_btn_momentary = (flags & 0x0020) != 0;
-    config.cf_btn_extended = (flags & 0x0040) != 0;
-    config.cf_led_flash_on_click = (flags & 0x0080) != 0;
-    config.cf_led_flash_on_release = (flags & 0x0100) != 0;
-    config.cf_led_track_button_toggle = (flags & 0x0200) != 0;
-    config.cf_acceleration = (flags & 0x0C00) >> 10;
-
+    let field_offset = 0;
+    for (const field of config_map) {
+        const field_type = field[0];
+        const field_name = field[1];
+        let field_size = 0;
+        switch (field_type) {
+            case 'uint8':
+                field_size = 1;
+                break;
+            case 'uint16':
+                field_size = 2;
+                break;
+        }
+        if (field_size == 0) {
+            console.log("ERROR: bad field size/offset array for unmarshalling config");
+            return default_config;
+        }
+        let value = 0;
+        for (let i = 0; i < field_size; ++i) {
+            value |= bytes[field_offset] << (i * 8);
+            field_offset += 1;
+        }
+        config[field_name] = value;
+    }
     return config;
 }
 
 //////////////////////////////////////////////////////////////////////
 
 function bytes_from_config(config) {
-    let bytes = new Array(26).fill(0);
 
-    bytes[0] = config.version & 0xff;
-    bytes[1] = config.rot_control_high & 0x7f;
-    bytes[2] = config.rot_control_low & 0x7f;
-    bytes[3] = config.btn_control_high & 0x7f;
-    bytes[4] = config.btn_control_low & 0x7f;
-    bytes[5] = config.btn_value_1 & 0xff;
-    bytes[6] = (config.btn_value_1 >> 8) & 0x3f;
-    bytes[7] = config.btn_value_2 & 0xff;
-    bytes[8] = (config.btn_value_2 >> 8) & 0x3f;
-    bytes[9] = config.rot_channel & 0xf;
-    bytes[9] |= (config.btn_channel & 0xf) << 4;
-    bytes[10] = config.rot_zero_point & 0xff;
-    bytes[11] = (config.rot_zero_point >> 8) & 0x3f;
-    bytes[12] = config.rot_delta & 0xff;
-    bytes[13] = (config.rot_delta >> 8) & 0x3f;
-    bytes[14] = config.rot_limit_low & 0xff;
-    bytes[15] = (config.rot_limit_low >> 8) & 0x3f;
-    bytes[16] = config.rot_limit_high & 0xff;
-    bytes[17] = (config.rot_limit_high >> 8) & 0x3f;
-    bytes[18] = config.rot_current_value & 0xff;
-    bytes[19] = (config.rot_current_value >> 8) & 0x3f;
+    let bytes = new Uint8Array(CONFIG_LEN);
 
-    let flags = 0;
-
-    flags |= config.cf_rotate_extended ? 0x0001 : 0;
-    flags |= config.cf_rotate_relative ? 0x0002 : 0;
-    flags |= config.cf_led_invert ? 0x0004 : 0;
-    flags |= config.cf_led_flash_on_rot ? 0x0008 : 0;
-    flags |= config.cf_led_flash_on_limit ? 0x0010 : 0;
-    flags |= config.cf_btn_momentary ? 0x0020 : 0;
-    flags |= config.cf_btn_extended ? 0x0040 : 0;
-    flags |= config.cf_led_flash_on_click ? 0x0080 : 0;
-    flags |= config.cf_led_flash_on_release ? 0x0100 : 0;
-    flags |= config.cf_led_track_button_toggle ? 0x0200 : 0;
-    flags |= (config.cf_acceleration & 3) << 10;
-
-    bytes[20] = flags & 0xff;
-    bytes[21] = (flags >> 8) & 0xff;
-
+    let field_offset = 0;
+    for (const field of config_map) {
+        const field_type = field[0];
+        const field_name = field[1];
+        let field_size = 0;
+        switch (field_type) {
+            case 'uint8':
+                field_size = 1;
+                break;
+            case 'uint16':
+                field_size = 2;
+                break;
+        }
+        if (field_size == 0) {
+            console.log("ERROR: bad field size/offset array for marshalling config");
+            return null;
+        }
+        let value = config[field_name];
+        for (let i = 0; i < field_size; ++i) {
+            bytes[field_offset] = value & 0xff;
+            value >>= 8;
+            field_offset += 1;
+        }
+    }
     return bytes;
 }
 
 //////////////////////////////////////////////////////////////////////
 // expand some bytes into an array of 7 bit values
 
-function bytes_to_bits7(src_data, offset, len, dest) {
+function bytes_to_bits7(src_data, offset, src_len) {
+
+    if (src_data.BYTES_PER_ELEMENT != 1) {
+        return null;
+    }
+
+    let required_bytes = (((src_len * 8) + 7) / 7) | 0;
+    let dest = new Uint8Array(required_bytes);
 
     let bits_available = 0;
     let cur_src = 0;
-    let bits_remaining = len * 8;
+    let dst_offset = 0;
+    let bits_remaining = src_len * 8;
 
-    while (true) {
+    while (dst_offset < required_bytes) {
 
         if (bits_available < 7) {
-            cur_src = (cur_src << 8) | src_data[offset++];
+            cur_src = (cur_src << 8) | src_data[offset];
+            offset += 1;
             bits_available += 8;
         }
 
         while (bits_available >= 7) {
             bits_available -= 7;
-            dest.push((cur_src >> bits_available) & 0x7f);
+            dest[dst_offset] = (cur_src >> bits_available) & 0x7f;
+            dst_offset += 1;
             bits_remaining -= 7;
         }
 
         if (bits_remaining < 7) {
-            dest.push((cur_src << (7 - bits_remaining)) & 0x7f);
-            break;
+            dest[dst_offset] = (cur_src << (7 - bits_remaining)) & 0x7f;
+            dst_offset += 1;
         }
     }
+    return dest;
 }
 
 //////////////////////////////////////////////////////////////////////
 // convert some 7 bit values to bytes
 
-function bits7_to_bytes(src_data, offset, len, dest) {
+function bits7_to_bytes(src_data, offset, dst_len) {
+
+    if (src_data.BYTES_PER_ELEMENT != 1) {
+        return;
+    }
+
+    let dest = new Uint8Array(dst_len);
 
     let bits_available = 0;
     let cur_src = 0;
+    let dst_offset = 0;
 
-    while (dest.length < len) {
+    while (dst_offset < dst_len) {
 
         if (bits_available < 8) {
-            cur_src = (cur_src << 7) | src_data[offset++];
+            cur_src = (cur_src << 7) | src_data[offset];
+            offset += 1;
             bits_available += 7;
         }
 
         while (bits_available >= 8) {
             bits_available -= 8;
-            dest.push((cur_src >> bits_available) & 0xff);
+            dest[dst_offset] = (cur_src >> bits_available) & 0xff;
+            dst_offset += 1;
         }
     }
+    return dest;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -386,23 +391,12 @@ function write_flash(index) {
         console.log(`write_flash: No such device ${index}`);
         return;
     }
-    let data_7bits = [];
-    bytes_to_bits7(bytes_from_config(device.config.value), 0, FLASH_MAX_LEN, data_7bits);
-    send_midi(device, [0xF0, 0x7E, 0x00, 0x06, sysex_request_set_flash].concat(data_7bits).concat([0xF7]));
-}
-
-//////////////////////////////////////////////////////////////////////
-// Convert a hex string to a byte array
-
-function hex_to_bytes(hex) {
-    let bytes = [];
-    for (let c = 0; c < hex.length; c += 2) {
-        bytes.push(parseInt(hex.substr(c, 2), 16));
+    let data_7bits = bytes_to_bits7(bytes_from_config(device.config.value), 0, CONFIG_LEN);
+    if (data_7bits !== null) {
+        send_midi(device, [0xF0, 0x7E, 0x00, 0x06, sysex_request_set_flash].concat(Array.from(data_7bits)).concat([0xF7]));
+    } else {
+        // report error
     }
-    while (bytes.length < FLASH_MAX_LEN) {
-        bytes.push(0xFF);
-    }
-    return bytes;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -557,13 +551,12 @@ function on_midi_message(event) {
             case sysex_response_get_flash: {
                 let d = midi_devices.value[device_index];
                 if (d !== undefined) {
-                    let flash_data = [];
-                    bits7_to_bytes(data, 5, FLASH_MAX_LEN, flash_data);
+                    let flash_data = bits7_to_bytes(data, 5, CONFIG_LEN);
                     d.config.value = config_from_bytes(flash_data);
                     if (on_config_loaded_callback != null) {
                         on_config_loaded_callback(d);
                     }
-                    let s = bytes_to_hex_string(flash_data, FLASH_MAX_LEN);
+                    let s = bytes_to_hex_string(flash_data, CONFIG_LEN);
                     console.log(`Memory for device ${d.serial_str}: ${s}`);
 
                     // get fw version
@@ -663,5 +656,6 @@ export default {
     flash_mode,
     read_flash,
     write_flash,
-    get_config_json
+    get_config_json,
+    flags
 }

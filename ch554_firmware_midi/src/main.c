@@ -48,8 +48,6 @@ __xdata config_t config;
 
 volatile uint8 tick;
 
-uint8 button_value_index = 0;
-
 //////////////////////////////////////////////////////////////////////
 // led pulse/fade thing to indicate rotary/button activity
 
@@ -82,9 +80,9 @@ void led_update()
         LED_BIT = led_gamma[led_brightness >> 8] > TL2;
     }
 
-    if(led_brightness == 0 && (config.flags & cf_led_track_button_toggle) != 0) {
-        uint8 on_off = button_value_index;
-        if((config.flags & cf_led_invert) != 0) {
+    if(led_brightness == 0 && config_flag(cf_led_track_button_toggle)) {
+        uint8 on_off = config_flag(cf_toggle);
+        if(config_flag(cf_led_invert)) {
             on_off = 1 - on_off;
         }
         LED_BIT = on_off;
@@ -115,7 +113,7 @@ void timer0_irq_handler(void) __interrupt(INT_NO_TMR0)
 //  else
 //      send 7 bit value as a single midi packet
 
-void send_cc(uint8 channel, uint8 cc[2], uint16 value, bool is_extended)
+void send_cc(uint8 channel, uint8 cc_msb, uint8 cc_lsb, uint16 value, bool is_extended)
 {
     uint8 packet[MIDI_PACKET_SIZE];
 
@@ -124,7 +122,7 @@ void send_cc(uint8 channel, uint8 cc[2], uint16 value, bool is_extended)
     packet[1] = 0xB0 | channel;
 
     // cc[0] is the value to send (or MSB of value)
-    packet[2] = cc[0];
+    packet[2] = cc_msb;
 
     // send MSB first if extended mode
     if(is_extended) {
@@ -134,7 +132,7 @@ void send_cc(uint8 channel, uint8 cc[2], uint16 value, bool is_extended)
         queue_put(packet);
 
         // cc[1] is LSB of value
-        packet[2] = cc[1];
+        packet[2] = cc_lsb;
     }
 
     // send value (or LSB of value)
@@ -146,7 +144,15 @@ void send_cc(uint8 channel, uint8 cc[2], uint16 value, bool is_extended)
 
 void send_button_cc()
 {
-    send_cc(get_btn_channel(), config.btn_control, config.btn_value[button_value_index], (config.flags & cf_btn_extended) != 0);
+    bool extended = config_flag(cf_btn_extended);
+
+    uint16 value = extended ? config.btn_value_a_14 : config.btn_value_a_7;
+
+    if(config_flag(cf_toggle)) {
+
+        value = extended ? config.btn_value_b_14 : config.btn_value_b_7;
+    }
+    send_cc(get_btn_channel(), config.btn_control_msb, config.btn_control_lsb, value, extended);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -156,43 +162,40 @@ uint8 deceleration_ticks = 0;
 
 void do_absolute_rotation(int16 offset)
 {
+    bool extended = config_flag(cf_rotate_extended);
     bool at_limit = false;
-    int32 cur = config.rot_current_value;
+    int32 cur = extended ? config.rot_current_value_14 : config.rot_current_value_7;
+    int16 limit = extended ? 0x3fff : 0x7f;
     cur += (int32)offset * (rotation_velocity + 1);
-    if(cur < (int32)config.rot_limit_low) {
-        cur = config.rot_limit_low;
+    if(cur < 0) {
+        cur = 0;
         at_limit = true;
-    } else if(cur > (int32)config.rot_limit_high) {
-        cur = config.rot_limit_high;
+    } else if(cur > limit) {
+        cur = limit;
         at_limit = true;
     }
-    config.rot_current_value = (int16)cur;
-    send_cc(get_rot_channel(), config.rot_control, cur, (config.flags & cf_rotate_extended) != 0);
+    if(extended) {
+        config.rot_current_value_14 = (int16)cur;
+    } else {
+        config.rot_current_value_7 = (int16)cur;
+    }
+    send_cc(get_rot_channel(), config.rot_control_msb, config.rot_control_lsb, cur, extended);
 
-    if((config.flags & cf_led_flash_on_rot) != 0 || (at_limit && (config.flags & cf_led_flash_on_limit) != 0)) {
+    if(config_flag(cf_led_flash_on_rot) || (at_limit && config_flag(cf_led_flash_on_limit))) {
+
         led_set_flash();
     }
 }
 
 //////////////////////////////////////////////////////////////////////
+// relative rotation is forced 7 bit mode
 
 void do_relative_rotation(int16 offset)
 {
-    int32 cur = config.rot_zero_point;
-    cur += (int32)offset * (rotation_velocity + 1);
-    int16 cur_limit = 0x7f;
-    bool extended = (config.flags & cf_rotate_extended) != 0;
-    if(extended) {
-        cur_limit = 0x3fff;
-    }
-    if(cur < 0) {
-        cur = 0;
-    } else if(cur > cur_limit) {
-        cur = cur_limit;
-    }
-    send_cc(get_rot_channel(), config.rot_control, (int16)cur, extended);
+    uint8 cur = (config.rot_zero_point + offset * (rotation_velocity + 1)) & 0x7f;
+    send_cc(get_rot_channel(), config.rot_control_msb, 0, cur, false);
 
-    if((config.flags & cf_led_flash_on_rot) != 0) {
+    if(config_flag(cf_led_flash_on_rot)) {
         led_set_flash();
     }
 }
@@ -322,41 +325,37 @@ int main()
 
                     if(pressed) {
 
-                        if(!is_toggle_mode()) {
-                            button_value_index = 1;
-                        } else {
+                        if(is_toggle_mode()) {
                             config.flags ^= cf_toggle;
-                            button_value_index = ((config.flags & cf_toggle) != 0) ? 1 : 0;
                         }
                         send_button_cc();
-                        if((config.flags & cf_led_flash_on_click) != 0) {
+                        if(config_flag(cf_led_flash_on_click)) {
                             led_set_flash();
                         }
 
                     } else if(released) {
 
                         if(!is_toggle_mode()) {
-                            button_value_index = 0;
                             send_button_cc();
                         }
-                        if((config.flags & cf_led_flash_on_release) != 0) {
+                        if(config_flag(cf_led_flash_on_release)) {
                             led_set_flash();
                         }
 
                     } else if(direction != 0) {
 
-                        int16 delta = config.rot_delta;
+                        int16 delta = config_flag(cf_rotate_extended) ? config.rot_delta_14 : config.rot_delta_7;
                         if(direction == turn_value) {
                             delta = -delta;
                         }
 
-                        if((config.flags & cf_rotate_relative) != 0) {
+                        if(config_flag(cf_rotate_relative)) {
                             do_relative_rotation(delta);
                         } else {
                             do_absolute_rotation(delta);
                         }
 
-                        int16 limit = (config.flags & cf_rotate_extended) ? 0x3fff : 0x7f;
+                        int16 limit = config_flag(cf_rotate_extended) ? 0x3fff : 0x7f;
 
                         rotation_velocity += get_acceleration();
 

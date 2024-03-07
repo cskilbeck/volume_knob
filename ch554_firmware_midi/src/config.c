@@ -12,30 +12,26 @@ static uint8 current_save_offset = 0;
 
 static uint8 const accel_values[2][4] = { { 0, 2, 10, 25 }, { 0, 20, 50, 100 } };
 
-#define DEFAULT_FLAGS (cf_rotate_extended | cf_led_flash_on_rot | cf_btn_momentary | cf_btn_extended | cf_led_track_button_toggle | 0x400)
-
-// 03,23
-// 78,00
-// 0100,0000
-// 00
-// 0000
-// FF3F
-// 0000
-// 6906
-// 000000000000000000
+#define DEFAULT_FLAGS cf_led_flash_on_limit | cf_led_flash_on_click | cf_acceleration_lsb
 
 __code const config_t default_config = {
-    CONFIG_VERSION,    // uint8 version
-    { 3, 35 },         // uint8 rot_control[2];
-    { 120, 0 },        // uint8 btn_control[2];
-    { 1, 0 },          // uint16 btn_value[2];
-    0x00,              // uint8 channels;
-    0x0040,            // uint16 rot_zero_point
-    0x0001,            // uint16 rot_delta
-    0x0000,            // uint16 rot_limit_low;
-    0x3fff,            // uint16 rot_limit_high;
-    0x0000,            // uint16 rot_current_value;
-    DEFAULT_FLAGS      // uint16 cf_flags;
+
+    CONFIG_VERSION,    // uint8 version;               // config struct version - must be 1st byte!
+    7,                 // uint8 rot_control_msb;       // Control Change index MSB,LSB for knob
+    39,                // uint8 rot_control_lsb;       // Control Change index MSB,LSB for knob
+    3,                 // uint8 btn_control_msb;       // Control Change index MSB,LSB for button
+    35,                // uint8 btn_control_lsb;       // Control Change index MSB,LSB for button
+    0x3fff,            // uint16 btn_value_a_14;       // 1st,2nd button values or pressed/released values if cf_btn_momentary (14 bit mode)
+    0x0000,            // uint16 btn_value_b_14;       // 1st,2nd button values or pressed/released values if cf_btn_momentary (14 bit mode)
+    0x7f,              // uint8 btn_value_a_7;         // 1st,2nd button values or pressed/released values if cf_btn_momentary (7 bit mode)
+    0x00,              // uint8 btn_value_b_7;         // 1st,2nd button values or pressed/released values if cf_btn_momentary (7 bit mode)
+    0x00,              // uint8 channels;              // rotate channel in low nibble, button in high nibble
+    0x40,              // uint8 rot_zero_point;        // Zero point in relative mode
+    0x0001,            // uint16 rot_delta_14;         // How much to change by
+    0x01,              // uint8 rot_delta_7;           // How much to change by
+    0x0000,            // uint16 rot_current_value_14; // current value (in absolute mode) (14 bit mode)
+    0x00,              // uint8 rot_current_value_7;   // current value (in absolute mode) (7 bit mode)
+    DEFAULT_FLAGS      // uint16 flags;                // flags, see enum above
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -182,10 +178,6 @@ bool load_config()
 bool save_config()
 {
     memcpy(&save_buffer.data, &config, sizeof(config_t));
-    uint8 extra = CONFIG_MAX_LEN - sizeof(config_t);
-    if(extra != 0) {
-        memset(save_buffer.data + sizeof(config_t), 0, extra);
-    }
     current_save_offset += FLASH_SLOT_SIZE;
     if(current_save_offset >= FLASH_SIZE) {
         current_save_offset = 0;

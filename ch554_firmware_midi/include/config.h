@@ -4,10 +4,12 @@
 // size of a midi_packet = 4 bytes
 // each midi_packet contains 3 x 7 bit values
 // so we get max_usb_size / sizeof(midi_packet) = 64 / 4 = 48 x 7 bit values per transfer
-// and (48 x 7) / 8 = 42 bytes per transfer
+// but we lose 6 values to the sysex header and terminator so we get 42
+// and (42 x 7) / 8 = 36 bytes per transfer
 // save_footer needs 6 bytes (2 for CRC, 4 for save_index)
-// so absolute max size of config is 42 - 6 = 36 bytes
-// BUT: in order to fit 4 save slots in the 128 byte flash (for wear levelling)
+// so absolute max size of config is 42 - 6 = 30 bytes
+
+// And in order to fit 4 save slots in the 128 byte flash (for wear levelling)
 // set the max slot size to 32.
 // so max config size = max_slot_size - sizeof(save_footer) = 32 - 6 = 26
 
@@ -23,7 +25,7 @@
 //////////////////////////////////////////////////////////////////////
 // increment this whenever the format of the config changes so the web ui knows to ignore old ones
 
-#define CONFIG_VERSION 0x06
+#define CONFIG_VERSION 0x07
 
 //////////////////////////////////////////////////////////////////////
 // flags in config.cf_flags
@@ -65,50 +67,38 @@ typedef enum config_flags
     cf_acceleration_msb = 0x0800,
 
     // current button toggle state
-    cf_toggle = 0x1000
+    cf_toggle = 0x1000,
+
+    // button's second value ('released') tracks rotation value (for e.g. mute/unmute)
+    cf_button_tracks_rotation = 0x2000
 };
 
 //////////////////////////////////////////////////////////////////////
-// sizeof config_t must be CONFIG_LEN
+// sizeof config_t must be CONFIG_MAX_LEN
 
 typedef struct config
 {
-    // config struct version - must be 1st byte!
-    uint8 version;
+    uint8 version;                  // Config struct version - must be 1st byte!
+    uint8 rot_control_msb;          // CC index MSB for knob
+    uint8 rot_control_lsb;          // CC index LSB for knob
+    uint8 btn_control_msb;          // CC index MSB for button
+    uint8 btn_control_lsb;          // CC index LSB for button
+    uint16 btn_value_a_14;          // 1st button value (or pressed value if cf_btn_momentary) (14 bit mode)
+    uint16 btn_value_b_14;          // 2nd button value (or released value if cf_btn_momentary) (14 bit mode)
+    uint8 btn_value_a_7;            // 1st button value (or pressed value if cf_btn_momentary) (7 bit mode)
+    uint8 btn_value_b_7;            // 2nd button value (or released value if cf_btn_momentary) (7 bit mode)
+    uint8 channels;                 // rotate channel in low nibble, button channel in high nibble
+    uint8 rot_zero_point;           // Zero point in relative mode (relative mode forces 7 bit mode)
+    uint16 rot_delta_14;            // Rotate delta (14 bit mode)
+    uint8 rot_delta_7;              // Rotate delta (7 bit mode)
+    uint16 rot_current_value_14;    // Current value (in absolute mode) (14 bit mode)
+    uint8 rot_current_value_7;      // Current value (in absolute mode) (7 bit mode)
+    uint16 flags;                   // Flags, see enum above
 
-    // Control Change index MSB,LSB for knob
-    uint8 rot_control[2];
-
-    // Control Change index MSB,LSB for button
-    uint8 btn_control[2];
-
-    // 1st,2nd button values or pressed/released values if cf_btn_momentary
-    uint16 btn_value[2];
-
-    // rotate channel in low nibble, button in high nibble
-    uint8 channels;
-
-    // Zero point in relative mode
-    uint16 rot_zero_point;
-
-    // How much to change by
-    uint16 rot_delta;
-
-    // lower limit of value in absolute mode
-    uint16 rot_limit_low;
-
-    // upper limit of value in absolute mode
-    uint16 rot_limit_high;
-
-    // current value (in absolute mode)
-    uint16 rot_current_value;
-
-    // flags, see enum above
-    uint16 flags;
-
+    uint8 pad[CONFIG_MAX_LEN - 21];
 } config_t;
 
-_Static_assert(sizeof(config_t) < CONFIG_MAX_LEN);
+_Static_assert(sizeof(config_t) == CONFIG_MAX_LEN);
 
 extern __code const config_t default_config;
 extern __xdata config_t config;
@@ -126,6 +116,11 @@ inline uint8 get_btn_channel()
 inline bool is_toggle_mode()
 {
     return (config.flags & cf_btn_momentary) == 0;
+}
+
+inline bool config_flag(uint16 mask)
+{
+    return (config.flags & mask) != 0;
 }
 
 uint8 get_acceleration();
