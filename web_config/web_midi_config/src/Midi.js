@@ -7,6 +7,14 @@ const CONFIG_LEN = 26;
 
 const CONFIG_VERSION = 0x07
 
+const MIDI_MANUFACTURER_ID = 0x36;    // Cheetah Marketing, defunct?
+
+const MIDI_FAMILY_CODE_LOW = 0x44;   // 0x5544
+const MIDI_FAMILY_CODE_HIGH = 0x55;
+
+const MIDI_MODEL_NUMBER_LOW = 0x22;   // 0x3322
+const MIDI_MODEL_NUMBER_HIGH = 0x33;
+
 //////////////////////////////////////////////////////////////////////
 // main web midi object
 
@@ -23,12 +31,6 @@ let midi_devices = ref([]);
 let scanned = ref({});
 
 //////////////////////////////////////////////////////////////////////
-// output ports which have been sent a device id request
-// position in the array is device_index
-
-let output_ports = [];
-
-//////////////////////////////////////////////////////////////////////
 // next midi device index
 
 let device_index = 0;
@@ -40,13 +42,11 @@ const sysex_request_toggle_led = 0x02;
 const sysex_request_get_flash = 0x03;
 const sysex_request_set_flash = 0x04;
 const sysex_request_bootloader = 0x05;
-const sysex_request_firmware_version = 0x06;
 
-const sysex_response_unused_01 = 0x01;
+//const sysex_response_unused_01 = 0x01;
 const sysex_response_device_id = 0x02;
 const sysex_response_get_flash = 0x03;
 const sysex_response_set_flash_ack = 0x04;
-const sysex_response_firmware_version = 0x05;
 
 //////////////////////////////////////////////////////////////////////
 // config flags
@@ -96,24 +96,25 @@ const flags = {
 
 //////////////////////////////////////////////////////////////////////
 
-let default_config = {
-    version: CONFIG_VERSION,                  // config struct version - must be 1st byte!
-    rot_control_msb: 7,          // Control Change index MSB,LSB for knob
-    rot_control_lsb: 39,         // Control Change index MSB,LSB for knob
-    btn_control_msb: 3,          // Control Change index MSB,LSB for button
-    btn_control_lsb: 35,         // Control Change index MSB,LSB for button
-    btn_value_a_14: 0x3fff,      // 1st,2nd button values or pressed/released values if cf_btn_momentary (14 bit mode)
-    btn_value_b_14: 0,           // 1st,2nd button values or pressed/released values if cf_btn_momentary (14 bit mode)
-    btn_value_a_7: 0x7f,         // 1st,2nd button values or pressed/released values if cf_btn_momentary (7 bit mode)
-    btn_value_b_7: 0,            // 1st,2nd button values or pressed/released values if cf_btn_momentary (7 bit mode)
-    channels: 0,                 // rotate channel in low nibble, button in high nibble
-    rot_zero_point: 0x40,        // Zero point in relative mode (forced 7 bit mode)
-    rot_delta_14: 1,             // How much to change by (14 bit mode)
-    rot_delta_7: 1,              // How much to change by(7 bit mode)
-    rot_current_value_14: 0,     // current value (in absolute mode) (14 bit mode)
-    rot_current_value_7: 0,      // current value (in absolute mode) (7 bit mode)
+let default_flags = flags.cf_led_flash_on_limit | flags.cf_led_flash_on_click | flags.cf_acceleration_lsb;
 
-    flags: flags.cf_led_flash_on_limit | flags.cf_led_flash_on_click | flags.cf_acceleration_lsb                  // flags, see enum above
+let default_config = {
+    config_version: CONFIG_VERSION, // config struct version - must be 1st byte!
+    rot_control_msb: 7,             // Control Change index MSB,LSB for knob
+    rot_control_lsb: 39,            // Control Change index MSB,LSB for knob
+    btn_control_msb: 3,             // Control Change index MSB,LSB for button
+    btn_control_lsb: 35,            // Control Change index MSB,LSB for button
+    btn_value_a_14: 0x3fff,         // 1st,2nd button values or pressed/released values if cf_btn_momentary (14 bit mode)
+    btn_value_b_14: 0,              // 1st,2nd button values or pressed/released values if cf_btn_momentary (14 bit mode)
+    btn_value_a_7: 0x7f,            // 1st,2nd button values or pressed/released values if cf_btn_momentary (7 bit mode)
+    btn_value_b_7: 0,               // 1st,2nd button values or pressed/released values if cf_btn_momentary (7 bit mode)
+    channels: 0,                    // rotate channel in low nibble, button in high nibble
+    rot_zero_point: 0x40,           // Zero point in relative mode (forced 7 bit mode)
+    rot_delta_14: 1,                // How much to change by (14 bit mode)
+    rot_delta_7: 1,                 // How much to change by(7 bit mode)
+    rot_current_value_14: 0,        // current value (in absolute mode) (14 bit mode)
+    rot_current_value_7: 0,         // current value (in absolute mode) (7 bit mode)
+    flags: default_flags            // flags, see enum above
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -125,7 +126,7 @@ let default_config = {
 // this assumes fields are laid out in order with no padding!!!
 
 let config_map = [
-    ["uint8", "version"],
+    ["uint8", "config_version"],
     ["uint8", "rot_control_msb"],
     ["uint8", "rot_control_lsb"],
     ["uint8", "btn_control_msb"],
@@ -141,6 +142,7 @@ let config_map = [
     ["uint16", "rot_current_value_14"],
     ["uint8", "rot_current_value_7"],
     ["uint16", "flags"],
+    ["uint16", "firmware_version"]
 ];
 
 // similar source code synchronization problem with the flags
@@ -318,22 +320,12 @@ function flash_mode(index) {
 
 //////////////////////////////////////////////////////////////////////
 
-const MIDI_MANUFACTURER_ID = 0x36;    // Cheetah Marketing, defunct?
-
-const MIDI_FAMILY_CODE_LOW = 0x44;   // 0x5544
-const MIDI_FAMILY_CODE_HIGH = 0x55;
-
-const MIDI_MODEL_NUMBER_LOW = 0x22;   // 0x3322
-const MIDI_MODEL_NUMBER_HIGH = 0x33;
-
-//////////////////////////////////////////////////////////////////////
-
 function on_device_id_response(input_port, data) {
 
     let reply_index = data[2];
     let device = midi_devices.value[reply_index];
     if (device == undefined) {
-        console.log(`Midi from unknown device: ${device.name}`);
+        console.log(`Midi from unknown device!`);
         return;
     }
 
@@ -391,7 +383,7 @@ function write_flash(index) {
         console.log(`write_flash: No such device ${index}`);
         return;
     }
-    let data_7bits = bytes_to_bits7(bytes_from_config(device.config.value), 0, CONFIG_LEN);
+    let data_7bits = bytes_to_bits7(bytes_from_config(device.config), 0, CONFIG_LEN);
     if (data_7bits !== null) {
         send_midi(device, [0xF0, 0x7E, 0x00, 0x06, sysex_request_set_flash].concat(Array.from(data_7bits)).concat([0xF7]));
     } else {
@@ -434,7 +426,6 @@ function init_devices() {
     console.log(`init_devices`);
 
     midi_devices.value = [];
-    output_ports = [];
     device_index = 0;
 
     scanned.done = true;
@@ -448,9 +439,6 @@ function init_devices() {
         input.addEventListener("midimessage", on_midi_message);
     }
 
-    // midi_devices[] is based on output ports
-    // inputs get assigned when replies come back
-
     for (const output of midi.outputs.values()) {
 
         console.log(`Found ${output.name} at ${output.id}`);
@@ -459,13 +447,13 @@ function init_devices() {
             device_index: device_index,
             serial_number: 0,
             serial_str: "#######",
-            input: null,
+            input: null,            // inputs get assigned when replies come back
             output: output,
             name: output.name,
-            firmware_version: 0x0000,
-            config: ref({})
+            config: {}
         };
-        device.config.value = default_config;
+
+        Object.assign(device.config, default_config);
 
         Object.defineProperty(device, 'active', {
             get() {
@@ -475,17 +463,19 @@ function init_devices() {
 
         midi_devices.value[device_index] = device;
 
-        // for looking up the device when the response arrives
-        //output_ports[device_index] = output;
-        //output.send([0xF0, 0x7E, device_index & 0x7f, 0x06, sysex_request_device_id, 0xF7]);
-
         device_index += 1;
     }
     console.log(`init devices scanned ${device_index} devices`);
-    // console.log(midi_devices);
 }
 
 //////////////////////////////////////////////////////////////////////
+
+function connect_device(d) {
+    d.output.send([0xF0, 0x7E, d.device_index & 0x7f, 0x06, sysex_request_device_id, 0xF7]);
+}
+
+//////////////////////////////////////////////////////////////////////
+// port.close() doesn't seem to work so this is kind of moot
 
 function toggle_device_connection(device_index) {
     console.log(`Toggle device ${device_index} connection`);
@@ -497,7 +487,7 @@ function toggle_device_connection(device_index) {
             d.output.close();
             console.log("Closed");
         } else {
-            d.output.send([0xF0, 0x7E, device_index & 0x7f, 0x06, sysex_request_device_id, 0xF7]);
+            connect_device(d);
         }
     }
 }
@@ -505,15 +495,18 @@ function toggle_device_connection(device_index) {
 //////////////////////////////////////////////////////////////////////
 
 function get_sysex_device_index(data) {
-    if (data[0] == 0xF0 && data[1] == 0x7E && data[3] == 0x07 && data[data.length - 1] == 0xF7) {
+
+    if (data[0] == 0xF0 &&
+        data[1] == 0x7E &&
+        data[3] == 0x07 &&
+        data[data.length - 1] == 0xF7) {
+
         return data[2];
     }
     return undefined;
 }
 
 //////////////////////////////////////////////////////////////////////
-
-let value = 0;
 
 function on_midi_message(event) {
 
@@ -525,27 +518,17 @@ function on_midi_message(event) {
 
     // console.log(`RECV: ${bytes_to_hex_string(data, data.length, " ")}`);
 
-    let midi_thing = data[0] & 0xf0;
+    let midi_status = data[0] & 0xf0;
 
-    switch (midi_thing) {
+    switch (midi_status) {
 
         // B0 is control change
         case 0xB0: {
 
-            let cc = data[1];
-            let val = data[2] & 0x7f;
-
-            console.log(`CC[${cc}] = ${val}`);
-
-            if (32 >= cc && cc < 64) {
-                value = (value & 0x7f) | (val << 7);
-            } else {
-                value = (value & 0x3f80) | val;
+            if (on_control_change_callback != null) {
+                on_control_change_callback(data[0] & 0xf, data[1], data[2]);
             }
 
-            if (on_rotate_callback != null) {
-                on_rotate_callback(value);
-            }
         } break;
 
         // F0 is sysex
@@ -567,15 +550,13 @@ function on_midi_message(event) {
                         let d = midi_devices.value[device_index];
                         if (d !== undefined) {
                             let flash_data = bits7_to_bytes(data, 5, CONFIG_LEN);
-                            d.config.value = config_from_bytes(flash_data);
-                            if (on_config_loaded_callback != null) {
-                                on_config_loaded_callback(d);
-                            }
+                            d.config = config_from_bytes(flash_data);
                             let s = bytes_to_hex_string(flash_data, CONFIG_LEN);
                             console.log(`Memory for device ${d.serial_str}: ${s}`);
 
-                            // get fw version
-                            send_midi(d, [0xF0, 0x7E, 0x00, 0x06, sysex_request_firmware_version, 0xF7]);
+                            if (on_config_loaded_callback != null) {
+                                on_config_loaded_callback(d);
+                            }
                         }
                     } break;
 
@@ -587,14 +568,6 @@ function on_midi_message(event) {
                             if (on_config_saved_callback != null) {
                                 on_config_saved_callback(d);
                             }
-                        }
-                    } break;
-
-                    case sysex_response_firmware_version: {
-                        let d = midi_devices.value[device_index];
-                        if (d !== undefined) {
-                            d.firmware_version = (data[5] & 0x7f) | ((data[6] & 0x7f) << 8);
-                            console.log(`Device ${d.serial_str} has flash version: ${data[6]}.${data[5]}`);
                         }
                     } break;
                 }
@@ -635,10 +608,10 @@ function on_config_saved(callback) {
 
 //////////////////////////////////////////////////////////////////////
 
-let on_rotate_callback = null;
+let on_control_change_callback = null;
 
-function on_rotate(callback) {
-    on_rotate_callback = callback;
+function on_control_change(callback) {
+    on_control_change_callback = callback;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -674,10 +647,11 @@ export default {
     scanned,
     on_midi_startup,
     init_devices,
+    connect_device,
     toggle_device_connection,
     on_config_loaded,
     on_config_saved,
-    on_rotate,
+    on_control_change,
     flash_device_led,
     flash_mode,
     read_flash,

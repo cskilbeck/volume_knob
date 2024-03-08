@@ -80,7 +80,7 @@ typedef enum config_flags
 
 typedef struct config
 {
-    uint8 version;                  // Config struct version - must be 1st byte!
+    uint8 config_version;           // Config struct version - must be 1st byte!
     uint8 rot_control_msb;          // CC index MSB for knob
     uint8 rot_control_lsb;          // CC index LSB for knob
     uint8 btn_control_msb;          // CC index MSB for button
@@ -96,8 +96,9 @@ typedef struct config
     uint16 rot_current_value_14;    // Current value (in absolute mode) (14 bit mode)
     uint8 rot_current_value_7;      // Current value (in absolute mode) (7 bit mode)
     uint16 flags;                   // Flags, see enum above
+    uint16 firmware_version;        // Firmware version, XX.YY
 
-    uint8 pad[CONFIG_MAX_LEN - 21];
+    uint8 pad[CONFIG_MAX_LEN - 23];
 } config_t;
 
 _Static_assert(sizeof(config_t) == CONFIG_MAX_LEN);

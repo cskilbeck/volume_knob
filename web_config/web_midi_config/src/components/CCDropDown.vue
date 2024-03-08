@@ -25,7 +25,7 @@ function constrainTo7Bits(event) {
 
 <template>
     <div :class="{ hide: hidden }">
-        <div class="input-group mb-1 limit-height">
+        <div class="input-group limit-height">
 
             <input type="number" class="form-control" v-model="model" @input="constrainTo7Bits">
 
@@ -36,14 +36,14 @@ function constrainTo7Bits(event) {
 
                 <li v-for="[id, ccname] in cc_names.cc_names_map">
 
-                    <a class="dropdown-item small-text py-0" href="#" @click="model = id">
+                    <a class="dropdown-item small-text" href="#" @click="model = id">
                         {{ id.toString().padStart(3, '0') }}: {{ ccname }}
                     </a>
 
                 </li>
             </ul>
         </div>
-        <div class="row mx-1 small-text text-success">{{ cc_names.get_cc_name(model) }}</div>
+        <div class="row mx-1 mb-2 small-text text-success">{{ cc_names.get_cc_name(model) }}</div>
     </div>
 </template>
 
