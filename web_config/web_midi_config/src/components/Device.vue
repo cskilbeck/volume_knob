@@ -1,6 +1,8 @@
 <script setup>
 
-import { toRaw, watch, ref, getCurrentInstance } from 'vue';
+//////////////////////////////////////////////////////////////////////
+
+import { toRaw, watch, watchEffect, ref, getCurrentInstance } from 'vue';
 
 import Toggle from './Toggle.vue'
 import Modal from './Modal.vue'
@@ -10,6 +12,8 @@ import midi from '../Midi.js'
 
 import fileDownload from 'js-file-download';
 
+//////////////////////////////////////////////////////////////////////
+
 const props = defineProps({
     device: {
         type: Object,
@@ -17,17 +21,30 @@ const props = defineProps({
     }
 });
 
+//////////////////////////////////////////////////////////////////////
 // 3 modal dialogs
+
 const flashModal = ref(false);
 const importModal = ref(false);
 const disconnectModal = ref(false);
 
+//////////////////////////////////////////////////////////////////////
 // is the current config different from what's on the device?
+
 let config_changed = ref(false);
 
+//////////////////////////////////////////////////////////////////////
 // this is the config on the device to compare against
+
 let stored_config = null;
 
+//////////////////////////////////////////////////////////////////////
+
+let ui_object = ui_from_config(midi.default_config);
+
+let ui = ref(ui_object);
+
+//////////////////////////////////////////////////////////////////////
 // noddy compare for config objects
 
 function shallowEqual(object1, object2) {
@@ -49,53 +66,7 @@ function shallowEqual(object1, object2) {
     return true;
 }
 
-let that = getCurrentInstance();
-
-// for petes sake, this absolutely sucks:
-// manually create refs for everything in the config
-// because I can't make the ref/reactive/vue thing work
-// properly for nested objects etc
-
-// this is at least bulletproof
-
-// flags
-
-let rotate_extended = ref(false);
-let rotate_relative = ref(false);
-let led_invert = ref(false);
-let led_flash_on_rot = ref(false);
-let led_flash_on_limit = ref(false);
-let btn_momentary = ref(false);
-let btn_extended = ref(false);
-let led_flash_on_click = ref(false);
-let led_flash_on_release = ref(false);
-let led_track_button_toggle = ref(false);
-let toggle = ref(false);
-let button_tracks_rotation = ref(false);
-
-// acceleration is a bit special, uses 2 bits in the flags
-
-let acceleration = ref(0);
-
-// fields
-
-let config_version = ref(0);
-let rot_control_msb = ref(0);
-let rot_control_lsb = ref(0);
-let btn_control_msb = ref(0);
-let btn_control_lsb = ref(0);
-let btn_value_a_14 = ref(0);
-let btn_value_b_14 = ref(0);
-let btn_value_a_7 = ref(0);
-let btn_value_b_7 = ref(0);
-let rot_channel = ref(0);   // high nibble of config.channels
-let btn_channel = ref(0);   // low nibble of config.channels
-let rot_zero_point = ref(0);
-let rot_delta_14 = ref(0);
-let rot_delta_7 = ref(0);
-let rot_current_value_14 = ref(0);
-let rot_current_value_7 = ref(0);
-let firmware_version = ref(0);
+//////////////////////////////////////////////////////////////////////
 
 function get_btn_channel(config) {
     return (config.channels >> 4) & 0xf;
@@ -105,165 +76,153 @@ function get_rot_channel(config) {
     return config.channels & 0xf;
 }
 
-// get a config object from the current settings
+//////////////////////////////////////////////////////////////////////
+// get a config object from the current ui
 
-function get_current_config() {
+function config_from_ui() {
 
     let config = {};
 
-    config.config_version = config_version.value;
-    config.rot_control_msb = rot_control_msb.value;
-    config.rot_control_lsb = rot_control_lsb.value;
-    config.btn_control_msb = btn_control_msb.value;
-    config.btn_control_lsb = btn_control_lsb.value;
-    config.btn_value_a_14 = btn_value_a_14.value;
-    config.btn_value_b_14 = btn_value_b_14.value;
-    config.btn_value_a_7 = btn_value_a_7.value;
-    config.btn_value_b_7 = btn_value_b_7.value;
-
-    config.channels = (rot_channel.value & 0xf) | ((btn_channel.value & 0xf) << 4);
-
-    config.rot_zero_point = rot_zero_point.value;
-    config.rot_delta_14 = rot_delta_14.value;
-    config.rot_delta_7 = rot_delta_7.value;
-    config.rot_current_value_14 = rot_current_value_14.value;
-    config.rot_current_value_7 = rot_current_value_7.value;
-    config.firmware_version = firmware_version.value;
+    config.config_version = ui.value.config_version;
+    config.rot_control_msb = ui.value.rot_control_msb;
+    config.rot_control_lsb = ui.value.rot_control_lsb;
+    config.btn_control_msb = ui.value.btn_control_msb;
+    config.btn_control_lsb = ui.value.btn_control_lsb;
+    config.btn_value_a_14 = ui.value.btn_value_a_14;
+    config.btn_value_b_14 = ui.value.btn_value_b_14;
+    config.btn_value_a_7 = ui.value.btn_value_a_7;
+    config.btn_value_b_7 = ui.value.btn_value_b_7;
+    config.channels = (ui.value.rot_channel & 0xf) | ((ui.value.btn_channel & 0xf) << 4);
+    config.rot_zero_point = ui.value.rot_zero_point;
+    config.rot_delta_14 = ui.value.rot_delta_14;
+    config.rot_delta_7 = ui.value.rot_delta_7;
+    config.rot_current_value_14 = ui.value.rot_current_value_14;
+    config.rot_current_value_7 = ui.value.rot_current_value_7;
+    config.firmware_version = ui.value.firmware_version;
 
     let flags = 0;
-    flags |= rotate_extended.value ? midi.flags.cf_rotate_extended : 0;
-    flags |= rotate_relative.value ? midi.flags.cf_rotate_relative : 0;
-    flags |= led_invert.value ? midi.flags.cf_led_invert : 0;
-    flags |= led_flash_on_rot.value ? midi.flags.cf_led_flash_on_rot : 0;
-    flags |= led_flash_on_limit.value ? midi.flags.cf_led_flash_on_limit : 0;
-    flags |= btn_momentary.value ? midi.flags.cf_btn_momentary : 0;
-    flags |= btn_extended.value ? midi.flags.cf_btn_extended : 0;
-    flags |= led_flash_on_click.value ? midi.flags.cf_led_flash_on_click : 0;
-    flags |= led_flash_on_release.value ? midi.flags.cf_led_flash_on_release : 0;
-    flags |= led_track_button_toggle.value ? midi.flags.cf_led_track_button_toggle : 0;
-
-    flags |= ((acceleration.value & 1) != 0) ? midi.flags.cf_acceleration_lsb : 0;
-    flags |= ((acceleration.value & 2) != 0) ? midi.flags.cf_acceleration_msb : 0;
-
-    flags |= toggle.value ? midi.flags.cf_toggle : 0;
-    flags |= button_tracks_rotation.value ? midi.flags.cf_button_tracks_rotation : 0;
+    flags |= ui.value.rotate_extended ? midi.flags.cf_rotate_extended : 0;
+    flags |= ui.value.rotate_relative ? midi.flags.cf_rotate_relative : 0;
+    flags |= ui.value.led_invert ? midi.flags.cf_led_invert : 0;
+    flags |= ui.value.led_flash_on_rot ? midi.flags.cf_led_flash_on_rot : 0;
+    flags |= ui.value.led_flash_on_limit ? midi.flags.cf_led_flash_on_limit : 0;
+    flags |= ui.value.btn_momentary ? midi.flags.cf_btn_momentary : 0;
+    flags |= ui.value.btn_extended ? midi.flags.cf_btn_extended : 0;
+    flags |= ui.value.led_flash_on_click ? midi.flags.cf_led_flash_on_click : 0;
+    flags |= ui.value.led_flash_on_release ? midi.flags.cf_led_flash_on_release : 0;
+    flags |= ui.value.led_track_button_toggle ? midi.flags.cf_led_track_button_toggle : 0;
+    flags |= ((ui.value.acceleration & 1) != 0) ? midi.flags.cf_acceleration_lsb : 0;
+    flags |= ((ui.value.acceleration & 2) != 0) ? midi.flags.cf_acceleration_msb : 0;
+    flags |= ui.valuetoggle ? midi.flags.cf_toggle : 0;
+    flags |= ui.valuebutton_tracks_rotation ? midi.flags.cf_button_tracks_rotation : 0;
 
     config.flags = flags;
 
     return config;
 }
 
-// apply current settings from a config object
+//////////////////////////////////////////////////////////////////////
+// get a ui object from a config object
 
-function on_new_config(config) {
+function ui_from_config(config) {
 
-    config_version.value = config.config_version;
-    rot_control_msb.value = config.rot_control_msb;
-    rot_control_lsb.value = config.rot_control_lsb;
-    btn_control_msb.value = config.btn_control_msb;
-    btn_control_lsb.value = config.btn_control_lsb;
-    btn_value_a_14.value = config.btn_value_a_14;
-    btn_value_b_14.value = config.btn_value_b_14;
-    btn_value_a_7.value = config.btn_value_a_7;
-    btn_value_b_7.value = config.btn_value_b_7;
-
-    rot_channel.value = get_rot_channel(config);
-    btn_channel.value = get_btn_channel(config);
-
-    rot_zero_point.value = config.rot_zero_point;
-    rot_delta_14.value = config.rot_delta_14;
-    rot_delta_7.value = config.rot_delta_7;
-    rot_current_value_14.value = config.rot_current_value_14;
-    rot_current_value_7.value = config.rot_current_value_7;
-    firmware_version.value = config.firmware_version;
-
-    let flags = config.flags;
-
-    rotate_extended.value = (flags & midi.flags.cf_rotate_extended) != 0;
-    rotate_relative.value = (flags & midi.flags.cf_rotate_relative) != 0;
-    led_invert.value = (flags & midi.flags.cf_led_invert) != 0;
-    led_flash_on_rot.value = (flags & midi.flags.cf_led_flash_on_rot) != 0;
-    led_flash_on_limit.value = (flags & midi.flags.cf_led_flash_on_limit) != 0;
-    btn_momentary.value = (flags & midi.flags.cf_btn_momentary) != 0;
-    btn_extended.value = (flags & midi.flags.cf_btn_extended) != 0;
-    led_flash_on_click.value = (flags & midi.flags.cf_led_flash_on_click) != 0;
-    led_flash_on_release.value = (flags & midi.flags.cf_led_flash_on_release) != 0;
-    led_track_button_toggle.value = (flags & midi.flags.cf_led_track_button_toggle) != 0;
-    toggle.value = (flags & midi.flags.cf_toggle) != 0;
-    button_tracks_rotation.value = (flags & midi.flags.cf_button_tracks_rotation) != 0;
-
-    acceleration.value = (((flags & midi.flags.cf_acceleration_lsb) != 0) ? 1 : 0) + (((flags & midi.flags.cf_acceleration_msb) != 0) ? 2 : 0);
+    let new_ui = {
+        rotate_extended: (config.flags & midi.flags.cf_rotate_extended) != 0,
+        rotate_relative: (config.flags & midi.flags.cf_rotate_relative) != 0,
+        led_invert: (config.flags & midi.flags.cf_led_invert) != 0,
+        led_flash_on_rot: (config.flags & midi.flags.cf_led_flash_on_rot) != 0,
+        led_flash_on_limit: (config.flags & midi.flags.cf_led_flash_on_limit) != 0,
+        btn_momentary: (config.flags & midi.flags.cf_btn_momentary) != 0,
+        btn_extended: (config.flags & midi.flags.cf_btn_extended) != 0,
+        led_flash_on_click: (config.flags & midi.flags.cf_led_flash_on_click) != 0,
+        led_flash_on_release: (config.flags & midi.flags.cf_led_flash_on_release) != 0,
+        led_track_button_toggle: (config.flags & midi.flags.cf_led_track_button_toggle) != 0,
+        toggle: (config.flags & midi.flags.cf_toggle) != 0,
+        button_tracks_rotation: (config.flags & midi.flags.cf_button_tracks_rotation) != 0,
+        acceleration: (((config.flags & midi.flags.cf_acceleration_lsb) != 0) ? 1 : 0) + (((config.flags & midi.flags.cf_acceleration_msb) != 0) ? 2 : 0),
+        config_version: config.config_version,
+        rot_control_msb: config.rot_control_msb,
+        rot_control_lsb: config.rot_control_lsb,
+        btn_control_msb: config.btn_control_msb,
+        btn_control_lsb: config.btn_control_lsb,
+        btn_value_a_14: config.btn_value_a_14,
+        btn_value_b_14: config.btn_value_b_14,
+        btn_value_a_7: config.btn_value_a_7,
+        btn_value_b_7: config.btn_value_b_7,
+        rot_channel: get_rot_channel(config),
+        btn_channel: get_btn_channel(config),
+        rot_zero_point: config.rot_zero_point,
+        rot_delta_14: config.rot_delta_14,
+        rot_delta_7: config.rot_delta_7,
+        rot_current_value_14: config.rot_current_value_14,
+        rot_current_value_7: config.rot_current_value_7,
+        firmware_version: config.firmware_version,
+    };
+    return new_ui;
 }
 
-// set config_changed if current settings are different from last loaded/saved
-// so the 'store to device' button can highlight if necessary
-
-function diff() {
-    config_changed.value = !shallowEqual(get_current_config(), stored_config);
-};
+//////////////////////////////////////////////////////////////////////
+// check for changes to ui, apply limits and check if the result is
+// different from the last stored/loaded config on the device
 
 function rot_limit() {
-    return rotate_extended.value ? (1 << 14) : (1 << 7);
+    return ui.value.rotate_extended.value ? (1 << 14) : (1 << 7);
 }
 
 function constrain(a, min, max) {
     return Math.max(min, Math.min(a, max));
 }
 
-// and then loads of watchers for limits etc
+watch(() => { return ui },
+    (ui) => {
+        ui.value.rot_zero_point = constrain(ui.value.rot_zero_point, 0, rot_limit());
+        ui.value.rot_delta_14 = constrain(ui.value.rot_delta_14, 1, 0x3fff);
+        ui.value.btn_value_a_14 = constrain(ui.value.btn_value_a_14, 0, 0x3fff);
+        ui.value.btn_value_b_14 = constrain(ui.value.btn_value_b_14, 0, 0x3fff);
+        ui.value.rot_delta_7 = constrain(ui.value.rot_delta_7, 1, 0x7f);
+        ui.value.btn_value_a_7 = constrain(ui.value.btn_value_a_7, 0, 0x7f);
+        ui.value.btn_value_b_7 = constrain(ui.value.btn_value_b_7, 0, 0x7f);
+        ui.value.rot_channel = constrain(ui.value.rot_channel, 0, 15);
+        ui.value.btn_channel = constrain(ui.value.btn_channel, 0, 15);
 
-function do_watch(x) {
-    console.log(that.proxy.$refs);
-}
+        // set config_changed if current settings are different from last loaded/saved
+        // so the 'store to device' button can highlight if necessary
 
-do_watch(rot_zero_point);
+        config_changed.value = !shallowEqual(config_from_ui(), stored_config);
+    },
+    { deep: true }
+);
 
-//watch(rot_zero_point, (n) => { rot_zero_point.value = constrain(n, 0, rot_limit()); diff(); });
-watch(rot_delta_14, (n) => { rot_delta_14.value = constrain(n, 1, 0x3fff); diff(); });
-watch(btn_value_a_14, (n) => { btn_value_a_14.value = constrain(n, 0, 0x3fff); diff(); });
-watch(btn_value_b_14, (n) => { btn_value_b_14.value = constrain(n, 0, 0x3fff); diff(); });
-watch(rot_delta_7, (n) => { rot_delta_7.value = constrain(n, 1, 0x7f); diff(); });
-watch(btn_value_a_7, (n) => { btn_value_a_7.value = constrain(n, 0, 0x7f); diff(); });
-watch(btn_value_b_7, (n) => { btn_value_b_7.value = constrain(n, 0, 0x7f); diff(); });
-watch(rot_channel, (n) => { rot_channel.value = constrain(n, 0, 15); diff(); });
-watch(btn_channel, (n) => { btn_channel.value = constrain(n, 0, 15); diff(); });
-watch(rotate_extended, (n) => { rotate_extended.value = n; diff(); });
-watch(rotate_relative, (n) => { rotate_relative.value = n; diff(); });
-watch(led_invert, (n) => { led_invert.value = n; diff(); });
-watch(led_flash_on_rot, (n) => { led_flash_on_rot.value = n; diff(); });
-watch(led_flash_on_limit, (n) => { led_flash_on_limit.value = n; diff(); });
-watch(btn_momentary, (n) => { btn_momentary.value = n; diff(); });
-watch(btn_extended, (n) => { btn_extended.value = n; diff(); });
-watch(led_flash_on_click, (n) => { led_flash_on_click.value = n; diff(); });
-watch(led_flash_on_release, (n) => { led_flash_on_release.value = n; diff(); });
-watch(led_track_button_toggle, (n) => { led_track_button_toggle.value = n; diff(); });
-watch(toggle, (n) => { toggle.value = n; diff(); });
-watch(button_tracks_rotation, (n) => { button_tracks_rotation.value = n; diff(); });
+//////////////////////////////////////////////////////////////////////
+// store current UI to the device
 
 function store_config() {
-    props.device.config = get_current_config();
+    props.device.config = config_from_ui();
     midi.write_flash(props.device.device_index);
     config_changed.value = false;
 }
 
-// midi says a config was loaded from the device
+//////////////////////////////////////////////////////////////////////
+// midi says a config was loaded from the device - apply it to the ui
 
 midi.on_config_loaded((device) => {
 
     props.device.config = device.config;
     stored_config = Object.assign({}, toRaw(device.config));
-    on_new_config(props.device.config);
+    ui.value = ui_from_config(props.device.config);
     config_changed.value = false;
-    that.proxy.$forceUpdate();
 });
 
-// midi says a config was saved to the device 
+//////////////////////////////////////////////////////////////////////
+// midi says a config was saved to the device
+// in theory there's a little race in here but in practice not a problem
 
 midi.on_config_saved((device) => {
     config_changed.value = false;
     stored_config = Object.assign({}, toRaw(device.config));
 });
 
+//////////////////////////////////////////////////////////////////////
 // preview knob
 
 let default_matrix = rotation_matrix(50, 50, -150);
@@ -343,6 +302,7 @@ midi.on_control_change((channel, cc, val) => {
     }
 });
 
+//////////////////////////////////////////////////////////////////////
 // this doesn't work - port.close() does nothing
 
 function toggle_connection(device) {
@@ -354,11 +314,16 @@ function toggle_connection(device) {
     }
 }
 
+//////////////////////////////////////////////////////////////////////
+// read device config when it's discovered
+
 let connect_on_discovery = true;
 
 if (connect_on_discovery) {
     midi.connect_device(props.device);
 }
+
+//////////////////////////////////////////////////////////////////////
 
 </script>
 
@@ -385,7 +350,7 @@ if (connect_on_discovery) {
                         <div class="small mt-3" v-if="device.active">
                             Firmware
                             <span class="text-primary-emphasis font-monospace">
-                                v{{ firmware_version >> 8 }}.{{ (firmware_version &
+                                v{{ ui.firmware_version >> 8 }}.{{ (ui.firmware_version &
                                 0x7f).toString(10).padStart(2, '0') }}
                             </span>
                         </div>
@@ -468,20 +433,22 @@ if (connect_on_discovery) {
                                     <label class="form-check-label user-select-none" for="extended_check_rot">Extended
                                         CC</label>
                                     <input class="form-check-input pull-left" type="checkbox" id="extended_check_rot"
-                                        v-model="rotate_extended">
+                                        v-model="ui.rotate_extended">
                                 </div>
                             </div>
                         </div>
                         <div class="row">
                             <div class='col'>
-                                <CCDropDown v-model="rot_control_msb" :label="rotate_extended ?
-                                'MSB' : 'CC'
-                                " />
+                                <CCDropDown v-model="ui.rot_control_msb">
+                                    {{ ui.rotate_extended ? 'MSB' : 'CC' }}
+                                </CCDropDown>
                             </div>
                         </div>
                         <div class="row">
-                            <div class='col'>
-                                <CCDropDown v-model="rot_control_lsb" label="LSB" :hidden="!rotate_extended" />
+                            <div class='col' :class="{ hide: !ui.rotate_extended }">
+                                <CCDropDown v-model="ui.rot_control_lsb">
+                                    LSB
+                                </CCDropDown>
                             </div>
                         </div>
                     </div>
@@ -489,21 +456,21 @@ if (connect_on_discovery) {
                         <div class="row">
                             <div class="col">
                                 <div class="input-group mb-1">
-                                    <input type="number" class="form-control" v-model.number="rot_channel">
+                                    <input type="number" class="form-control" v-model.number="ui.rot_channel">
                                     <span class="input-group-text user-select-none">Chan</span>
                                 </div>
                             </div>
                         </div>
                         <div class="row">
-                            <div class="col" v-if="rotate_extended">
+                            <div class="col" v-if="ui.rotate_extended">
                                 <div class="input-group mb-1">
-                                    <input type="number" class="form-control" v-model.number="rot_delta_14">
+                                    <input type="number" class="form-control" v-model.number="ui.rot_delta_14">
                                     <span class="input-group-text user-select-none">Delta</span>
                                 </div>
                             </div>
-                            <div class="col" v-if="!rotate_extended">
+                            <div class="col" v-if="!ui.rotate_extended">
                                 <div class="input-group mb-1">
-                                    <input type="number" class="form-control" v-model.number="rot_delta_7">
+                                    <input type="number" class="form-control" v-model.number="ui.rot_delta_7">
                                     <span class="input-group-text user-select-none">Delta</span>
                                 </div>
                             </div>
@@ -511,33 +478,39 @@ if (connect_on_discovery) {
                         <div class="row">
                             <div class="col">
                                 <div class="input-group">
-                                    <select class="form-select smaller-text" id="inputGroupSelect01"
-                                        v-model="acceleration">
+                                    <select class="form-select smaller-text" id="accel_input_group"
+                                        v-model="ui.acceleration">
                                         <option selected value="0">Off</option>
                                         <option value="1">Low</option>
                                         <option value="2">Medium</option>
                                         <option value="3">High</option>
                                     </select>
-                                    <label class="input-group-text" for="inputGroupSelect01">Accel</label>
+                                    <label class="input-group-text" for="accel_input_group">Accel</label>
                                 </div>
                             </div>
                         </div>
                         <div class="row mx-4 mt-1 mb-0">
                             <div class="col mb-1" style="height:1.5rem;margin: 0px;padding: 0px;">
-                                <Toggle v-model="rotate_relative" :checked-text-color='"var(--bs-btn-color)"'
+                                <Toggle v-model="ui.rotate_relative" :checked-text-color='"var(--bs-btn-color)"'
                                     :unchecked-text-color='"var(--bs-btn-color)"'
                                     :checked-background-color='"var(--bs-tertiary-bg)"'
                                     :unchecked-background-color='"var(--bs-tertiary-bg)"'
                                     :border-color='"var(--bs-border-color)"'
                                     :unchecked-pill-color='"var(--bs-border-color)"'
-                                    :checked-pill-color='"var(--bs-border-color)"' :checked-text='"Relative"'
-                                    :unchecked-text='"Absolute"' />
+                                    :checked-pill-color='"var(--bs-border-color)"'>
+                                    <template #unchecked>
+                                        Absolute
+                                    </template>
+                                    <template #checked>
+                                        Relative
+                                    </template>
+                                </Toggle>
                             </div>
                         </div>
-                        <div class="row" :class="{ 'hide': !rotate_relative }">
+                        <div class="row" :class="{ 'hide': !ui.rotate_relative }">
                             <div class='col'>
                                 <div class="input-group mb-2">
-                                    <input type="number" class="form-control" v-model.number="rot_zero_point">
+                                    <input type="number" class="form-control" v-model.number="ui.rot_zero_point">
                                     <span class="input-group-text user-select-none">Zero</span>
                                 </div>
                             </div>
@@ -559,55 +532,61 @@ if (connect_on_discovery) {
                         <div class="row">
                             <div class="col">
                                 <div class="input-group">
-                                    <input type="number" class="form-control" v-model.number="btn_channel">
+                                    <input type="number" class="form-control" v-model.number="ui.btn_channel">
                                     <span class="input-group-text user-select-none">Chan</span>
                                 </div>
                             </div>
                         </div>
                         <div class="row mx-4 mt-1">
                             <div class="col mb-1" style="height:1.5rem;padding: 0px;">
-                                <Toggle v-model="btn_momentary" :checked-text-color='"var(--bs-btn-color)"'
+                                <Toggle v-model="ui.btn_momentary" :checked-text-color='"var(--bs-btn-color)"'
                                     :unchecked-text-color='"var(--bs-btn-color)"'
                                     :checked-background-color='"var(--bs-tertiary-bg)"'
                                     :unchecked-background-color='"var(--bs-tertiary-bg)"'
                                     :border-color='"var(--bs-border-color)"'
                                     :unchecked-pill-color='"var(--bs-border-color)"'
-                                    :checked-pill-color='"var(--bs-border-color)"' :checked-text='"Momentary"'
-                                    :unchecked-text='"Toggle"' />
+                                    :checked-pill-color='"var(--bs-border-color)"'>
+                                    <template #checked>
+                                        Momentary
+                                    </template>
+                                    <template #unchecked>
+                                        Toggle
+                                    </template>
+                                </Toggle>
                             </div>
                         </div>
                         <div class="row">
-                            <div class="col" v-if="btn_extended">
+                            <div class="col" v-if="ui.btn_extended">
                                 <div class="input-group mb-1">
-                                    <input type="number" class="form-control" v-model.number="btn_value_a_14">
+                                    <input type="number" class="form-control" v-model.number="ui.btn_value_a_14">
                                     <span class="input-group-text user-select-none">
-                                        {{ btn_momentary.value ? "ON" : "A" }}
+                                        {{ ui.btn_momentary ? "ON" : "A" }}
                                     </span>
                                 </div>
                             </div>
-                            <div class="col" v-if="!btn_extended">
+                            <div class="col" v-if="!ui.btn_extended">
                                 <div class="input-group mb-1">
-                                    <input type="number" class="form-control" v-model.number="btn_value_a_7">
+                                    <input type="number" class="form-control" v-model.number="ui.btn_value_a_7">
                                     <span class="input-group-text user-select-none">
-                                        {{ btn_momentary.value ? "ON" : "A" }}
+                                        {{ ui.btn_momentary ? "ON" : "A" }}
                                     </span>
                                 </div>
                             </div>
                         </div>
                         <div class="row">
-                            <div class="col" v-if="btn_extended">
+                            <div class="col" v-if="ui.btn_extended">
                                 <div class="input-group mb-1">
-                                    <input type="number" class="form-control" v-model.number="btn_value_b_14">
+                                    <input type="number" class="form-control" v-model.number="ui.btn_value_b_14">
                                     <span class="input-group-text user-select-none">
-                                        {{ btn_momentary.value ? "OFF" : "B" }}
+                                        {{ ui.btn_momentary ? "OFF" : "B" }}
                                     </span>
                                 </div>
                             </div>
-                            <div class="col" v-if="!btn_extended">
+                            <div class="col" v-if="!ui.btn_extended">
                                 <div class="input-group mb-2">
-                                    <input type="number" class="form-control" v-model.number="btn_value_b_7">
+                                    <input type="number" class="form-control" v-model.number="ui.btn_value_b_7">
                                     <span class="input-group-text user-select-none">
-                                        {{ btn_momentary.value ? "OFF" : "B" }}
+                                        {{ ui.btn_momentary ? "OFF" : "B" }}
                                     </span>
                                 </div>
                             </div>
@@ -620,18 +599,22 @@ if (connect_on_discovery) {
                                     <label class="form-check-label user-select-none" for="extended_check_btn">Extended
                                         CC</label>
                                     <input class="form-check-input pull-left" type="checkbox" id="extended_check_btn"
-                                        v-model="btn_extended">
+                                        v-model="ui.btn_extended">
                                 </div>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col">
-                                <CCDropDown v-model="btn_control_msb" :label="btn_extended.value ? 'MSB' : 'CC'" />
+                                <CCDropDown v-model="ui.btn_control_msb">
+                                    {{ ui.btn_extended ? 'MSB' : 'CC' }}
+                                </CCDropDown>
                             </div>
                         </div>
                         <div class="row">
-                            <div class="col mb-2">
-                                <CCDropDown v-model="btn_control_lsb" label="LSB" :hidden="!btn_extended" />
+                            <div class="col mb-2" :class="{ hide: !ui.btn_extended }">
+                                <CCDropDown v-model="ui.btn_control_lsb">
+                                    LSB
+                                </CCDropDown>
                             </div>
                         </div>
                     </div>
@@ -660,40 +643,40 @@ if (connect_on_discovery) {
                                 <label class="form-check-label user-select-none" for="flash_on_rot">Knob is
                                     rotated</label>
                                 <input class="form-check-input pull-left" type="checkbox" id="flash_on_rot"
-                                    v-model="led_flash_on_rot">
+                                    v-model="ui.led_flash_on_rot">
                             </div>
                         </div>
                     </div>
                     <div class="row">
                         <div class="col">
                             <div class="form-check">
-                                <label class="form-check-label user-select-none" for="flash_on_limit">Rotation
-                                    value
-                                    hits
-                                    limit</label>
+                                <label class="form-check-label user-select-none" for="flash_on_limit">
+                                    Rotation value hits limit
+                                </label>
                                 <input class="form-check-input pull-left" type="checkbox" id="flash_on_limit"
-                                    v-model="led_flash_on_limit">
+                                    v-model="ui.led_flash_on_limit">
                             </div>
                         </div>
                     </div>
                     <div class="row">
                         <div class="col">
                             <div class="form-check">
-                                <label class="form-check-label user-select-none" for="flash_on_click">Button is
-                                    pressed</label>
+                                <label class="form-check-label user-select-none" for="flash_on_click">
+                                    Button is pressed
+                                </label>
                                 <input class="form-check-input pull-left" type="checkbox" id="flash_on_click"
-                                    v-model="led_flash_on_click">
+                                    v-model="ui.led_flash_on_click">
                             </div>
                         </div>
                     </div>
                     <div class="row">
                         <div class="col">
                             <div class="form-check">
-                                <label class="form-check-label user-select-none" for="flash_on_release">Button
-                                    is
-                                    released</label>
+                                <label class="form-check-label user-select-none" for="flash_on_release">
+                                    Button is released
+                                </label>
                                 <input class="form-check-input pull-left" type="checkbox" id="flash_on_release"
-                                    v-model="led_flash_on_release">
+                                    v-model="ui.led_flash_on_release">
                             </div>
                         </div>
                     </div>
@@ -701,22 +684,22 @@ if (connect_on_discovery) {
                     <div class="row">
                         <div class="col">
                             <div class="form-check">
-                                <label class="form-check-label user-select-none" for="track_button_value">LED
-                                    tracks
-                                    button
-                                    value</label>
+                                <label class="form-check-label user-select-none" for="track_button_value">
+                                    LED tracks button value
+                                </label>
                                 <input class="form-check-input pull-left" type="checkbox" id="track_button_value"
-                                    v-model="led_track_button_toggle">
+                                    v-model="ui.led_track_button_toggle">
                             </div>
                         </div>
                     </div>
                     <div class="row mb-2">
                         <div class="col">
                             <div class="form-check">
-                                <label class="form-check-label user-select-none" for="led_invert">Invert
-                                    LED</label>
+                                <label class="form-check-label user-select-none" for="led_invert">
+                                    Invert LED
+                                </label>
                                 <input class="form-check-input pull-left" type="checkbox" id="led_invert"
-                                    v-model="led_invert">
+                                    v-model="ui.led_invert">
                             </div>
                         </div>
                     </div>

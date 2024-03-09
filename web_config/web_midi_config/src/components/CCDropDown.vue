@@ -2,48 +2,53 @@
 
 <script setup>
 
-import cc_names from '../cc_names.js';
+import CC from '../CC.js';
 
-const model = defineModel();
-
-const props = defineProps({
-    label: {
-        type: String,
-        required: true
-    },
-    hidden: {
-        type: Boolean,
-        required: false
-    }
-});
+const cc_id = defineModel();
 
 function constrainTo7Bits(event) {
-    model.value = Math.max(0, Math.min(Number(event.target.value), 127));
+    cc_id.value = Math.max(0, Math.min(Number(event.target.value), 127));;
 }
 
 </script>
 
 <template>
-    <div :class="{ hide: hidden }">
-        <div class="input-group limit-height">
+    <div class="input-group limit-height">
 
-            <input type="number" class="form-control" v-model="model" @input="constrainTo7Bits">
+        <input type="number" class="form-control" v-model.number="cc_id" @input="constrainTo7Bits">
 
-            <button class="btn tertiary-bg small-text border rounded-end" type="button" data-bs-toggle="dropdown">{{
-        label }}</button>
+        <button class="btn tertiary-bg small-text border rounded-end" type="button" data-bs-toggle="dropdown">
+            <slot></slot>
+        </button>
 
-            <ul class="dropdown-menu border-secondary-subtle rounded-0">
+        <ul class="dropdown-menu border-secondary-subtle rounded-0" style="width:300px">
 
-                <li v-for="[id, ccname] in cc_names.cc_names_map">
+            <li v-for="(cc, index) in CC.CCs" class="w-100">
 
-                    <a class="dropdown-item small-text" href="#" @click="model = id">
-                        {{ id.toString().padStart(3, '0') }}: {{ ccname }}
-                    </a>
+                <a class="dropdown-item small-text" href="#" @click="cc_id = index">
+                    <div class="d-flex flex-row">
+                        <div class="w-75">
+                            {{ cc.name }}
+                        </div>
+                        <div class="w-25 text-end me-4">
+                            {{ index.toString() }}
+                        </div>
+                        <div class="w-25 text-end">
+                            <span class="rounded px-2 pb-1"
+                                :class='(CC.is_MSB(cc) || CC.is_LSB(cc) ? "bg-secondary-subtle" : "") + " " + (CC.is_MSB(cc) ? "bg-secondary-subtle" : "text-secondary")'>
+                                {{ CC.is_MSB(cc) ? "EXT" : CC.is_LSB(cc) ? "LSB" : "" }}
+                            </span>
+                        </div>
+                    </div>
+                </a>
 
-                </li>
-            </ul>
+            </li>
+        </ul>
+    </div>
+    <div class="row ms-1 mb-2 small-text text-success">
+        <div class="col-9">
+            {{ `${CC.CCs[cc_id].name} ${CC.is_LSB(CC.CCs[cc_id]) ? "LSB" : ""}` }}
         </div>
-        <div class="row mx-1 mb-2 small-text text-success">{{ cc_names.get_cc_name(model) }}</div>
     </div>
 </template>
 
@@ -68,5 +73,12 @@ function constrainTo7Bits(event) {
 .limit-height ul {
     max-height: 250px;
     overflow-y: auto;
+}
+
+.btn.active,
+.btn.show,
+.btn:first-child:active,
+:not(.btn-check)+.btn:active {
+    border-color: transparent;
 }
 </style>

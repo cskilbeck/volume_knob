@@ -657,5 +657,6 @@ export default {
     read_flash,
     write_flash,
     get_config_json,
+    default_config,
     flags
 }

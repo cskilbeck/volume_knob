@@ -8,18 +8,6 @@ const props = defineProps({
         required: true,
         description: "The model value"
     },
-    checkedText: {
-        type: String,
-        required: false,
-        default: "",
-        description: "Checked text"
-    },
-    uncheckedText: {
-        type: String,
-        required: false,
-        default: "",
-        description: "Unchecked text"
-    },
     pillSize: {
         type: Number,
         required: false,
@@ -136,8 +124,7 @@ function getDotBorder() {
     return ((labelHeight.value - props.pillSize) - getDotSize()) * 0.5;
 }
 
-// hmph, 50% not quite exactly right, not sure why
-const v_offset = "-48%";
+const v_offset = "-50%";
 
 const resizeObserver = new ResizeObserver((entries) => {
 
@@ -156,10 +143,10 @@ onMounted(() => {
         <input v-model="isChecked" type="checkbox" @change="emits('update:modelValue', isChecked)">
         <span class="slider">
             <span class='checked-text-span'>
-                {{ checkedText }}
+                <slot name="checked"></slot>
             </span>
             <span class='unchecked-text-span'>
-                {{ uncheckedText }}
+                <slot name="unchecked"></slot>
             </span>
         </span>
     </label>
