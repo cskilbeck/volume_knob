@@ -1,5 +1,6 @@
 <script setup>
-import { ref } from 'vue';
+
+const emit = defineEmits(["update:modelValue"]);
 
 const backdropClick = (event) => {
     if (event.target.id == 'backdrop' && props.closeable == true) {
@@ -34,8 +35,6 @@ const props = defineProps({
         default: null
     }
 })
-
-const emit = defineEmits();
 
 </script>
 

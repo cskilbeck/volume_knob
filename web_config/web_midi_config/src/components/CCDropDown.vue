@@ -2,20 +2,35 @@
 
 <script setup>
 
+import { ref, watch, watchEffect } from 'vue';
 import CC from '../CC.js';
 
-const cc_id = defineModel();
+const props = defineProps({
+    modelValue: {
+        type: Number,
+        required: true,
+        default: 0
+    }
+});
 
-function constrainTo7Bits(event) {
-    cc_id.value = Math.max(0, Math.min(Number(event.target.value), 127));;
-}
+const emit = defineEmits(["update:modelValue"]);
+
+const current = ref(0);
+
+watchEffect(function () {
+    current.value = props.modelValue;
+});
+
+watch(current, (n) => {
+    current.value = Math.max(0, Math.min(Number(n), 127));
+});
 
 </script>
 
 <template>
     <div class="input-group limit-height">
 
-        <input type="number" class="form-control" v-model.number="cc_id" @input="constrainTo7Bits">
+        <input type="number" class="form-control" v-model.number="current">
 
         <button class="btn tertiary-bg small-text border rounded-end" type="button" data-bs-toggle="dropdown">
             <slot></slot>
@@ -25,7 +40,7 @@ function constrainTo7Bits(event) {
 
             <li v-for="(cc, index) in CC.CCs" class="w-100">
 
-                <a class="dropdown-item small-text" href="#" @click="cc_id = index">
+                <a class="dropdown-item small-text" href="#" @click="current = index">
                     <div class="d-flex flex-row">
                         <div class="w-75">
                             {{ cc.name }}
@@ -45,9 +60,9 @@ function constrainTo7Bits(event) {
             </li>
         </ul>
     </div>
-    <div class="row ms-1 mb-2 small-text text-success">
-        <div class="col-9">
-            {{ `${CC.CCs[cc_id].name} ${CC.is_LSB(CC.CCs[cc_id]) ? "LSB" : ""}` }}
+    <div class="row mb-2 me-0 small-text text-secondary">
+        <div class="col pe-0">
+            {{ `${CC.CCs[current].name} ${CC.is_LSB(CC.CCs[current]) ? "LSB" : ""}` }}
         </div>
     </div>
 </template>
@@ -73,12 +88,5 @@ function constrainTo7Bits(event) {
 .limit-height ul {
     max-height: 250px;
     overflow-y: auto;
-}
-
-.btn.active,
-.btn.show,
-.btn:first-child:active,
-:not(.btn-check)+.btn:active {
-    border-color: transparent;
 }
 </style>

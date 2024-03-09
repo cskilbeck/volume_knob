@@ -2,7 +2,7 @@
 
 //////////////////////////////////////////////////////////////////////
 
-import { toRaw, watch, watchEffect, ref, getCurrentInstance } from 'vue';
+import { toRaw, watch, ref } from 'vue';
 
 import Toggle from './Toggle.vue'
 import Modal from './Modal.vue'
@@ -222,6 +222,10 @@ midi.on_config_saved((device) => {
     stored_config = Object.assign({}, toRaw(device.config));
 });
 
+function cc_rot_msb_changed() {
+    console.log(ui.value.rot_control_msb);
+}
+
 //////////////////////////////////////////////////////////////////////
 // preview knob
 
@@ -247,7 +251,6 @@ function is_rot_extended(config) {
 function is_rot_relative(config) {
     return (config.flags & midi.flags.cf_rotate_relative) != 0;
 }
-
 
 let rotation_value = 0;
 
@@ -439,7 +442,7 @@ if (connect_on_discovery) {
                         </div>
                         <div class="row">
                             <div class='col'>
-                                <CCDropDown v-model="ui.rot_control_msb">
+                                <CCDropDown v-model="ui.rot_control_msb" v-on:update:modelValue="cc_rot_msb_changed">
                                     {{ ui.rotate_extended ? 'MSB' : 'CC' }}
                                 </CCDropDown>
                             </div>
