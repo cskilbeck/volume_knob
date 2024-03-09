@@ -329,15 +329,15 @@ int main()
                 // no midi packets waiting to be sent, queue up any keypress/rotations
                 if(!queue_full()) {
 
+                    // BUTTON
+
                     if(pressed) {
 
                         config.flags ^= cf_toggle;
 
                         which_value_t value = value_a;
-                        if(!config_flag(cf_btn_momentary)) {
-                            if(config_flag(cf_toggle)) {
-                                value = value_b;
-                            }
+                        if(!config_flag(cf_btn_momentary) && config_flag(cf_toggle)) {
+                            value = value_b;
                         }
                         send_button_cc(value);
 
@@ -354,8 +354,11 @@ int main()
                         if(config_flag(cf_led_flash_on_release)) {
                             led_set_flash();
                         }
+                    }
 
-                    } else if(direction != 0) {
+                    // ROTATION
+
+                    if(direction != 0) {
 
                         int16 delta = config_flag(cf_rotate_extended) ? config.rot_delta_14 : config.rot_delta_7;
                         if(direction == turn_value) {
@@ -378,11 +381,10 @@ int main()
 
                         deceleration_ticks = 0;
 
-                    } else {
-                        if(deceleration_ticks == 50) {
-                            deceleration_ticks = 0;
-                            rotation_velocity >>= 1;
-                        }
+                    } else if(deceleration_ticks == 50) {
+
+                        deceleration_ticks = 0;
+                        rotation_velocity >>= 1;
                     }
                 }
             }
