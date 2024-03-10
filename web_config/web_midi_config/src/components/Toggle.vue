@@ -50,18 +50,6 @@ const props = defineProps({
         default: "White",
         description: "Color of the pill when unchecked"
     },
-    checkedTextColor: {
-        type: String,
-        required: false,
-        default: "White",
-        description: "Color of the text when checked"
-    },
-    uncheckedTextColor: {
-        type: String,
-        required: false,
-        default: "White",
-        description: "Color of the text when unchecked"
-    },
     checkedBackgroundColor: {
         type: String,
         required: false,

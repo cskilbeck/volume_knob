@@ -23,6 +23,8 @@ watchEffect(function () {
 
 watch(current, (n) => {
     current.value = Math.max(0, Math.min(Number(n), 127));
+
+    emit('update:modelValue', current.value);
 });
 
 </script>

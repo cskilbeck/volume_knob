@@ -7,6 +7,7 @@ import { toRaw, watch, ref } from 'vue';
 import Toggle from './Toggle.vue'
 import Modal from './Modal.vue'
 import CCDropDown from './CCDropDown.vue';
+import CC from '../CC.js'
 
 import midi from '../Midi.js'
 
@@ -78,6 +79,8 @@ function get_rot_channel(config) {
 
 //////////////////////////////////////////////////////////////////////
 // get a config object from the current ui
+// could automate this somewhat...
+// especially the flags
 
 function config_from_ui() {
 
@@ -92,7 +95,9 @@ function config_from_ui() {
     config.btn_value_b_14 = ui.value.btn_value_b_14;
     config.btn_value_a_7 = ui.value.btn_value_a_7;
     config.btn_value_b_7 = ui.value.btn_value_b_7;
+
     config.channels = (ui.value.rot_channel & 0xf) | ((ui.value.btn_channel & 0xf) << 4);
+
     config.rot_zero_point = ui.value.rot_zero_point;
     config.rot_delta_14 = ui.value.rot_delta_14;
     config.rot_delta_7 = ui.value.rot_delta_7;
@@ -139,7 +144,9 @@ function ui_from_config(config) {
         led_track_button_toggle: (config.flags & midi.flags.cf_led_track_button_toggle) != 0,
         toggle: (config.flags & midi.flags.cf_toggle) != 0,
         button_tracks_rotation: (config.flags & midi.flags.cf_button_tracks_rotation) != 0,
+
         acceleration: (((config.flags & midi.flags.cf_acceleration_lsb) != 0) ? 1 : 0) + (((config.flags & midi.flags.cf_acceleration_msb) != 0) ? 2 : 0),
+
         config_version: config.config_version,
         rot_control_msb: config.rot_control_msb,
         rot_control_lsb: config.rot_control_lsb,
@@ -149,8 +156,10 @@ function ui_from_config(config) {
         btn_value_b_14: config.btn_value_b_14,
         btn_value_a_7: config.btn_value_a_7,
         btn_value_b_7: config.btn_value_b_7,
+
         rot_channel: get_rot_channel(config),
         btn_channel: get_btn_channel(config),
+
         rot_zero_point: config.rot_zero_point,
         rot_delta_14: config.rot_delta_14,
         rot_delta_7: config.rot_delta_7,
@@ -222,8 +231,33 @@ midi.on_config_saved((device) => {
     stored_config = Object.assign({}, toRaw(device.config));
 });
 
+//////////////////////////////////////////////////////////////////////
+// rotation/button CC MSB changed
+// if it's an MSB, set extended flag and set LSB to the alt
+
+// these two functions are very similar
+// but refactoring them looks like more hassle than it's worth
+
+// rot version
+
 function cc_rot_msb_changed() {
-    console.log(ui.value.rot_control_msb);
+    let cc = CC.CCs[ui.value.rot_control_msb];
+    let msb = CC.is_MSB(cc);
+    ui.value.rotate_extended = msb;
+    if (msb) {
+        ui.value.rot_control_lsb = cc.alt;
+    }
+}
+
+// button version
+
+function cc_btn_msb_changed() {
+    let cc = CC.CCs[ui.value.btn_control_msb];
+    let msb = CC.is_MSB(cc);
+    ui.value.btn_extended = msb;
+    if (msb) {
+        ui.value.btn_control_lsb = cc.alt;
+    }
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -494,9 +528,7 @@ if (connect_on_discovery) {
                         </div>
                         <div class="row mx-4 mt-1 mb-0">
                             <div class="col mb-1" style="height:1.5rem;margin: 0px;padding: 0px;">
-                                <Toggle v-model="ui.rotate_relative" :checked-text-color='"var(--bs-btn-color)"'
-                                    :unchecked-text-color='"var(--bs-btn-color)"'
-                                    :checked-background-color='"var(--bs-tertiary-bg)"'
+                                <Toggle v-model="ui.rotate_relative" :checked-background-color='"var(--bs-tertiary-bg)"'
                                     :unchecked-background-color='"var(--bs-tertiary-bg)"'
                                     :border-color='"var(--bs-border-color)"'
                                     :unchecked-pill-color='"var(--bs-border-color)"'
@@ -542,9 +574,7 @@ if (connect_on_discovery) {
                         </div>
                         <div class="row mx-4 mt-1">
                             <div class="col mb-1" style="height:1.5rem;padding: 0px;">
-                                <Toggle v-model="ui.btn_momentary" :checked-text-color='"var(--bs-btn-color)"'
-                                    :unchecked-text-color='"var(--bs-btn-color)"'
-                                    :checked-background-color='"var(--bs-tertiary-bg)"'
+                                <Toggle v-model="ui.btn_momentary" :checked-background-color='"var(--bs-tertiary-bg)"'
                                     :unchecked-background-color='"var(--bs-tertiary-bg)"'
                                     :border-color='"var(--bs-border-color)"'
                                     :unchecked-pill-color='"var(--bs-border-color)"'
@@ -608,7 +638,7 @@ if (connect_on_discovery) {
                         </div>
                         <div class="row">
                             <div class="col">
-                                <CCDropDown v-model="ui.btn_control_msb">
+                                <CCDropDown v-model="ui.btn_control_msb" v-on:update:modelValue="cc_btn_msb_changed">
                                     {{ ui.btn_extended ? 'MSB' : 'CC' }}
                                 </CCDropDown>
                             </div>
