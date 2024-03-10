@@ -7,8 +7,8 @@ import { toRaw, watch, ref } from 'vue';
 import Toggle from './Toggle.vue'
 import Modal from './Modal.vue'
 import CCDropDown from './CCDropDown.vue';
-import CC from '../CC.js'
 
+import CC from '../CC.js'
 import midi from '../Midi.js'
 
 import fileDownload from 'js-file-download';
@@ -49,8 +49,6 @@ let ui = ref(ui_object);
 // noddy compare for config objects
 
 function shallowEqual(object1, object2) {
-
-    // if either are null, equality is false
 
     const keys1 = Object.keys(object1);
     const keys2 = Object.keys(object2);
@@ -360,40 +358,80 @@ if (connect_on_discovery) {
     midi.connect_device(props.device);
 }
 
+let collapsed = ref(false);
+
+function toggle_expand() {
+    collapsed.value = !collapsed.value;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+function firmware_version() {
+    return `v${ui.value.firmware_version >> 8}.${(ui.value.firmware_version & 0x7f).toString(10).padStart(2, '0')}`;
+}
+
 //////////////////////////////////////////////////////////////////////
 
 </script>
 
 <template>
-    <div class="container border rounded-3 py-3 bg-device border-secondary bg-secondary-subtle">
-        <div class='row p-1'>
+
+    <svg class='d-none'>
+        <symbol id='little-arrow' xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
+            viewBox="0 0 16 16">
+            <path
+                d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z" />
+        </symbol>
+    </svg>
+
+    <div class="container border rounded-3 bg-device border-secondary bg-secondary-subtle pt-2"
+        :class="collapsed ? 'pb-2' : ' pb-4'">
+
+        <div class='row'>
+            <div class='col-lg-3 text-center' :class="!collapsed ? 'mb-1' : ''">
+                <div class="row">
+                    <div class="col card-header">
+                        <span>
+                            <button class="btn" @click="toggle_expand()"
+                                style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem;">
+                                <svg width="20" height="20" style="transition:0.1s"
+                                    :transform="rotation_matrix(0, 0, collapsed ? 0 : 90)">
+                                    <use href="#little-arrow"></use>
+                                </svg>
+                            </button>
+                        </span>
+                        <span>
+                            <strong>{{ device.name }}</strong>
+                        </span>
+                    </div>
+                    <div class="col">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class='row p-1' v-if="!collapsed">
 
             <!-- Name, Serial, Buttons -->
 
             <div class='col-lg-3'>
-                <div class='row'>
-                    <div class='col-6'>
-                        <div class="container">
-                            <h5>{{ device.name }}</h5>
-                        </div>
-                    </div>
-                </div>
                 <div class='row mt-1'>
-                    <div class="col-6 text-center mt-1">
+                    <div class="col-6 text-center">
                         <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
                             @click='toggle_connection(device)'>
                             {{ !device.active ? 'Connect' : 'Disconnect' }}
                         </button>
                         <div class="small mt-3" v-if="device.active">
                             Firmware
-                            <span class="text-primary-emphasis font-monospace">
-                                v{{ ui.firmware_version >> 8 }}.{{ (ui.firmware_version &
-                                0x7f).toString(10).padStart(2, '0') }}
+                            <span class="text-body-secondary font-monospace">
+                                {{ firmware_version() }}
                             </span>
                         </div>
                         <div class="small" v-if="device.active">
                             Serial #
-                            <span class="text-body-secondary font-monospace">{{ device.serial_str }}</span>
+                            <span class="text-body-secondary font-monospace">
+                                {{ device.serial_str }}
+                            </span>
                         </div>
                         <div class="row text-center mt-3" v-if="device.active">
                             <div class="col">
@@ -406,8 +444,8 @@ if (connect_on_discovery) {
                         <div class="row text-center" v-if="device.active">
                             <div class="col">
                                 <span style="width:45px;display:inline-block">
-                                    <div class="progress" role="progressbar" aria-valuemax="16383" aria-valuemin="0"
-                                        aria-valuenow="50" style="height:6px">
+                                    <div class="progress border bg-body border-secondary" role="progressbar"
+                                        aria-valuemax="16383" aria-valuemin="0" aria-valuenow="0" style="height:8px">
                                         <div class="progress-bar" :style="`width:${rotation_value * 100 / 16383}%`">
                                         </div>
                                     </div>
@@ -738,6 +776,7 @@ if (connect_on_discovery) {
                     </div>
                 </div>
             </div>
+
         </div>
     </div>
 
@@ -847,5 +886,12 @@ if (connect_on_discovery) {
 
 .progress-bar {
     transition-duration: 0s;
+}
+
+.btn.active,
+.btn.show,
+.btn:first-child:active,
+:not(.btn-check)+.btn:active {
+    border-color: transparent;
 }
 </style>
