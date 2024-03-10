@@ -1,12 +1,22 @@
 <script setup>
 
-import { onMounted, ref, watchEffect, computed } from 'vue';
+//////////////////////////////////////////////////////////////////////
+
+import { onMounted, ref, nextTick, watchEffect, computed } from 'vue';
+
+//////////////////////////////////////////////////////////////////////
 
 const props = defineProps({
     modelValue: {
         type: Boolean,
         required: true,
         description: "The model value"
+    },
+    fontSize: {
+        type: String,
+        required: false,
+        default: "smaller",
+        description: "Font size for the checked/unchecked text"
     },
     pillSize: {
         type: Number,
@@ -18,7 +28,7 @@ const props = defineProps({
         type: Number,
         required: false,
         default: 6,
-        description: "Horizontal spacing between pill and text"
+        description: "Horizontal spacing between pill and text in pixels"
     },
     borderPixels: {
         type: Number,
@@ -53,41 +63,41 @@ const props = defineProps({
     checkedBackgroundColor: {
         type: String,
         required: false,
-        default: "#45F",
+        default: "#359",
         description: "Background color when checked"
     },
     uncheckedBackgroundColor: {
         type: String,
         required: false,
-        default: "#555",
+        default: "#3C4244",
         description: "Background color when unchecked"
     },
     borderColor: {
         type: String,
         required: false,
-        default: "#AAA",
+        default: "#888",
         description: "Border color"
     }
 });
 
+//////////////////////////////////////////////////////////////////////
+
 const isChecked = ref(false);
 
-const emits = defineEmits(["update:modelValue"]);
+const emit = defineEmits(["update:modelValue"]);
 
 watchEffect(function () {
     isChecked.value = props.modelValue;
 });
 
-let ready = ref(false);
+//////////////////////////////////////////////////////////////////////
 
+const ready = ref(false);   // ready for avoiding initial animation problem
 const theLabel = ref(null);
 const labelWidth = ref(0);
 const labelHeight = ref(0);
-const trans = computed(() => { return ready.value ? props.transitionTime : 0 });
-const pixelsWide = computed(() => { return labelWidth.value; });
-const pixelsHigh = computed(() => { return labelHeight.value; });
-const dotSize = computed(() => { return getDotSize(); });
-const dotBorder = computed(() => { return getDotBorder(); });
+
+//////////////////////////////////////////////////////////////////////
 
 function updateDimensions() {
     let wpx = "0px";
@@ -95,41 +105,43 @@ function updateDimensions() {
     if (theLabel.value) {
         wpx = getComputedStyle(theLabel.value).width;
         hpx = getComputedStyle(theLabel.value).height;
-
-        // this is nasty...
-        setTimeout(() => { ready.value = true; }, 0);
     }
     // wpx,hpx are in the format "#px" - is it guaranteed?
     labelWidth.value = wpx.substring(0, wpx.length - 2) | 0;
     labelHeight.value = hpx.substring(0, hpx.length - 2) | 0;
 }
 
-function getDotSize() {
-    return (labelHeight.value - props.borderPixels * 2) * props.pillSize;
-}
+//////////////////////////////////////////////////////////////////////
 
-function getDotBorder() {
-    return ((labelHeight.value - props.pillSize) - getDotSize()) * 0.5;
-}
+const trans = computed(() => { return ready.value ? props.transitionTime : 0 });
 
-const v_offset = "-50%";
+const dotSize = computed(() => { return (labelHeight.value - props.borderPixels * 2) * props.pillSize; });
 
-const resizeObserver = new ResizeObserver((entries) => {
+const dotBorder = computed(() => { return ((labelHeight.value - props.pillSize) - dotSize.value) * 0.5; });
 
-    updateDimensions();
-});
+//////////////////////////////////////////////////////////////////////
 
 onMounted(() => {
-    resizeObserver.observe(theLabel.value);
 
+    updateDimensions();
+
+    new ResizeObserver((entries) => {
+        updateDimensions();
+    }).observe(theLabel.value);
+
+    // allow a moment to get the initial translation done
+    // couldn't make this work with nextTick()...
+    setTimeout(() => { ready.value = true; }, 0);
 });
+
+//////////////////////////////////////////////////////////////////////
 
 </script>
 
 <template>
-    <label class="switch" ref="theLabel">
-        <input v-model="isChecked" type="checkbox" @change="emits('update:modelValue', isChecked)">
-        <span class="slider">
+    <label class="toggle" ref="theLabel">
+        <input v-model="isChecked" type="checkbox" @change="emit('update:modelValue', isChecked)">
+        <span class="pill">
             <span class='checked-text-span'>
                 <slot name="checked"></slot>
             </span>
@@ -141,9 +153,9 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.switch {
+.toggle {
     position: relative;
-    font-size: smaller;
+    font-size: v-bind('props.fontSize');
     display: block;
     margin: 0px;
     padding: 0px;
@@ -151,12 +163,12 @@ onMounted(() => {
     height: 100%;
 }
 
-.switch input {
+.toggle input {
     visibility: hidden;
 }
 
-.slider {
-    border: v-bind('props.borderColor') v-bind('(props.borderPixels) + "px"') solid;
+.pill {
+    border: v-bind('`${props.borderColor} ${props.borderPixels}px solid`');
     position: absolute;
     cursor: pointer;
     top: 0;
@@ -164,72 +176,67 @@ onMounted(() => {
     right: 0;
     bottom: 0;
     background-color: v-bind('`${props.uncheckedBackgroundColor}`');
-    transition: transform v-bind('`${trans}s`'),
-    background-color v-bind('`${trans}s`');
+    transition: v-bind('`transform ${trans}s, background-color ${trans}s`');
     overflow: hidden;
-    border-radius: v-bind('(pixelsHigh * props.rounded * 0.5) + "px"');
+    border-radius: v-bind('`${(labelHeight * props.rounded * 0.5)}px`');
 }
 
-.slider:before {
+.pill:before {
     position: absolute;
     content: "";
     margin: 0px;
     padding: 0px;
-    height: v-bind('dotSize + "px"');
-    width: v-bind('dotSize + "px"');
+    height: v-bind('`${dotSize}px`');
+    width: v-bind('`${dotSize}px`');
     left: 0%;
     top: 50%;
-    border-radius: v-bind('(dotSize * props.rounded * 0.5) + "px"');
+    border-radius: v-bind('`${dotSize * props.rounded * 0.5}px`');
     background-color: v-bind('`${props.uncheckedPillColor}`');
-    transform: v-bind('`translate(${dotBorder - props.borderPixels + 0.5}px, ${v_offset})`');
-    transition: transform v-bind('`${trans}s`'),
-    background-color v-bind('`${trans}s`');
+    transform: v-bind('`translate(${dotBorder - props.borderPixels + 0.5}px, -50%)`');
+    transition: v-bind('`transform ${trans}s, background-color ${trans}s`');
 }
 
-input:checked+.slider {
+input:checked+.pill {
     background-color: v-bind('`${props.checkedBackgroundColor}`');
 }
 
-input+.slider span {
+/* spans for containing checked and unchecked text */
+input+.pill span {
     position: absolute;
     top: 50%;
     user-select: none;
+    transition: v-bind('`transform ${trans}s, opacity ${trans}s`');
 }
 
-input:checked+.slider:before {
+/* checked pill */
+input:checked+.pill:before {
     background-color: v-bind('`${props.checkedPillColor}`');
-    transform: v-bind('`translate(${pixelsWide - (dotBorder + dotSize + props.borderPixels)}px, ${v_offset})`');
+    transform: v-bind('`translate(${labelWidth - (dotBorder + dotSize + props.borderPixels)}px, -50%)`');
 }
 
 /* unchecked: checked text hidden on the left */
-input+.slider span.checked-text-span {
+input+.pill span.checked-text-span {
     opacity: 0%;
     right: 100%;
-    color: v-bind('props.checkedTextColor');
-    transition: transform v-bind('`${trans}s,`') opacity v-bind('`${trans}s`');
-    transform: v-bind('`translate(${dotBorder - props.marginPixels - props.borderPixels}px, ${v_offset}`');
+    transform: v-bind('`translate(${dotBorder - props.marginPixels - props.borderPixels}px, -50%`');
 }
 
 /* unchecked: unchecked text shown on the right */
-input+.slider span.unchecked-text-span {
+input+.pill span.unchecked-text-span {
     opacity: 100%;
-    color: v-bind('props.uncheckedTextColor');
-    transition: transform v-bind('`${trans}s,`') opacity v-bind('`${trans}s`');
-    transform: v-bind('`translate(${dotBorder + dotSize + props.marginPixels - props.borderPixels}px, ${v_offset})`');
+    transform: v-bind('`translate(${dotBorder + dotSize + props.marginPixels - props.borderPixels}px, -50%)`');
 }
 
 /* checked: checked text shown on the left */
-input:checked+.slider span.checked-text-span {
+input:checked+.pill span.checked-text-span {
     opacity: 100%;
     right: 100%;
-    transition: transform v-bind('`${trans}s,`') opacity v-bind('`${trans}s`');
-    transform: v-bind('`translate(${pixelsWide - (dotBorder + dotSize + props.marginPixels + props.borderPixels)}px, ${v_offset})`');
+    transform: v-bind('`translate(${labelWidth - (dotBorder + dotSize + props.marginPixels + props.borderPixels)}px, -50%)`');
 }
 
 /* checked: unchecked text hidden on the right */
-input:checked+.slider span.unchecked-text-span {
+input:checked+.pill span.unchecked-text-span {
     opacity: 0%;
-    transition: transform v-bind('`${trans}s,`') opacity v-bind('`${trans}s`');
-    transform: v-bind('`translate(${pixelsWide - dotBorder + props.marginPixels - props.borderPixels}px, ${v_offset})`');
+    transform: v-bind('`translate(${labelWidth - dotBorder + props.marginPixels - props.borderPixels}px, -50%)`');
 }
 </style>
