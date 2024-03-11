@@ -5,6 +5,7 @@
 #include <string.h>
 #include "ch554.h"
 #include "types.h"
+#include "main.h"
 #include "gpio.h"
 #include "debug.h"
 #include "midi.h"
@@ -13,7 +14,6 @@
 #include "usb.h"
 #include "util.h"
 #include "gpio.h"
-#include "main.h"
 
 uint8 queue_size = 0;
 
@@ -161,7 +161,7 @@ void handle_midi_packet()
             response->manufacturer_id = MIDI_MANUFACTURER_ID;
             response->family_code = MIDI_FAMILY_CODE;
             response->model_number = MIDI_MODEL_NUMBER;
-            response->unique_id = chip_id_28;
+            response->version_number = FIRMWARE_VERSION;
             midi_send_sysex(sizeof(sysex_identity_response_t));
         } break;
 
@@ -199,13 +199,6 @@ void handle_midi_packet()
         case sysex_request_bootloader: {
             goto_bootloader();
         } break;
-
-        case sysex_request_firmware_version: {
-            uint8 *buf = init_sysex_response(sysex_response_firmware_version);
-            *buf++ = FIRMWARE_VERSION & 0xff;
-            *buf++ = FIRMWARE_VERSION >> 8;
-            midi_send_sysex(2);
-        };
         }
     }
     sysex_recv_length = 0;

@@ -3,6 +3,7 @@
 #include "ch554.h"
 #include "ch554_usb.h"
 #include "types.h"
+#include "main.h"
 #include "gpio.h"
 #include "debug.h"
 #include "config.h"
@@ -80,12 +81,6 @@ __code uint8 const config_descriptor[] = {
 
 // language string
 unsigned char __code const language_string[] = { 0x04, 0x03, 0x09, 0x04 };
-
-// product string
-unsigned char __code const product_string[] = {
-    0x1E, 0x03, 'T',  0x00, 'i',  0x00, 'n',  0x00, 'y',  0x00, ' ',  0x00, 'M',  0x00, 'I',
-    0x00, 'D',  0x00, 'I',  0x00, ' ',  0x00, 'K',  0x00, 'n',  0x00, 'o',  0x00, 'b',  0x00,
-};
 
 // manufacturer string
 unsigned char __code const manufacturer_string[] = { 0x26, 0x03, 'T', 0,   'i', 0,   'n', 0,   'y', 0,   ' ', 0,   'L', 0,   'i', 0,   't', 0,   't',
@@ -205,11 +200,11 @@ void usb_irq_handler(void) __interrupt(INT_NO_USB)    // USB interrupt service p
                                 break;
                             case 2:
                                 descriptor = product_string;
-                                len = sizeof(product_string);
+                                len = PRODUCT_NAME_STRING_LEN;
                                 break;
                             default:
                                 descriptor = serial_number_string;
-                                len = sizeof(serial_number_string);
+                                len = SERIAL_STRING_LEN;
                                 break;
                             }
                             break;

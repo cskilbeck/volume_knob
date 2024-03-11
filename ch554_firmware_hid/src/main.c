@@ -291,7 +291,7 @@ void do_press(uint16 k)
     if(queue_space() > 1) {
         queue_put(k);
         queue_put(k & 0x8000);
-        // led_flash();
+        led_flash();
     } else {
         led_flash();
     }

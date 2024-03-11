@@ -7,6 +7,7 @@
 #include "ch554.h"
 #include "ch554_usb.h"
 #include "types.h"
+#include "main.h"
 #include "gpio.h"
 #include "debug.h"
 #include "util.h"
@@ -14,7 +15,6 @@
 #include "config.h"
 #include "encoder.h"
 #include "midi.h"
-#include "main.h"
 
 //////////////////////////////////////////////////////////////////////
 
@@ -45,11 +45,12 @@
 //////////////////////////////////////////////////////////////////////
 // XDATA, 1KB available
 
-__xdata uint8 endpoint_0_buffer[DEFAULT_ENDP0_SIZE];     // endpoint0 OUT & IN buffer，Must be an even address
-__xdata uint8 endpoint_1_buffer[DEFAULT_ENDP1_SIZE];     // endpoint1 upload buffer
-__xdata uint8 endpoint_2_in_buffer[MAX_PACKET_SIZE];     // endpoint2 IN buffer, Must be an even address
-__xdata uint8 endpoint_2_out_buffer[MAX_PACKET_SIZE];    // endpoint2 OUT buffer, Must be an even address
-__xdata uint8 serial_number_string[18];
+__xdata uint8 endpoint_0_buffer[DEFAULT_ENDP0_SIZE];      // endpoint0 OUT & IN buffer，Must be an even address
+__xdata uint8 endpoint_1_buffer[DEFAULT_ENDP1_SIZE];      // endpoint1 upload buffer
+__xdata uint8 endpoint_2_in_buffer[MAX_PACKET_SIZE];      // endpoint2 IN buffer, Must be an even address
+__xdata uint8 endpoint_2_out_buffer[MAX_PACKET_SIZE];     // endpoint2 OUT buffer, Must be an even address
+__xdata uint8 serial_number_string[SERIAL_STRING_LEN];    // e.g "012345678"
+__xdata uint8 product_string[PRODUCT_NAME_STRING_LEN];    // e.g. "Tiny Midi Knob 012345678"
 __xdata uint8 midi_send_buffer[48];
 __xdata uint8 midi_recv_buffer[48];
 __xdata save_buffer_t save_buffer;
@@ -220,6 +221,8 @@ void do_relative_rotation(int16 offset)
 
 //////////////////////////////////////////////////////////////////////
 
+__code uint8 const product_name[] = PRODUCT_NAME;
+
 int main()
 {
     clk_init();
@@ -237,24 +240,36 @@ int main()
 
     init_chip_id();
 
-    hexdump("CHIPID", &chip_id, 4);
+    print_uint32("CHIPID", chip_id);
 
-    // setup USB serial string from Chip ID
+    // insert chip id into serial string and product name string
 
-    serial_number_string[0] = 18;    // 18 long, 2 for header, 16 for the serial number (8 wchars)
-    serial_number_string[1] = 3;     // usb string descriptor
+    product_string[0] = PRODUCT_NAME_STRING_LEN;
+    product_string[1] = USB_DESCR_TYP_STRING;
+    for(uint8 i = 0; i < PRODUCT_NAME_LEN; ++i) {
+        product_string[2 + i * 2] = product_name[i];
+        product_string[3 + i * 2] = 0;
+    }
+
+    serial_number_string[0] = SERIAL_STRING_LEN;
+    serial_number_string[1] = USB_DESCR_TYP_STRING;
     uint32 n = chip_id;
-    for(uint8 i = 0; i < 8; ++i) {
-        uint8 c = (uint8)(n >> 28);
+    for(uint8 i = 0; i < SERIAL_LEN; ++i) {
+        uint8 c = (uint8)(n >> 28);    // @hardcoded
         if(c < 10) {
             c += '0';
         } else {
             c += 'A' - 10;
         }
-        serial_number_string[i * 2 + 2] = c;
-        serial_number_string[i * 2 + 3] = 0;
+        serial_number_string[2 + i * 2] = c;
+        serial_number_string[3 + i * 2] = 0;
+        product_string[2 + i * 2 + PRODUCT_NAME_LEN * 2] = c;
+        product_string[3 + i * 2 + PRODUCT_NAME_LEN * 2] = 0;
         n <<= 4;
     }
+
+    hexdump("SERIAL", serial_number_string, SERIAL_STRING_LEN);
+    hexdump("PRODUCT", product_string, PRODUCT_NAME_STRING_LEN);
 
     gpio_init(ROTA_PORT, ROTA_PIN, gpio_input_pullup);
     gpio_init(ROTB_PORT, ROTB_PIN, gpio_input_pullup);

@@ -27,7 +27,7 @@
 //////////////////////////////////////////////////////////////////////
 // increment this whenever the format of the config changes so the web ui knows to ignore old ones
 
-#define CONFIG_VERSION 0x07
+#define CONFIG_VERSION 0x08
 
 //////////////////////////////////////////////////////////////////////
 // flags in config.cf_flags
@@ -99,9 +99,8 @@ typedef struct config
     uint16 rot_current_value_14;    // Current value (in absolute mode) (14 bit mode)
     uint8 rot_current_value_7;      // Current value (in absolute mode) (7 bit mode)
     uint16 flags;                   // Flags, see enum above
-    uint16 firmware_version;        // Firmware version, XX.YY
 
-    uint8 pad[CONFIG_MAX_LEN - 23];
+    uint8 pad[CONFIG_MAX_LEN - 21];
 } config_t;
 
 _Static_assert(sizeof(config_t) == CONFIG_MAX_LEN);

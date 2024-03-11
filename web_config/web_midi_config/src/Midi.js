@@ -5,7 +5,7 @@ import { ref, toRaw } from 'vue'
 
 const CONFIG_LEN = 26;
 
-const CONFIG_VERSION = 0x07
+const CONFIG_VERSION = 0x08
 
 const MIDI_MANUFACTURER_ID = 0x36;    // Cheetah Marketing, defunct?
 
@@ -117,8 +117,7 @@ let default_config = {
     rot_delta_7: 1,                 // How much to change by(7 bit mode)
     rot_current_value_14: 0,        // current value (in absolute mode) (14 bit mode)
     rot_current_value_7: 0,         // current value (in absolute mode) (7 bit mode)
-    flags: default_flags,           // flags, see enum above
-    firmware_version: 0
+    flags: default_flags            // flags, see enum above
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -145,8 +144,7 @@ let config_map = [
     ["uint8", "rot_delta_7"],
     ["uint16", "rot_current_value_14"],
     ["uint8", "rot_current_value_7"],
-    ["uint16", "flags"],
-    ["uint16", "firmware_version"]
+    ["uint16", "flags"]
 ];
 
 // similar source code synchronization problem with the flags
@@ -305,7 +303,7 @@ function flash_device_led(index) {
     if (device === undefined) {
         console.log(`Can't find device ${index}`);
     } else {
-        console.log(`Flash led for device ${device.serial_number.toString(16).toUpperCase()}`);
+        console.log(`Flash led for device ${device.name}`);
         send_midi(device, [0xF0, 0x7E, 0x00, 0x06, sysex_request_toggle_led, 0xF7]);
     }
 }
@@ -317,7 +315,7 @@ function flash_mode(index) {
     if (device === undefined) {
         console.log(`Can't find device ${index}`);
     } else {
-        console.log(`Enter flash mode for device ${device.serial_number.toString(16).toUpperCase()}`);
+        console.log(`Enter flash mode for device ${device.name}`);
         send_midi(device, [0xF0, 0x7E, 0x00, 0x06, sysex_request_bootloader, 0xF7]);
     }
 }
@@ -346,19 +344,19 @@ function on_device_id_response(input_port, data) {
         return;
     }
 
-    // get the serial number from the device id response
+    // get the firmware version from the device id response
 
     let b0 = data[10] || 0;
     let b1 = data[11] || 0;
     let b2 = data[12] || 0;
     let b3 = data[13] || 0;
 
-    device.serial_number = b3 | (b2 << 7) | (b1 << 14) | (b0 << 21);
-    device.serial_str = device.serial_number.toString(16).toUpperCase();
+    device.firmware_version = b3 | (b2 << 7) | (b1 << 14) | (b0 << 21);
+    device.firmware_version_str = `${b3}.${b2}.${b1}.${b0}`;
 
     // add a new device to the array of midi_devices
 
-    console.log(`Found device ${device.name}, serial # ${device.serial_str}, ${midi_devices.value.length} device(s) so far...`);
+    console.log(`Found device ${device.name}, FW version # ${device.firmware_version_str}, ${midi_devices.value.length} device(s) so far...`);
 
     device.input = input_port;
 
@@ -449,12 +447,15 @@ function init_devices() {
 
         let device = {
             device_index: device_index,
-            serial_number: 0,
-            serial_str: "#######",
+            firmware_version: 0x00000000,
+            firmware_version_str: "0.0.0.0",
             input: null,            // inputs get assigned when replies come back
             output: output,
             name: output.name,
-            config: {}
+            config: {},
+            on_config_loaded: null,
+            on_config_saved: null,
+            on_control_change: null
         };
 
         Object.assign(device.config, default_config);
@@ -512,6 +513,17 @@ function get_sysex_device_index(data) {
 
 //////////////////////////////////////////////////////////////////////
 
+function device_from_input_port(port) {
+    for (let d of midi_devices.value) {
+        if (d.input.name == port.name) {
+            return d;
+        }
+    }
+    return null;
+}
+
+//////////////////////////////////////////////////////////////////////
+
 function on_midi_message(event) {
 
     let input_port = event.target;
@@ -520,7 +532,7 @@ function on_midi_message(event) {
 
     const data = event.data;
 
-    // console.log(`RECV: ${bytes_to_hex_string(data, data.length, " ")}`);
+    console.log(`RECV: ${bytes_to_hex_string(data, data.length, " ")}`);
 
     let midi_status = data[0] & 0xf0;
 
@@ -529,8 +541,9 @@ function on_midi_message(event) {
         // B0 is control change
         case 0xB0: {
 
-            if (on_control_change_callback != null) {
-                on_control_change_callback(data[0] & 0xf, data[1], data[2]);
+            let device = device_from_input_port(input_port);
+            if (device != null && device.on_control_change != null) {
+                device.on_control_change(data[0] & 0xf, data[1], data[2]);
             }
 
         } break;
@@ -556,10 +569,10 @@ function on_midi_message(event) {
                             let flash_data = bits7_to_bytes(data, 5, CONFIG_LEN);
                             d.config = config_from_bytes(flash_data);
                             let s = bytes_to_hex_string(flash_data, CONFIG_LEN);
-                            console.log(`Memory for device ${d.serial_str}: ${s}`);
+                            console.log(`Memory for device ${d.name}: ${s}`);
 
-                            if (on_config_loaded_callback != null) {
-                                on_config_loaded_callback(d);
+                            if (d.on_config_loaded != null) {
+                                d.on_config_loaded();
                             }
                         }
                     } break;
@@ -568,9 +581,9 @@ function on_midi_message(event) {
                     case sysex_response_set_flash_ack: {
                         let d = midi_devices.value[device_index];
                         if (d !== undefined) {
-                            console.log(`Device ${d.serial_str} wrote flash data`);
-                            if (on_config_saved_callback != null) {
-                                on_config_saved_callback(d);
+                            console.log(`Device ${d.name} wrote flash data`);
+                            if (d.on_config_saved != null) {
+                                d.on_config_saved(d);
                             }
                         }
                     } break;
@@ -592,30 +605,6 @@ function get_config_json(device_index) {
         delete c.value;
     }
     return JSON.stringify(c, null, 4);
-}
-
-//////////////////////////////////////////////////////////////////////
-
-let on_config_loaded_callback = null;
-
-function on_config_loaded(callback) {
-    on_config_loaded_callback = callback;
-}
-
-//////////////////////////////////////////////////////////////////////
-
-let on_config_saved_callback = null;
-
-function on_config_saved(callback) {
-    on_config_saved_callback = callback;
-}
-
-//////////////////////////////////////////////////////////////////////
-
-let on_control_change_callback = null;
-
-function on_control_change(callback) {
-    on_control_change_callback = callback;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -653,9 +642,6 @@ export default {
     init_devices,
     connect_device,
     toggle_device_connection,
-    on_config_loaded,
-    on_config_saved,
-    on_control_change,
     flash_device_led,
     flash_mode,
     read_flash,

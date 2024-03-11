@@ -15,8 +15,7 @@ enum
     sysex_request_toggle_led = 0x02,
     sysex_request_get_flash = 0x03,
     sysex_request_set_flash = 0x04,
-    sysex_request_bootloader = 0x05,
-    sysex_request_firmware_version = 0x06,
+    sysex_request_bootloader = 0x05
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -49,7 +48,7 @@ typedef struct sysex_identity_response
     uint8 manufacturer_id;
     uint16 family_code;
     uint16 model_number;
-    uint32 unique_id;
+    uint32 version_number;
 } sysex_identity_response_t;
 
 //////////////////////////////////////////////////////////////////////

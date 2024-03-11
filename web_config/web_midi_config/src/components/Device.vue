@@ -112,8 +112,7 @@ function config_from_ui() {
             | (((ui.value.acceleration & 2) != 0) ? midi.flags.cf_acceleration_msb : 0)
             | (ui.value.toggle ? midi.flags.cf_toggle : 0)
             | (ui.value.button_tracks_rotation ? midi.flags.cf_button_tracks_rotation : 0)
-            | (ui.value.rotate_reverse ? midi.flags.cf_rotate_reverse : 0),
-        firmware_version: ui.value.firmware_version
+            | (ui.value.rotate_reverse ? midi.flags.cf_rotate_reverse : 0)
     };
 }
 
@@ -153,10 +152,62 @@ function ui_from_config(config) {
         rot_delta_14: config.rot_delta_14,
         rot_delta_7: config.rot_delta_7,
         rot_current_value_14: config.rot_current_value_14,
-        rot_current_value_7: config.rot_current_value_7,
-        firmware_version: config.firmware_version,
+        rot_current_value_7: config.rot_current_value_7
     };
 }
+
+props.device.on_control_change = (channel, cc, val) => {
+
+    console.log(channel, cc, val);
+
+    let update_knob = false;
+
+    if (channel == get_rot_channel(stored_config)) {
+
+        // if (!is_rot_extended(stored_config)) {
+
+        // } else {
+
+        //     if (is_LSB(cc) && cc == stored_config.rot_control_lsb) {
+
+        //         rotation_value = (rotation_value & 0x3f80) | val;
+
+        //     } else if (cc == stored_config.rot_control_msb) {
+
+        //         rotation_value = (rotation_value & 0x7f) | (val << 7);
+        //     }
+
+        // }
+
+        if (is_LSB(cc) && is_rot_extended(stored_config) && cc == stored_config.rot_control_lsb) {
+
+            if (is_rot_relative(stored_config)) {
+
+                rotation_value += (rotation_value << 7) & 0x3f80;
+
+            } else {
+
+                rotation_value = (rotation_value & 0x3f80) | val;
+            }
+            update_knob = true;
+
+        } else if (cc == stored_config.rot_control_msb) {
+            if ((stored_config.flags & midi.flags.cf_rotate_relative) != 0) {
+                rotation_value = (rotation_value & 0x3f80) | val;
+            } else {
+                rotation_value = (rotation_value & 0x7f) | (val << 7);
+            }
+            update_knob = true;
+        }
+        if (update_knob) {
+            let lower = -150;
+            let upper = 150;
+            let range = upper - lower;
+            let angle = lower + (rotation_value / 16383.0) * range;
+            rot_matrix.value = rotation_matrix(50, 50, angle);
+        }
+    }
+};
 
 //////////////////////////////////////////////////////////////////////
 // check for changes to ui, apply limits and check if the result is
@@ -193,13 +244,20 @@ watch(() => { return ui },
 //////////////////////////////////////////////////////////////////////
 // midi says a config was loaded from the device - apply it to the ui
 
-midi.on_config_loaded((device) => {
-
-    props.device.config = device.config;
-    stored_config = Object.assign({}, toRaw(device.config));
+props.device.on_config_loaded = () => {
+    stored_config = Object.assign({}, toRaw(props.device.config));
     ui.value = ui_from_config(props.device.config);
     config_changed.value = false;
-});
+};
+
+//////////////////////////////////////////////////////////////////////
+// midi says a config was saved to the device
+// in theory there's a little race in here but in practice not a problem
+
+props.device.on_config_saved = () => {
+    config_changed.value = false;
+    stored_config = Object.assign({}, toRaw(props.device.config));
+};
 
 //////////////////////////////////////////////////////////////////////
 // store current UI to the device
@@ -209,15 +267,6 @@ function store_config() {
     props.device.config = config_from_ui();
     midi.write_flash(props.device.device_index);
 }
-
-//////////////////////////////////////////////////////////////////////
-// midi says a config was saved to the device
-// in theory there's a little race in here but in practice not a problem
-
-midi.on_config_saved((device) => {
-    config_changed.value = false;
-    stored_config = Object.assign({}, toRaw(device.config));
-});
 
 //////////////////////////////////////////////////////////////////////
 // rotation/button CC MSB changed
@@ -280,57 +329,6 @@ let rotation_value = 0;
 // if channel/cc the same as stored config rot then twist knob
 // if channel/cc the same as stored config btn then animate button value
 
-midi.on_control_change((channel, cc, val) => {
-
-    let update_knob = false;
-
-    if (channel == get_rot_channel(stored_config)) {
-
-        // if (!is_rot_extended(stored_config)) {
-
-        // } else {
-
-        //     if (is_LSB(cc) && cc == stored_config.rot_control_lsb) {
-
-        //         rotation_value = (rotation_value & 0x3f80) | val;
-
-        //     } else if (cc == stored_config.rot_control_msb) {
-
-        //         rotation_value = (rotation_value & 0x7f) | (val << 7);
-        //     }
-
-        // }
-
-        if (is_LSB(cc) && is_rot_extended(stored_config) && cc == stored_config.rot_control_lsb) {
-
-            if (is_rot_relative(stored_config)) {
-
-                rotation_value += (rotation_value << 7) & 0x3f80;
-
-            } else {
-
-                rotation_value = (rotation_value & 0x3f80) | val;
-            }
-            update_knob = true;
-
-        } else if (cc == stored_config.rot_control_msb) {
-            if ((stored_config.flags & midi.flags.cf_rotate_relative) != 0) {
-                rotation_value = (rotation_value & 0x3f80) | val;
-            } else {
-                rotation_value = (rotation_value & 0x7f) | (val << 7);
-            }
-            update_knob = true;
-        }
-        if (update_knob) {
-            let lower = -150;
-            let upper = 150;
-            let range = upper - lower;
-            let angle = lower + (rotation_value / 16383.0) * range;
-            rot_matrix.value = rotation_matrix(50, 50, angle);
-        }
-    }
-});
-
 //////////////////////////////////////////////////////////////////////
 // this doesn't work - port.close() does nothing
 
@@ -361,7 +359,7 @@ function toggle_expand() {
 //////////////////////////////////////////////////////////////////////
 
 function firmware_version() {
-    return `v${ui.value.firmware_version >> 8}.${(ui.value.firmware_version & 0x7f).toString(10).padStart(2, '0')}`;
+    return `v??`;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -378,11 +376,11 @@ function firmware_version() {
         </symbol>
     </svg>
 
-    <div class="container border rounded-3 bg-device border-secondary bg-secondary-subtle pt-2"
+    <div class="container border rounded-3 bg-device border-secondary bg-secondary-subtle pt-2 mb-4"
         :class="collapsed ? 'pb-2' : ' pb-4'">
 
         <div class='row'>
-            <div class='col-lg-3 text-center' :class="!collapsed ? 'mb-1' : ''">
+            <div class='col text-left ms-2' :class="!collapsed ? 'mb-1' : ''">
                 <div class="row">
                     <div class="col card-header">
                         <span>
@@ -397,8 +395,6 @@ function firmware_version() {
                         <span>
                             <strong>{{ device.name }}</strong>
                         </span>
-                    </div>
-                    <div class="col">
                     </div>
                 </div>
             </div>
@@ -416,16 +412,10 @@ function firmware_version() {
                             {{ !device.active ? 'Connect' : 'Disconnect' }}
                         </button>
                         <div class="small mt-3" v-if="device.active">
-                            Firmware
-                            <span class="text-body-secondary font-monospace">
-                                {{ firmware_version() }}
-                            </span>
-                        </div>
-                        <div class="small" v-if="device.active">
-                            Serial #
-                            <span class="text-body-secondary font-monospace">
-                                {{ device.serial_str }}
-                            </span>
+                            Firmware version
+                            <div class="text-body-secondary font-monospace">
+                                {{ props.device.firmware_version_str }}
+                            </div>
                         </div>
                         <div class="row text-center mt-3" v-if="device.active">
                             <div class="col">
@@ -496,7 +486,7 @@ function firmware_version() {
                 </div>
                 <div class="row">
                     <div class='col-lg'>
-                        <div class="row px-2">
+                        <div class="row ps-1">
                             <div class="col">
                                 <div class="form-check">
                                     <label class="form-check-label user-select-none" for="extended_check_rot">
@@ -521,7 +511,7 @@ function firmware_version() {
                                 </CCDropDown>
                             </div>
                         </div>
-                        <div class="row">
+                        <div class="row ps-1">
                             <div class="col">
                                 <div class="form-check">
                                     <label class="form-check-label user-select-none" for="rotate_reverse_check">
