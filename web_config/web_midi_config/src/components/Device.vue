@@ -10,6 +10,7 @@ import CCDropDown from './CCDropDown.vue';
 
 import CC from '../CC.js'
 import midi from '../Midi.js'
+import cookie from '../cookie.js'
 
 import fileDownload from 'js-file-download';
 
@@ -28,6 +29,12 @@ const props = defineProps({
 const flashModal = ref(false);
 const importModal = ref(false);
 const disconnectModal = ref(false);
+
+function cookie_name() {
+    return `${props.device.name}_label`;
+}
+
+let device_label = ref(cookie.get(cookie_name()) || "Unnamed");
 
 //////////////////////////////////////////////////////////////////////
 // is the current config different from what's on the device?
@@ -371,8 +378,8 @@ function toggle_expand() {
 
 //////////////////////////////////////////////////////////////////////
 
-function firmware_version() {
-    return `v??`;
+function save_name() {
+    cookie.set(cookie_name(), device_label.value, 400);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -395,19 +402,23 @@ function firmware_version() {
         <div class='row'>
             <div class='col text-left ms-2' :class="!collapsed ? 'mb-1' : ''">
                 <div class="row">
-                    <div class="col card-header">
-                        <span>
-                            <button class="btn" @click="toggle_expand()"
-                                style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem;">
-                                <svg width="20" height="20" style="transition:0.1s"
-                                    :transform="rotation_matrix(0, 0, collapsed ? 0 : 90)">
-                                    <use href="#little-arrow"></use>
-                                </svg>
-                            </button>
-                        </span>
-                        <span>
-                            <strong>{{ device.name }}</strong>
-                        </span>
+                    <div class="col ps-0">
+                        <div class="row">
+                            <div class="col pe-0 me-0">
+                                <button class="btn" @click="toggle_expand()"
+                                    style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem;">
+                                    <svg width="20" height="20" style="transition:0.1s"
+                                        :transform="rotation_matrix(0, 0, collapsed ? 0 : 90)">
+                                        <use href="#little-arrow"></use>
+                                    </svg>
+                                </button>
+                                <strong>{{ device.name }}</strong>
+                                <span class="d-inline-block" style="width:1em"></span>
+                                <input
+                                    class="bg-secondary-subtle text-secondary border-0 rounded focus-ring ps-2 bright-focus-input"
+                                    type="text" @input="save_name()" v-model="device_label">
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -903,5 +914,10 @@ function firmware_version() {
 .btn:first-child:active,
 :not(.btn-check)+.btn:active {
     border-color: transparent;
+}
+
+input.bright-focus-input:active,
+input.bright-focus-input:focus {
+    color: var(--bs-body-color) !important;
 }
 </style>
