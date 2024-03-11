@@ -2,7 +2,7 @@
 
 //////////////////////////////////////////////////////////////////////
 
-import { toRaw, watch, ref } from 'vue';
+import { toRaw, watch, ref, nextTick } from 'vue';
 
 import Toggle from './Toggle.vue'
 import Modal from './Modal.vue'
@@ -33,6 +33,10 @@ const disconnectModal = ref(false);
 // is the current config different from what's on the device?
 
 let config_changed = ref(false);
+
+// if loading from device, suppress some computed things (MSB/LSB/etc stuff)
+
+let loading_config = false;
 
 //////////////////////////////////////////////////////////////////////
 // this is the config on the device to compare against
@@ -158,7 +162,7 @@ function ui_from_config(config) {
 
 props.device.on_control_change = (channel, cc, val) => {
 
-    console.log(channel, cc, val);
+    // console.log(channel, cc, val);
 
     let update_knob = false;
 
@@ -245,9 +249,13 @@ watch(() => { return ui },
 // midi says a config was loaded from the device - apply it to the ui
 
 props.device.on_config_loaded = () => {
+    loading_config = true;
     stored_config = Object.assign({}, toRaw(props.device.config));
     ui.value = ui_from_config(props.device.config);
-    config_changed.value = false;
+    nextTick(() => {
+        loading_config = false;
+        config_changed.value = false;
+    });
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -278,22 +286,26 @@ function store_config() {
 // rot version
 
 function cc_rot_msb_changed() {
-    let cc = CC.CCs[ui.value.rot_control_msb];
-    let msb = CC.is_MSB(cc);
-    ui.value.rotate_extended = msb;
-    if (msb) {
-        ui.value.rot_control_lsb = cc.alt;
+    if (!loading_config) {
+        let cc = CC.CCs[ui.value.rot_control_msb];
+        let is_msb = CC.is_MSB(cc);
+        ui.value.rotate_extended = is_msb;
+        if (is_msb) {
+            ui.value.rot_control_lsb = cc.alt;
+        }
     }
 }
 
 // button version
 
 function cc_btn_msb_changed() {
-    let cc = CC.CCs[ui.value.btn_control_msb];
-    let msb = CC.is_MSB(cc);
-    ui.value.btn_extended = msb;
-    if (msb) {
-        ui.value.btn_control_lsb = cc.alt;
+    if (!loading_config) {
+        let cc = CC.CCs[ui.value.btn_control_msb];
+        let is_msb = CC.is_MSB(cc);
+        ui.value.btn_extended = is_msb;
+        if (is_msb) {
+            ui.value.btn_control_lsb = cc.alt;
+        }
     }
 }
 
