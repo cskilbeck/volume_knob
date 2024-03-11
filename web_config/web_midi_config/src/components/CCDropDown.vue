@@ -34,8 +34,10 @@ watch(current, (n) => {
 
         <input type="number" class="form-control" v-model.number="current">
 
-        <button class="btn tertiary-bg small-text border rounded-end" type="button" data-bs-toggle="dropdown">
+        <button class="btn tertiary-bg small-text border rounded-end form-select ps-2 pe-0 text-start" type="button"
+            data-bs-toggle="dropdown">
             <slot></slot>
+            <span class="d-inline-block"></span>
         </button>
 
         <ul class="dropdown-menu border-secondary-subtle rounded-0" style="width:300px">

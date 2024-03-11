@@ -91,7 +91,10 @@ const flags = {
     cf_toggle: 0x1000,
 
     // button's second value ('released') tracks rotation value (for e.g. mute/unmute)
-    cf_button_tracks_rotation: 0x2000
+    cf_button_tracks_rotation: 0x2000,
+
+    // other rotary encoder type
+    cf_rotate_reverse: 0x4000
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -114,7 +117,8 @@ let default_config = {
     rot_delta_7: 1,                 // How much to change by(7 bit mode)
     rot_current_value_14: 0,        // current value (in absolute mode) (14 bit mode)
     rot_current_value_7: 0,         // current value (in absolute mode) (7 bit mode)
-    flags: default_flags            // flags, see enum above
+    flags: default_flags,           // flags, see enum above
+    firmware_version: 0
 };
 
 //////////////////////////////////////////////////////////////////////

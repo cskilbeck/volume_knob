@@ -82,46 +82,39 @@ function get_rot_channel(config) {
 
 function config_from_ui() {
 
-    let config = {};
-
-    config.config_version = ui.value.config_version;
-    config.rot_control_msb = ui.value.rot_control_msb;
-    config.rot_control_lsb = ui.value.rot_control_lsb;
-    config.btn_control_msb = ui.value.btn_control_msb;
-    config.btn_control_lsb = ui.value.btn_control_lsb;
-    config.btn_value_a_14 = ui.value.btn_value_a_14;
-    config.btn_value_b_14 = ui.value.btn_value_b_14;
-    config.btn_value_a_7 = ui.value.btn_value_a_7;
-    config.btn_value_b_7 = ui.value.btn_value_b_7;
-
-    config.channels = (ui.value.rot_channel & 0xf) | ((ui.value.btn_channel & 0xf) << 4);
-
-    config.rot_zero_point = ui.value.rot_zero_point;
-    config.rot_delta_14 = ui.value.rot_delta_14;
-    config.rot_delta_7 = ui.value.rot_delta_7;
-    config.rot_current_value_14 = ui.value.rot_current_value_14;
-    config.rot_current_value_7 = ui.value.rot_current_value_7;
-    config.firmware_version = ui.value.firmware_version;
-
-    let flags = 0;
-    flags |= ui.value.rotate_extended ? midi.flags.cf_rotate_extended : 0;
-    flags |= ui.value.rotate_relative ? midi.flags.cf_rotate_relative : 0;
-    flags |= ui.value.led_invert ? midi.flags.cf_led_invert : 0;
-    flags |= ui.value.led_flash_on_rot ? midi.flags.cf_led_flash_on_rot : 0;
-    flags |= ui.value.led_flash_on_limit ? midi.flags.cf_led_flash_on_limit : 0;
-    flags |= ui.value.btn_momentary ? midi.flags.cf_btn_momentary : 0;
-    flags |= ui.value.btn_extended ? midi.flags.cf_btn_extended : 0;
-    flags |= ui.value.led_flash_on_click ? midi.flags.cf_led_flash_on_click : 0;
-    flags |= ui.value.led_flash_on_release ? midi.flags.cf_led_flash_on_release : 0;
-    flags |= ui.value.led_track_button_toggle ? midi.flags.cf_led_track_button_toggle : 0;
-    flags |= ((ui.value.acceleration & 1) != 0) ? midi.flags.cf_acceleration_lsb : 0;
-    flags |= ((ui.value.acceleration & 2) != 0) ? midi.flags.cf_acceleration_msb : 0;
-    flags |= ui.valuetoggle ? midi.flags.cf_toggle : 0;
-    flags |= ui.valuebutton_tracks_rotation ? midi.flags.cf_button_tracks_rotation : 0;
-
-    config.flags = flags;
-
-    return config;
+    return {
+        config_version: ui.value.config_version,
+        rot_control_msb: ui.value.rot_control_msb,
+        rot_control_lsb: ui.value.rot_control_lsb,
+        btn_control_msb: ui.value.btn_control_msb,
+        btn_control_lsb: ui.value.btn_control_lsb,
+        btn_value_a_14: ui.value.btn_value_a_14,
+        btn_value_b_14: ui.value.btn_value_b_14,
+        btn_value_a_7: ui.value.btn_value_a_7,
+        btn_value_b_7: ui.value.btn_value_b_7,
+        channels: (ui.value.rot_channel & 0xf) | ((ui.value.btn_channel & 0xf) << 4),
+        rot_zero_point: ui.value.rot_zero_point,
+        rot_delta_14: ui.value.rot_delta_14,
+        rot_delta_7: ui.value.rot_delta_7,
+        rot_current_value_14: ui.value.rot_current_value_14,
+        rot_current_value_7: ui.value.rot_current_value_7,
+        flags: (ui.value.rotate_extended ? midi.flags.cf_rotate_extended : 0)
+            | (ui.value.rotate_relative ? midi.flags.cf_rotate_relative : 0)
+            | (ui.value.led_invert ? midi.flags.cf_led_invert : 0)
+            | (ui.value.led_flash_on_rot ? midi.flags.cf_led_flash_on_rot : 0)
+            | (ui.value.led_flash_on_limit ? midi.flags.cf_led_flash_on_limit : 0)
+            | (ui.value.btn_momentary ? midi.flags.cf_btn_momentary : 0)
+            | (ui.value.btn_extended ? midi.flags.cf_btn_extended : 0)
+            | (ui.value.led_flash_on_click ? midi.flags.cf_led_flash_on_click : 0)
+            | (ui.value.led_flash_on_release ? midi.flags.cf_led_flash_on_release : 0)
+            | (ui.value.led_track_button_toggle ? midi.flags.cf_led_track_button_toggle : 0)
+            | (((ui.value.acceleration & 1) != 0) ? midi.flags.cf_acceleration_lsb : 0)
+            | (((ui.value.acceleration & 2) != 0) ? midi.flags.cf_acceleration_msb : 0)
+            | (ui.value.toggle ? midi.flags.cf_toggle : 0)
+            | (ui.value.button_tracks_rotation ? midi.flags.cf_button_tracks_rotation : 0)
+            | (ui.value.rotate_reverse ? midi.flags.cf_rotate_reverse : 0),
+        firmware_version: ui.value.firmware_version
+    };
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -129,7 +122,7 @@ function config_from_ui() {
 
 function ui_from_config(config) {
 
-    let new_ui = {
+    return {
         rotate_extended: (config.flags & midi.flags.cf_rotate_extended) != 0,
         rotate_relative: (config.flags & midi.flags.cf_rotate_relative) != 0,
         led_invert: (config.flags & midi.flags.cf_led_invert) != 0,
@@ -142,9 +135,9 @@ function ui_from_config(config) {
         led_track_button_toggle: (config.flags & midi.flags.cf_led_track_button_toggle) != 0,
         toggle: (config.flags & midi.flags.cf_toggle) != 0,
         button_tracks_rotation: (config.flags & midi.flags.cf_button_tracks_rotation) != 0,
-
+        rotate_reverse: (config.flags & midi.flags.cf_rotate_reverse) != 0,
+        button_tracks_rotation: (config.flags & midi.flags.cf_button_tracks_rotation) != 0,
         acceleration: (((config.flags & midi.flags.cf_acceleration_lsb) != 0) ? 1 : 0) + (((config.flags & midi.flags.cf_acceleration_msb) != 0) ? 2 : 0),
-
         config_version: config.config_version,
         rot_control_msb: config.rot_control_msb,
         rot_control_lsb: config.rot_control_lsb,
@@ -154,10 +147,8 @@ function ui_from_config(config) {
         btn_value_b_14: config.btn_value_b_14,
         btn_value_a_7: config.btn_value_a_7,
         btn_value_b_7: config.btn_value_b_7,
-
         rot_channel: get_rot_channel(config),
         btn_channel: get_btn_channel(config),
-
         rot_zero_point: config.rot_zero_point,
         rot_delta_14: config.rot_delta_14,
         rot_delta_7: config.rot_delta_7,
@@ -165,7 +156,6 @@ function ui_from_config(config) {
         rot_current_value_7: config.rot_current_value_7,
         firmware_version: config.firmware_version,
     };
-    return new_ui;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -173,7 +163,7 @@ function ui_from_config(config) {
 // different from the last stored/loaded config on the device
 
 function rot_limit() {
-    return ui.value.rotate_extended.value ? (1 << 14) : (1 << 7);
+    return ui.value.rotate_extended ? (1 << 14) : (1 << 7);
 }
 
 function constrain(a, min, max) {
@@ -201,15 +191,6 @@ watch(() => { return ui },
 );
 
 //////////////////////////////////////////////////////////////////////
-// store current UI to the device
-
-function store_config() {
-    props.device.config = config_from_ui();
-    midi.write_flash(props.device.device_index);
-    config_changed.value = false;
-}
-
-//////////////////////////////////////////////////////////////////////
 // midi says a config was loaded from the device - apply it to the ui
 
 midi.on_config_loaded((device) => {
@@ -219,6 +200,15 @@ midi.on_config_loaded((device) => {
     ui.value = ui_from_config(props.device.config);
     config_changed.value = false;
 });
+
+//////////////////////////////////////////////////////////////////////
+// store current UI to the device
+// update stored_config when we get the ack that it was written
+
+function store_config() {
+    props.device.config = config_from_ui();
+    midi.write_flash(props.device.device_index);
+}
 
 //////////////////////////////////////////////////////////////////////
 // midi says a config was saved to the device
@@ -312,13 +302,17 @@ midi.on_control_change((channel, cc, val) => {
         // }
 
         if (is_LSB(cc) && is_rot_extended(stored_config) && cc == stored_config.rot_control_lsb) {
+
             if (is_rot_relative(stored_config)) {
-                let amount = stored.rot_delta_7
-                rotation_value = (rotation_value & 0x3f80) | val;
+
+                rotation_value += (rotation_value << 7) & 0x3f80;
+
             } else {
+
                 rotation_value = (rotation_value & 0x3f80) | val;
             }
             update_knob = true;
+
         } else if (cc == stored_config.rot_control_msb) {
             if ((stored_config.flags & midi.flags.cf_rotate_relative) != 0) {
                 rotation_value = (rotation_value & 0x3f80) | val;
@@ -443,7 +437,7 @@ function firmware_version() {
                         </div>
                         <div class="row text-center" v-if="device.active">
                             <div class="col">
-                                <span style="width:45px;display:inline-block">
+                                <span style="width:40px;display:inline-block">
                                     <div class="progress border bg-body border-secondary" role="progressbar"
                                         aria-valuemax="16383" aria-valuemin="0" aria-valuenow="0" style="height:8px">
                                         <div class="progress-bar" :style="`width:${rotation_value * 100 / 16383}%`">
@@ -505,8 +499,9 @@ function firmware_version() {
                         <div class="row px-2">
                             <div class="col">
                                 <div class="form-check">
-                                    <label class="form-check-label user-select-none" for="extended_check_rot">Extended
-                                        CC</label>
+                                    <label class="form-check-label user-select-none" for="extended_check_rot">
+                                        Extended CC
+                                    </label>
                                     <input class="form-check-input pull-left" type="checkbox" id="extended_check_rot"
                                         v-model="ui.rotate_extended">
                                 </div>
@@ -524,6 +519,17 @@ function firmware_version() {
                                 <CCDropDown v-model="ui.rot_control_lsb">
                                     LSB
                                 </CCDropDown>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <div class="form-check">
+                                    <label class="form-check-label user-select-none" for="rotate_reverse_check">
+                                        Reverse rotation
+                                    </label>
+                                    <input class="form-check-input pull-left" type="checkbox" id="rotate_reverse_check"
+                                        v-model="ui.rotate_reverse">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -704,15 +710,16 @@ function firmware_version() {
                     <div class="col">
                         <div class="row">
                             <div class="col">
-                                Flash LED when:
+                                Flash on:
                             </div>
                         </div>
                     </div>
                     <div class="row">
                         <div class="col">
                             <div class="form-check">
-                                <label class="form-check-label user-select-none" for="flash_on_rot">Knob is
-                                    rotated</label>
+                                <label class="form-check-label user-select-none" for="flash_on_rot">
+                                    Rotate
+                                </label>
                                 <input class="form-check-input pull-left" type="checkbox" id="flash_on_rot"
                                     v-model="ui.led_flash_on_rot">
                             </div>
@@ -722,7 +729,7 @@ function firmware_version() {
                         <div class="col">
                             <div class="form-check">
                                 <label class="form-check-label user-select-none" for="flash_on_limit">
-                                    Rotation value hits limit
+                                    Limit
                                 </label>
                                 <input class="form-check-input pull-left" type="checkbox" id="flash_on_limit"
                                     v-model="ui.led_flash_on_limit">
@@ -733,7 +740,7 @@ function firmware_version() {
                         <div class="col">
                             <div class="form-check">
                                 <label class="form-check-label user-select-none" for="flash_on_click">
-                                    Button is pressed
+                                    Press
                                 </label>
                                 <input class="form-check-input pull-left" type="checkbox" id="flash_on_click"
                                     v-model="ui.led_flash_on_click">
@@ -744,7 +751,7 @@ function firmware_version() {
                         <div class="col">
                             <div class="form-check">
                                 <label class="form-check-label user-select-none" for="flash_on_release">
-                                    Button is released
+                                    Release
                                 </label>
                                 <input class="form-check-input pull-left" type="checkbox" id="flash_on_release"
                                     v-model="ui.led_flash_on_release">
@@ -756,7 +763,7 @@ function firmware_version() {
                         <div class="col">
                             <div class="form-check">
                                 <label class="form-check-label user-select-none" for="track_button_value">
-                                    LED tracks button value
+                                    Track button
                                 </label>
                                 <input class="form-check-input pull-left" type="checkbox" id="track_button_value"
                                     v-model="ui.led_track_button_toggle">
@@ -767,7 +774,7 @@ function firmware_version() {
                         <div class="col">
                             <div class="form-check">
                                 <label class="form-check-label user-select-none" for="led_invert">
-                                    Invert LED
+                                    Invert
                                 </label>
                                 <input class="form-check-input pull-left" type="checkbox" id="led_invert"
                                     v-model="ui.led_invert">
