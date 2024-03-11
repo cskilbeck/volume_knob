@@ -4,9 +4,9 @@
 #define DEVICE_DIRECT 1
 #define DEVICE_DEVKIT 2
 
-
-// #define DEVICE DEVICE_DEVKIT
-#define DEVICE DEVICE_ORIGINAL
+#if !defined(DEVICE)
+#define DEVICE DEVICE_DEVKIT
+#endif
 
 //////////////////////////////////////////////////////////////////////
 

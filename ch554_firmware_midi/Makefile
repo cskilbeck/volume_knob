@@ -10,6 +10,15 @@ INC = include/
 OBJ = obj/
 BIN = bin/
 
-EXTRA_FLAGS += --std-c23
+DEVICE_ORIGINAL = 0
+DEVICE_DIRECT = 1
+DEVICE_DEVKIT = 2
+
+DEVICE_TYPE ?= $(DEVICE_DEVKIT)
+
+EXTRA_FLAGS += --std-c23 -DDEVICE=$(DEVICE_TYPE)
+
+.PHONY build:
+	@echo Device type $(DEVICE_TYPE) is up to date
 
 include Makefile.include
