@@ -12,9 +12,10 @@
 static uint32 current_save_index = 1;
 static uint8 current_save_offset = 0;
 
+// should these be in here or in main.c?
 static uint8 const accel_values[2][4] = { { 0, 1, 2, 3 }, { 0, 20, 40, 80 } };
 
-#define DEFAULT_FLAGS cf_led_flash_on_limit | cf_led_flash_on_click | cf_acceleration_lsb
+#define DEFAULT_FLAGS cf_led_flash_on_limit | cf_led_flash_on_click
 
 __code const config_t default_config = {
 
@@ -33,7 +34,8 @@ __code const config_t default_config = {
     0x01,              // uint8 rot_delta_7;           // How much to change by
     0x0000,            // uint16 rot_current_value_14; // current value (in absolute mode) (14 bit mode)
     0x00,              // uint8 rot_current_value_7;   // current value (in absolute mode) (7 bit mode)
-    DEFAULT_FLAGS      // uint16 flags;                 // flags, see enum above
+    0x00,              // uint8 acceleration;          // 0..3 see table in config.c
+    DEFAULT_FLAGS      // uint16 flags;                // flags, see enum above
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -196,7 +198,7 @@ bool save_config()
 
 uint8 get_acceleration()
 {
-    uint8 accel_index = (config.flags >> 10) & 3;
-    uint8 accel_table = (config.flags & cf_rotate_extended) ? 1 : 0;
+    uint8 accel_index = config.acceleration & 3;
+    uint8 accel_table = config_flag(cf_rotate_extended) ? 1 : 0;
     return accel_values[accel_table][accel_index];
 }

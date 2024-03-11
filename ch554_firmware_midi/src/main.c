@@ -12,9 +12,10 @@
 #include "debug.h"
 #include "util.h"
 #include "usb.h"
+#include "midi.h"
+#include "xdata.h"
 #include "config.h"
 #include "encoder.h"
-#include "midi.h"
 
 //////////////////////////////////////////////////////////////////////
 

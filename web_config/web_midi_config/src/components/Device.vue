@@ -71,6 +71,10 @@ function shallowEqual(object1, object2) {
 
 //////////////////////////////////////////////////////////////////////
 
+function get_channels(rot, btn) {
+    return (rot & 0xf) | ((btn & 0xf) << 4);
+}
+
 function get_btn_channel(config) {
     return (config.channels >> 4) & 0xf;
 }
@@ -96,12 +100,14 @@ function config_from_ui() {
         btn_value_b_14: ui.value.btn_value_b_14,
         btn_value_a_7: ui.value.btn_value_a_7,
         btn_value_b_7: ui.value.btn_value_b_7,
-        channels: (ui.value.rot_channel & 0xf) | ((ui.value.btn_channel & 0xf) << 4),
+        channels: get_channels(ui.value.rot_channel, ui.value.btn_channel),
         rot_zero_point: ui.value.rot_zero_point,
         rot_delta_14: ui.value.rot_delta_14,
         rot_delta_7: ui.value.rot_delta_7,
         rot_current_value_14: ui.value.rot_current_value_14,
         rot_current_value_7: ui.value.rot_current_value_7,
+        acceleration: ui.value.acceleration,
+
         flags: (ui.value.rotate_extended ? midi.flags.cf_rotate_extended : 0)
             | (ui.value.rotate_relative ? midi.flags.cf_rotate_relative : 0)
             | (ui.value.led_invert ? midi.flags.cf_led_invert : 0)
@@ -112,8 +118,6 @@ function config_from_ui() {
             | (ui.value.led_flash_on_click ? midi.flags.cf_led_flash_on_click : 0)
             | (ui.value.led_flash_on_release ? midi.flags.cf_led_flash_on_release : 0)
             | (ui.value.led_track_button_toggle ? midi.flags.cf_led_track_button_toggle : 0)
-            | (((ui.value.acceleration & 1) != 0) ? midi.flags.cf_acceleration_lsb : 0)
-            | (((ui.value.acceleration & 2) != 0) ? midi.flags.cf_acceleration_msb : 0)
             | (ui.value.toggle ? midi.flags.cf_toggle : 0)
             | (ui.value.button_tracks_rotation ? midi.flags.cf_button_tracks_rotation : 0)
             | (ui.value.rotate_reverse ? midi.flags.cf_rotate_reverse : 0)
@@ -126,21 +130,6 @@ function config_from_ui() {
 function ui_from_config(config) {
 
     return {
-        rotate_extended: (config.flags & midi.flags.cf_rotate_extended) != 0,
-        rotate_relative: (config.flags & midi.flags.cf_rotate_relative) != 0,
-        led_invert: (config.flags & midi.flags.cf_led_invert) != 0,
-        led_flash_on_rot: (config.flags & midi.flags.cf_led_flash_on_rot) != 0,
-        led_flash_on_limit: (config.flags & midi.flags.cf_led_flash_on_limit) != 0,
-        btn_momentary: (config.flags & midi.flags.cf_btn_momentary) != 0,
-        btn_extended: (config.flags & midi.flags.cf_btn_extended) != 0,
-        led_flash_on_click: (config.flags & midi.flags.cf_led_flash_on_click) != 0,
-        led_flash_on_release: (config.flags & midi.flags.cf_led_flash_on_release) != 0,
-        led_track_button_toggle: (config.flags & midi.flags.cf_led_track_button_toggle) != 0,
-        toggle: (config.flags & midi.flags.cf_toggle) != 0,
-        button_tracks_rotation: (config.flags & midi.flags.cf_button_tracks_rotation) != 0,
-        rotate_reverse: (config.flags & midi.flags.cf_rotate_reverse) != 0,
-        button_tracks_rotation: (config.flags & midi.flags.cf_button_tracks_rotation) != 0,
-        acceleration: (((config.flags & midi.flags.cf_acceleration_lsb) != 0) ? 1 : 0) + (((config.flags & midi.flags.cf_acceleration_msb) != 0) ? 2 : 0),
         config_version: config.config_version,
         rot_control_msb: config.rot_control_msb,
         rot_control_lsb: config.rot_control_lsb,
@@ -156,7 +145,23 @@ function ui_from_config(config) {
         rot_delta_14: config.rot_delta_14,
         rot_delta_7: config.rot_delta_7,
         rot_current_value_14: config.rot_current_value_14,
-        rot_current_value_7: config.rot_current_value_7
+        rot_current_value_7: config.rot_current_value_7,
+        acceleration: config.acceleration,
+
+        rotate_extended: (config.flags & midi.flags.cf_rotate_extended) != 0,
+        rotate_relative: (config.flags & midi.flags.cf_rotate_relative) != 0,
+        led_invert: (config.flags & midi.flags.cf_led_invert) != 0,
+        led_flash_on_rot: (config.flags & midi.flags.cf_led_flash_on_rot) != 0,
+        led_flash_on_limit: (config.flags & midi.flags.cf_led_flash_on_limit) != 0,
+        btn_momentary: (config.flags & midi.flags.cf_btn_momentary) != 0,
+        btn_extended: (config.flags & midi.flags.cf_btn_extended) != 0,
+        led_flash_on_click: (config.flags & midi.flags.cf_led_flash_on_click) != 0,
+        led_flash_on_release: (config.flags & midi.flags.cf_led_flash_on_release) != 0,
+        led_track_button_toggle: (config.flags & midi.flags.cf_led_track_button_toggle) != 0,
+        toggle: (config.flags & midi.flags.cf_toggle) != 0,
+        button_tracks_rotation: (config.flags & midi.flags.cf_button_tracks_rotation) != 0,
+        rotate_reverse: (config.flags & midi.flags.cf_rotate_reverse) != 0,
+        button_tracks_rotation: (config.flags & midi.flags.cf_button_tracks_rotation) != 0
     };
 }
 
@@ -217,17 +222,13 @@ props.device.on_control_change = (channel, cc, val) => {
 // check for changes to ui, apply limits and check if the result is
 // different from the last stored/loaded config on the device
 
-function rot_limit() {
-    return ui.value.rotate_extended ? (1 << 14) : (1 << 7);
-}
-
 function constrain(a, min, max) {
     return Math.max(min, Math.min(a, max));
 }
 
 watch(() => { return ui },
     (ui) => {
-        ui.value.rot_zero_point = constrain(ui.value.rot_zero_point, 0, rot_limit());
+        ui.value.rot_zero_point = constrain(ui.value.rot_zero_point, 0, 128);
         ui.value.rot_delta_14 = constrain(ui.value.rot_delta_14, 1, 0x3fff);
         ui.value.btn_value_a_14 = constrain(ui.value.btn_value_a_14, 0, 0x3fff);
         ui.value.btn_value_b_14 = constrain(ui.value.btn_value_b_14, 0, 0x3fff);
@@ -240,6 +241,8 @@ watch(() => { return ui },
         // set config_changed if current settings are different from last loaded/saved
         // so the 'store to device' button can highlight if necessary
 
+        console.log("STORED:", stored_config);
+        console.log("UI: ", config_from_ui());
         config_changed.value = !shallowEqual(config_from_ui(), stored_config);
     },
     { deep: true }
@@ -263,8 +266,8 @@ props.device.on_config_loaded = () => {
 // in theory there's a little race in here but in practice not a problem
 
 props.device.on_config_saved = () => {
-    config_changed.value = false;
     stored_config = Object.assign({}, toRaw(props.device.config));
+    config_changed.value = false;
 };
 
 //////////////////////////////////////////////////////////////////////

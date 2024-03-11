@@ -10,5 +10,6 @@ extern __xdata uint8 serial_number_string[SERIAL_STRING_LEN];    // USB serial n
 extern __xdata uint8 product_string[PRODUCT_NAME_STRING_LEN];    // Product name + serial number
 extern __xdata uint8 midi_send_buffer[48];
 extern __xdata uint8 midi_recv_buffer[48];
-extern __xdata save_buffer_t save_buffer;
+// extern __xdata save_buffer_t save_buffer;
 extern __xdata uint8 queue_buffer[MIDI_QUEUE_LEN * MIDI_PACKET_SIZE];
+// extern __xdata config_t config;

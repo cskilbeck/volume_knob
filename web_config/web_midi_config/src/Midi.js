@@ -5,7 +5,7 @@ import { ref, toRaw } from 'vue'
 
 const CONFIG_LEN = 26;
 
-const CONFIG_VERSION = 0x08
+const CONFIG_VERSION = 0x09
 
 const MIDI_MANUFACTURER_ID = 0x36;    // Cheetah Marketing, defunct?
 
@@ -83,18 +83,14 @@ const flags = {
     // led tracks state of button
     cf_led_track_button_toggle: 0x0200,
 
-    // two bits for acceleration (so 4 options: off; low; med; high)
-    cf_acceleration_lsb: 0x0400,
-    cf_acceleration_msb: 0x0800,
-
     // current button toggle state
-    cf_toggle: 0x1000,
+    cf_toggle: 0x0400,
 
     // button's second value ('released') tracks rotation value (for e.g. mute/unmute)
-    cf_button_tracks_rotation: 0x2000,
+    cf_button_tracks_rotation: 0x0800,
 
     // other rotary encoder type
-    cf_rotate_reverse: 0x4000
+    cf_rotate_reverse: 0x1000
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -117,6 +113,7 @@ let default_config = {
     rot_delta_7: 1,                 // How much to change by(7 bit mode)
     rot_current_value_14: 0,        // current value (in absolute mode) (14 bit mode)
     rot_current_value_7: 0,         // current value (in absolute mode) (7 bit mode)
+    acceleration: 0,
     flags: default_flags            // flags, see enum above
 };
 
@@ -144,6 +141,7 @@ let config_map = [
     ["uint8", "rot_delta_7"],
     ["uint16", "rot_current_value_14"],
     ["uint8", "rot_current_value_7"],
+    ["uint8", "acceleration"],
     ["uint16", "flags"]
 ];
 

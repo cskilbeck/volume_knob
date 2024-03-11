@@ -26,8 +26,10 @@
 
 //////////////////////////////////////////////////////////////////////
 // increment this whenever the format of the config changes so the web ui knows to ignore old ones
+//
+// KEEP THIS IN SYNC WITH THE WEB UI, THAT'S A HASSLE!!!!
 
-#define CONFIG_VERSION 0x08
+#define CONFIG_VERSION 0x09
 
 //////////////////////////////////////////////////////////////////////
 // flags in config.cf_flags
@@ -64,18 +66,14 @@ typedef enum config_flags
     // led tracks state of button
     cf_led_track_button_toggle = 0x0200,
 
-    // two bits for acceleration (so 4 options: off, low, med, high)
-    cf_acceleration_lsb = 0x0400,
-    cf_acceleration_msb = 0x0800,
-
     // current button toggle state
-    cf_toggle = 0x1000,
+    cf_toggle = 0x0400,
 
     // button's second value ('released') tracks rotation value (for e.g. mute/unmute)
-    cf_button_tracks_rotation = 0x2000,
+    cf_button_tracks_rotation = 0x0800,
 
     // support both kinds of encoder
-    cf_rotate_reverse = 0x4000
+    cf_rotate_reverse = 0x1000
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -98,12 +96,14 @@ typedef struct config
     uint8 rot_delta_7;              // Rotate delta (7 bit mode)
     uint16 rot_current_value_14;    // Current value (in absolute mode) (14 bit mode)
     uint8 rot_current_value_7;      // Current value (in absolute mode) (7 bit mode)
+    uint8 acceleration;             // 0..3 see table in config.c
     uint16 flags;                   // Flags, see enum above
 
-    uint8 pad[CONFIG_MAX_LEN - 21];
+    uint8 pad[CONFIG_MAX_LEN - 22];
+
 } config_t;
 
-_Static_assert(sizeof(config_t) == CONFIG_MAX_LEN);
+_Static_assert(sizeof(config_t) <= CONFIG_MAX_LEN);
 
 extern __code const config_t default_config;
 extern __xdata config_t config;
