@@ -241,8 +241,6 @@ watch(() => { return ui },
         // set config_changed if current settings are different from last loaded/saved
         // so the 'store to device' button can highlight if necessary
 
-        console.log("STORED:", stored_config);
-        console.log("UI: ", config_from_ui());
         config_changed.value = !shallowEqual(config_from_ui(), stored_config);
     },
     { deep: true }

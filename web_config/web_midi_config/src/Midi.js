@@ -530,7 +530,7 @@ function on_midi_message(event) {
 
     const data = event.data;
 
-    console.log(`RECV: ${bytes_to_hex_string(data, data.length, " ")}`);
+    // console.log(`RECV: ${bytes_to_hex_string(data, data.length, " ")}`);
 
     let midi_status = data[0] & 0xf0;
 
