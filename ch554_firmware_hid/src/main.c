@@ -5,6 +5,8 @@
 #include <ch554.h>
 #include <debug.h>
 #include "hid.h"
+#include "types.h"
+#include "gpio.h"
 #include "hid_keys.h"
 
 #define CLOCKWISE 2
@@ -35,31 +37,6 @@ typedef uint16_t uint16;
 typedef void (*BOOTLOADER)(void);
 #define bootloader554 ((BOOTLOADER)0x3800)    // CH551/2/3/4
 #define bootloader559 ((BOOTLOADER)0xF400)    // CH558/9
-
-//////////////////////////////////////////////////////////////////////
-// GPIOs
-
-#define PORT1 0x90
-#define PORT3 0xB0
-
-#define BTN_PORT PORT1
-#define BTN_PIN 7
-
-#define ROTA_PORT PORT1
-#define ROTA_PIN 6
-
-#define ROTB_PORT PORT1
-#define ROTB_PIN 4
-
-#define LED_PORT PORT1
-#define LED_PIN 5
-
-SBIT(LED_BIT, LED_PORT, LED_PIN);
-
-SBIT(BTN_BIT, BTN_PORT, BTN_PIN);
-
-SBIT(ROTA_BIT, ROTA_PORT, ROTA_PIN);
-SBIT(ROTB_BIT, ROTB_PORT, ROTB_PIN);
 
 //////////////////////////////////////////////////////////////////////
 
@@ -314,13 +291,15 @@ void do_press(uint16 k)
     if(queue_space() > 1) {
         queue_put(k);
         queue_put(k & 0x8000);
+        // led_flash();
+    } else {
         led_flash();
     }
 }
 
 //////////////////////////////////////////////////////////////////////
 
-#define DEBOUNCE_TIME 0xA0u
+#define DEBOUNCE_TIME 0x1Cu
 #define T2_DEBOUNCE (0xFFu - DEBOUNCE_TIME)
 
 uint16 press_time = 0;
@@ -340,13 +319,14 @@ void main()
     }
     turn_value = (int8)vol_direction - 1;    // becomes -1 or 1
 
-    // Set led bit (P1.5) as output push pull
-    // Set Encoder and button bits (P1.4, P1.6, P1.7) as inputs with pullup
-    P1_MOD_OC = 0b11010000;
-    P1_DIR_PU = 0b11110000;
-
-    P3_MOD_OC = 0b00000000;
-    P3_DIR_PU = 0b00000000;
+#if DEVICE == DEVICE_DEVKIT
+    gpio_init(UART_TX_PORT, UART_TX_PIN, gpio_output_push_pull);
+    gpio_init(UART_RX_PORT, UART_RX_PIN, gpio_output_open_drain);
+#endif
+    gpio_init(ROTA_PORT, ROTA_PIN, gpio_input_pullup);
+    gpio_init(ROTB_PORT, ROTB_PIN, gpio_input_pullup);
+    gpio_init(BTN_PORT, BTN_PIN, gpio_input_pullup);
+    gpio_init(LED_PORT, LED_PIN, gpio_output_push_pull);
 
     // start usb client
     usb_init();
