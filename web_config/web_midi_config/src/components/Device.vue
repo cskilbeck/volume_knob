@@ -454,7 +454,8 @@ function save_name() {
                                 <span style="width:40px;display:inline-block">
                                     <div class="progress border bg-body border-secondary" role="progressbar"
                                         aria-valuemax="16383" aria-valuemin="0" aria-valuenow="0" style="height:8px">
-                                        <div class="progress-bar" :style="`width:${rotation_value * 100 / 16383}%`">
+                                        <div class="progress-bar value-bar"
+                                            :style="`width:${rotation_value * 100 / 16383}%`">
                                         </div>
                                     </div>
                                 </span>
@@ -919,5 +920,13 @@ function save_name() {
 input.bright-focus-input:active,
 input.bright-focus-input:focus {
     color: var(--bs-body-color) !important;
+}
+
+[data-bs-theme='light'] .value-bar {
+    background-color: var(--bs-primary-bg-subtle);
+}
+
+[data-bs-theme='dark'] .value-bar {
+    background-color: var(--bs-primary-border-subtle);
 }
 </style>
