@@ -2,7 +2,7 @@
 
 //////////////////////////////////////////////////////////////////////
 
-import { onMounted, ref, nextTick, watchEffect, computed } from 'vue';
+import { onMounted, ref, watchEffect, computed } from 'vue';
 
 //////////////////////////////////////////////////////////////////////
 
@@ -16,13 +16,13 @@ const props = defineProps({
         type: String,
         required: false,
         default: "smaller",
-        description: "Font size for the checked/unchecked text"
+        description: "Font size for the text"
     },
-    pillSize: {
+    pillSizePercent: {
         type: Number,
         required: false,
-        default: 0.75,
-        description: "The pill size, 0..1 where 1 = same size as vertical extent"
+        default: 70,
+        description: "Pill size, 0..100%"
     },
     marginPixels: {
         type: Number,
@@ -36,29 +36,29 @@ const props = defineProps({
         default: 1,
         description: "Thickness of the border in pixels"
     },
-    rounded: {
+    roundedPercent: {
         type: Number,
         required: false,
-        default: 1,
-        description: "How rounded, 0..1 where 0 = square, 1 = rounded"
+        default: 100,
+        description: "How rounded, 0..100% where 0 = square, 100 = rounded"
     },
     transitionTime: {
         type: Number,
         required: false,
-        default: 0.3,
-        description: "How long transition between checked/unchecked takes"
+        default: 0.25,
+        description: "TTransition time between checked/unchecked"
     },
     checkedPillColor: {
         type: String,
         required: false,
         default: "White",
-        description: "Color of the pill when checked"
+        description: "Pill color when checked"
     },
     uncheckedPillColor: {
         type: String,
         required: false,
         default: "White",
-        description: "Color of the pill when unchecked"
+        description: "Pill color when unchecked"
     },
     checkedBackgroundColor: {
         type: String,
@@ -81,58 +81,33 @@ const props = defineProps({
 });
 
 //////////////////////////////////////////////////////////////////////
+// track modelValue
 
 const isChecked = ref(false);
 
 const emit = defineEmits(["update:modelValue"]);
 
-watchEffect(function () {
-    isChecked.value = props.modelValue;
-});
+watchEffect(function () { isChecked.value = props.modelValue; });
 
 //////////////////////////////////////////////////////////////////////
+// transition time suppressed to 0 until onMounted
 
-const ready = ref(false);   // ready for avoiding initial animation problem
-const theLabel = ref(null);
-const labelWidth = ref(0);
-const labelHeight = ref(0);
+const ready = ref(false);
 
-//////////////////////////////////////////////////////////////////////
-
-function updateDimensions() {
-    let wpx = "0px";
-    let hpx = "0px";
-    if (theLabel.value) {
-        wpx = getComputedStyle(theLabel.value).width;
-        hpx = getComputedStyle(theLabel.value).height;
-    }
-    // wpx,hpx are in the format "#px" - is it guaranteed?
-    labelWidth.value = wpx.substring(0, wpx.length - 2) | 0;
-    labelHeight.value = hpx.substring(0, hpx.length - 2) | 0;
-}
-
-//////////////////////////////////////////////////////////////////////
+onMounted(() => { ready.value = true; });
 
 const trans = computed(() => { return ready.value ? props.transitionTime : 0 });
 
-const dotSize = computed(() => { return (labelHeight.value - props.borderPixels * 2) * props.pillSize; });
-
-const dotBorder = computed(() => { return ((labelHeight.value - props.pillSize) - dotSize.value) * 0.5; });
-
 //////////////////////////////////////////////////////////////////////
+// the top level dom object, needs this for dimensions
 
-onMounted(() => {
+const theLabel = ref(null);
 
-    updateDimensions();
+// size of the pill in pixels
+const pill_size_px = computed(() => { return (theLabel.value.offsetHeight - props.borderPixels * 2) * props.pillSizePercent / 100; });
 
-    new ResizeObserver((entries) => {
-        updateDimensions();
-    }).observe(theLabel.value);
-
-    // allow a moment to get the initial translation done
-    // couldn't make this work with nextTick()...
-    setTimeout(() => { ready.value = true; }, 0);
-});
+// space between pill and border in pixels
+const pill_border_px = computed(() => { return ((theLabel.value.offsetHeight - props.pillSizePercent / 100) - pill_size_px.value) * 0.5; });
 
 //////////////////////////////////////////////////////////////////////
 
@@ -141,7 +116,7 @@ onMounted(() => {
 <template>
     <label class="toggle" ref="theLabel">
         <input v-model="isChecked" type="checkbox" @change="emit('update:modelValue', isChecked)">
-        <span class="pill">
+        <span class="pill-container">
             <span class='checked-text-span'>
                 <slot name="checked"></slot>
             </span>
@@ -153,6 +128,7 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* main toggle element */
 .toggle {
     position: relative;
     font-size: v-bind('props.fontSize');
@@ -163,11 +139,13 @@ onMounted(() => {
     height: 100%;
 }
 
+/* hide the actual checkbox */
 .toggle input {
     visibility: hidden;
 }
 
-.pill {
+/* the actual top level visible bit */
+.pill-container {
     border: v-bind('`${props.borderColor} ${props.borderPixels}px solid`');
     position: absolute;
     cursor: pointer;
@@ -178,65 +156,67 @@ onMounted(() => {
     background-color: v-bind('`${props.uncheckedBackgroundColor}`');
     transition: v-bind('`transform ${trans}s, background-color ${trans}s`');
     overflow: hidden;
-    border-radius: v-bind('`${(labelHeight * props.rounded * 0.5)}px`');
+    border-radius: v-bind('`${(theLabel.offsetHeight * 0.005 * props.roundedPercent)}px`');
 }
 
-.pill:before {
+/* main pill setup + unchecked pill color */
+.pill-container:before {
     position: absolute;
     content: "";
     margin: 0px;
-    padding: 0px;
-    height: v-bind('`${dotSize}px`');
-    width: v-bind('`${dotSize}px`');
+    padding: v-bind('`${pill_size_px * 0.5}px`');
+    width: 0px;
+    height: 0px;
     left: 0%;
     top: 50%;
-    border-radius: v-bind('`${dotSize * props.rounded * 0.5}px`');
-    background-color: v-bind('`${props.uncheckedPillColor}`');
-    transform: v-bind('`translate(${dotBorder - props.borderPixels + 0.5}px, -50%)`');
+    border-radius: v-bind('`${props.roundedPercent * 0.5}%`');
+    transform: v-bind('`translate(${pill_border_px - props.borderPixels}px, -50%)`');
     transition: v-bind('`transform ${trans}s, background-color ${trans}s`');
+    background-color: v-bind('`${props.uncheckedPillColor}`');
 }
 
-input:checked+.pill {
+/* checked bg color */
+input:checked+.pill-container {
     background-color: v-bind('`${props.checkedBackgroundColor}`');
 }
 
 /* spans for containing checked and unchecked text */
-input+.pill span {
+input+.pill-container span {
     position: absolute;
     top: 50%;
     user-select: none;
     transition: v-bind('`transform ${trans}s, opacity ${trans}s`');
 }
 
-/* checked pill */
-input:checked+.pill:before {
+/* checked pill, set color and position */
+input:checked+.pill-container:before {
     background-color: v-bind('`${props.checkedPillColor}`');
-    transform: v-bind('`translate(${labelWidth - (dotBorder + dotSize + props.borderPixels)}px, -50%)`');
+    transform: v-bind('`translate(${theLabel.offsetWidth - (pill_border_px + pill_size_px + props.borderPixels)}px, -50%)`');
 }
 
 /* unchecked: checked text hidden on the left */
-input+.pill span.checked-text-span {
+input+.pill-container span.checked-text-span {
     opacity: 0%;
     right: 100%;
-    transform: v-bind('`translate(${dotBorder - props.marginPixels - props.borderPixels}px, -50%`');
+    transform: v-bind('`translate(${-props.marginPixels - props.borderPixels}px, -50%`');
 }
 
 /* unchecked: unchecked text shown on the right */
-input+.pill span.unchecked-text-span {
+input+.pill-container span.unchecked-text-span {
     opacity: 100%;
-    transform: v-bind('`translate(${dotBorder + dotSize + props.marginPixels - props.borderPixels}px, -50%)`');
+    transform: v-bind('`translate(${(pill_border_px * 2) + pill_size_px + props.marginPixels - props.borderPixels}px, -50%)`');
 }
 
 /* checked: checked text shown on the left */
-input:checked+.pill span.checked-text-span {
+input:checked+.pill-container span.checked-text-span {
     opacity: 100%;
     right: 100%;
-    transform: v-bind('`translate(${labelWidth - (dotBorder + dotSize + props.marginPixels + props.borderPixels)}px, -50%)`');
+    transform: v-bind('`translate(${theLabel.offsetWidth - ((pill_border_px * 2) + pill_size_px + props.marginPixels + props.borderPixels)}px, -50%)`');
 }
 
 /* checked: unchecked text hidden on the right */
-input:checked+.pill span.unchecked-text-span {
+input:checked+.pill-container span.unchecked-text-span {
     opacity: 0%;
-    transform: v-bind('`translate(${labelWidth - dotBorder + props.marginPixels - props.borderPixels}px, -50%)`');
+    transform: v-bind('`translate(${theLabel.offsetWidth + props.marginPixels - props.borderPixels}px, -50%)`');
 }
 </style>
