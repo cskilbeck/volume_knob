@@ -7,18 +7,18 @@
 #include "ch554.h"
 #include "ch554_usb.h"
 #include "types.h"
+#include "gpio.h"
 #include "debug.h"
 #include "util.h"
 #include "usb.h"
 #include "config.h"
-#include "gpio.h"
 #include "encoder.h"
 #include "midi.h"
 #include "main.h"
 
 //////////////////////////////////////////////////////////////////////
 
-#define DEBOUNCE_TIME 0x10u
+#define DEBOUNCE_TIME 0x1Cu
 #define T2_DEBOUNCE (0xFFu - DEBOUNCE_TIME)
 
 #define ROT_CLOCKWISE 2
@@ -28,8 +28,19 @@
 // the other ones (some are reversed). This sets the default rotation (after first
 // flash), reverse by triple-clicking the knob
 
+#if DEVICE == DEVICE_DEVKIT
+
 #define ROTARY_DIRECTION (ROT_CLOCKWISE)
-// #define ROTARY_DIRECTION (ROT_ANTI_CLOCKWISE)
+#define LED_ON 1
+#define LED_OFF 0
+
+#else
+
+#define ROTARY_DIRECTION (ROT_ANTI_CLOCKWISE)
+#define LED_OFF 1
+#define LED_ON 0
+
+#endif
 
 //////////////////////////////////////////////////////////////////////
 // XDATA, 1KB available
@@ -38,6 +49,7 @@ __xdata uint8 endpoint_0_buffer[DEFAULT_ENDP0_SIZE];     // endpoint0 OUT & IN b
 __xdata uint8 endpoint_1_buffer[DEFAULT_ENDP1_SIZE];     // endpoint1 upload buffer
 __xdata uint8 endpoint_2_in_buffer[MAX_PACKET_SIZE];     // endpoint2 IN buffer, Must be an even address
 __xdata uint8 endpoint_2_out_buffer[MAX_PACKET_SIZE];    // endpoint2 OUT buffer, Must be an even address
+__xdata uint8 serial_number_string[18];
 __xdata uint8 midi_send_buffer[48];
 __xdata uint8 midi_recv_buffer[48];
 __xdata save_buffer_t save_buffer;
@@ -73,11 +85,11 @@ uint16 led_brightness = 0;
 void led_update()
 {
     if(led_brightness <= LED_FADE_SPEED) {
-        LED_BIT = 0;
+        LED_BIT = LED_OFF;
         led_brightness = 0;
     } else {
         led_brightness -= LED_FADE_SPEED;
-        LED_BIT = led_gamma[led_brightness >> 8] > TL2;
+        LED_BIT = (led_gamma[led_brightness >> 8] > TL2) ? LED_ON : LED_OFF;
     }
 
     if(led_brightness == 0 && config_flag(cf_led_track_button_toggle)) {
@@ -85,7 +97,7 @@ void led_update()
         if(config_flag(cf_led_invert)) {
             on_off = 1 - on_off;
         }
-        LED_BIT = on_off;
+        LED_BIT = on_off ? LED_ON : LED_OFF;
     }
 }
 
@@ -212,7 +224,12 @@ int main()
 {
     clk_init();
     delay_mS(5);
+
+#if DEVICE == DEVICE_DEVKIT
+    gpio_init(UART_TX_PORT, UART_TX_PIN, gpio_output_push_pull);
+    gpio_init(UART_RX_PORT, UART_RX_PIN, gpio_output_open_drain);
     uart0_init();
+#endif
 
     putstr("================ BOOT =================\n");
 
@@ -222,8 +239,23 @@ int main()
 
     hexdump("CHIPID", &chip_id, 4);
 
-    gpio_init(UART_TX_PORT, UART_TX_PIN, gpio_output_push_pull);
-    gpio_init(UART_RX_PORT, UART_RX_PIN, gpio_output_open_drain);
+    // setup USB serial string from Chip ID
+
+    serial_number_string[0] = 18;    // 18 long, 2 for header, 16 for the serial number (8 wchars)
+    serial_number_string[1] = 3;     // usb string descriptor
+    uint32 n = chip_id;
+    for(uint8 i = 0; i < 8; ++i) {
+        uint8 c = (uint8)(n >> 28);
+        if(c < 10) {
+            c += '0';
+        } else {
+            c += 'A' - 10;
+        }
+        serial_number_string[i * 2 + 2] = c;
+        serial_number_string[i * 2 + 3] = 0;
+        n <<= 4;
+    }
+
     gpio_init(ROTA_PORT, ROTA_PIN, gpio_input_pullup);
     gpio_init(ROTB_PORT, ROTB_PIN, gpio_input_pullup);
     gpio_init(BTN_PORT, BTN_PIN, gpio_input_pullup);
@@ -359,6 +391,10 @@ int main()
                     // ROTATION
 
                     if(direction != 0) {
+
+                        if(config_flag(cf_rotate_reverse)) {
+                            direction = -direction;
+                        }
 
                         int16 delta = config_flag(cf_rotate_extended) ? config.rot_delta_14 : config.rot_delta_7;
                         if(direction == turn_value) {

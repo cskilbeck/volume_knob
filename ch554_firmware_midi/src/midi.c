@@ -5,6 +5,7 @@
 #include <string.h>
 #include "ch554.h"
 #include "types.h"
+#include "gpio.h"
 #include "debug.h"
 #include "midi.h"
 #include "config.h"

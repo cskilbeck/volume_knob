@@ -1,9 +1,37 @@
 #pragma once
 
+#define DEVICE_ORIGINAL 0
+#define DEVICE_DIRECT 1
+#define DEVICE_DEVKIT 2
+
+
+// #define DEVICE DEVICE_DEVKIT
+#define DEVICE DEVICE_ORIGINAL
+
 //////////////////////////////////////////////////////////////////////
 
 #define PORT1 0x90
 #define PORT3 0xB0
+
+//////////////////////////////////////////////////////////////////////
+
+#if DEVICE == DEVICE_ORIGINAL
+
+// USB Micro B version
+
+#define ROTA_PORT PORT3
+#define ROTA_PIN 1
+
+#define ROTB_PORT PORT3
+#define ROTB_PIN 0
+
+#define BTN_PORT PORT3
+#define BTN_PIN 2
+
+#define LED_PORT PORT1
+#define LED_PIN 4
+
+#elif DEVICE == DEVICE_DEVKIT
 
 #define UART_TX_PORT PORT3
 #define UART_TX_PIN 0
@@ -22,6 +50,8 @@
 
 #define LED_PORT PORT1
 #define LED_PIN 6
+
+#endif
 
 SBIT(BTN_BIT, BTN_PORT, BTN_PIN);
 SBIT(LED_BIT, LED_PORT, LED_PIN);

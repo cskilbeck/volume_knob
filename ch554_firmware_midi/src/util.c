@@ -1,8 +1,8 @@
 #include <string.h>
 #include <ch554.h>
 #include "types.h"
-#include "debug.h"
 #include "gpio.h"
+#include "debug.h"
 #include "util.h"
 #include "main.h"
 

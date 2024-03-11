@@ -3,6 +3,7 @@
 #include "ch554.h"
 #include "ch554_usb.h"
 #include "types.h"
+#include "gpio.h"
 #include "debug.h"
 #include "config.h"
 #include "midi.h"
@@ -79,10 +80,6 @@ __code uint8 const config_descriptor[] = {
 
 // language string
 unsigned char __code const language_string[] = { 0x04, 0x03, 0x09, 0x04 };
-
-// serial number string
-unsigned char __code const serial_number_string[] = { 0x16, 0x03, '2',  0x00, '0',  0x00, '2',  0x00, '4',  0x00, '/',
-                                                      0x00, '0',  0x00, '2',  0x00, '/',  0x00, '1',  0x00, '8',  0x00 };
 
 // product string
 unsigned char __code const product_string[] = {

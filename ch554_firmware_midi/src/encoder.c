@@ -1,7 +1,7 @@
 #include "ch554.h"
 #include "types.h"
-#include "debug.h"
 #include "gpio.h"
+#include "debug.h"
 
 //////////////////////////////////////////////////////////////////////
 // rotary encoder reader

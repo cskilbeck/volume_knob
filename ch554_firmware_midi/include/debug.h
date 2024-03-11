@@ -29,6 +29,11 @@ void uart1_send_byte(uint8_t Senddat);    // uart1 Send a byte
 void watchdog_mode_select(uint8_t Mode);    // watchdog settings
 void watchdog_feed(uint8_t TIM);            //  feed the watchdog
 
+#if !defined(DEVICE)
+#error PLEASE DEFINE A DEVICE TYPE IN GPIO.H (and include it)
+#endif
+
+#if DEVICE == DEVICE_DEVKIT
 void putnibble(uint8 n);
 void putstr(char *p);
 void puthex(uint8 b);
@@ -37,3 +42,17 @@ void hexdump(char *msg, uint8 *p, uint8 n);
 void print_uint32(char *msg, uint32 v);
 void print_uint16(char *msg, uint16 v);
 void print_uint8(char *msg, uint8 v);
+#else
+#define NOP_MACRO \
+    do {          \
+    } while(false)
+
+#define putnibble(n) NOP_MACRO
+#define putstr(p) NOP_MACRO
+#define puthex(b) NOP_MACRO
+#define hexdump(m, p, n) NOP_MACRO
+#define print_uint32(m, v) NOP_MACRO
+#define print_uint16(m, v) NOP_MACRO
+#define print_uint8(m, v) NOP_MACRO
+
+#endif

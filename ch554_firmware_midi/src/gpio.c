@@ -1,7 +1,7 @@
 #include "ch554.h"
 #include "types.h"
-#include "debug.h"
 #include "gpio.h"
+#include "debug.h"
 
 //////////////////////////////////////////////////////////////////////
 // Pn_MOD_OC & Pn_DIR_PU: pin input & output configuration for Pn (n=1/3)

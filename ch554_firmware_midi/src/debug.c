@@ -4,6 +4,7 @@
 
 #include "ch554.h"
 #include "types.h"
+#include "gpio.h"
 #include "debug.h"
 
 #define _BAUD_X1(clk, baud) (10 * clk / baud / 16)
@@ -235,6 +236,7 @@ void watchdog_feed(uint8_t tim)
 
 //////////////////////////////////////////////////////////////////////
 
+#if DEVICE == DEVICE_DEVKIT
 void putnibble(uint8 n)
 {
     if(n > 9) {
@@ -307,3 +309,4 @@ void hexdump(char *msg, uint8 *p, uint8 n)
     }
     putchar('\n');
 }
+#endif

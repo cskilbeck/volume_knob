@@ -72,7 +72,10 @@ typedef enum config_flags
     cf_toggle = 0x1000,
 
     // button's second value ('released') tracks rotation value (for e.g. mute/unmute)
-    cf_button_tracks_rotation = 0x2000
+    cf_button_tracks_rotation = 0x2000,
+
+    // support both kinds of encoder
+    cf_rotate_reverse = 0x4000
 };
 
 //////////////////////////////////////////////////////////////////////
