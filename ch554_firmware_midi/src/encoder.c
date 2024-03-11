@@ -1,10 +1,7 @@
-#include "ch554.h"
-#include "types.h"
-#include "gpio.h"
-#include "debug.h"
-
 //////////////////////////////////////////////////////////////////////
 // rotary encoder reader
+
+#include "main.h"
 
 static __code const uint8 encoder_valid_bits[16] = { 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0 };
 

@@ -1,17 +1,6 @@
-#include <stdint.h>
-#include <string.h>
-#include "ch554.h"
-#include "ch554_usb.h"
-#include "types.h"
-#include "main.h"
-#include "gpio.h"
-#include "debug.h"
-#include "config.h"
-#include "midi.h"
-#include "xdata.h"
-#include "usb.h"
+//////////////////////////////////////////////////////////////////////
 
-// //////////////////////////////////////////////////////////////////////
+#include "main.h"
 
 volatile __idata uint8 ep2_recv_len = 0;
 volatile __idata uint8 ep2_busy = 0;

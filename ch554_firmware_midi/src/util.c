@@ -1,10 +1,6 @@
-#include <string.h>
-#include <ch554.h>
-#include "types.h"
+//////////////////////////////////////////////////////////////////////
+
 #include "main.h"
-#include "gpio.h"
-#include "debug.h"
-#include "util.h"
 
 #pragma disable_warning 110
 

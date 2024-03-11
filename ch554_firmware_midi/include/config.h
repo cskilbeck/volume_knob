@@ -106,7 +106,6 @@ typedef struct config
 _Static_assert(sizeof(config_t) <= CONFIG_MAX_LEN);
 
 extern __code const config_t default_config;
-extern __xdata config_t config;
 
 inline uint8 get_rot_channel()
 {
@@ -135,8 +134,6 @@ typedef struct save_buffer
 } save_buffer_t;
 
 _Static_assert(sizeof(save_buffer_t) == 32);
-
-extern __xdata save_buffer_t save_buffer;
 
 bool load_config();
 bool save_config();

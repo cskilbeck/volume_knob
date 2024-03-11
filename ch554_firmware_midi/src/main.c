@@ -1,21 +1,6 @@
 //////////////////////////////////////////////////////////////////////
 
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
-
-#include "ch554.h"
-#include "ch554_usb.h"
-#include "types.h"
 #include "main.h"
-#include "gpio.h"
-#include "debug.h"
-#include "util.h"
-#include "usb.h"
-#include "midi.h"
-#include "xdata.h"
-#include "config.h"
-#include "encoder.h"
 
 //////////////////////////////////////////////////////////////////////
 

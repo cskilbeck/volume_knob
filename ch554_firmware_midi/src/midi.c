@@ -1,19 +1,7 @@
 //////////////////////////////////////////////////////////////////////
-//
-// WCHISPTOOL download: https://www.wch-ic.com/downloads/WCHISPTool_Setup_exe.html
 
-#include <string.h>
-#include "ch554.h"
-#include "types.h"
 #include "main.h"
-#include "gpio.h"
-#include "debug.h"
-#include "midi.h"
-#include "xdata.h"
-#include "config.h"
-#include "usb.h"
-#include "util.h"
-#include "gpio.h"
+
 
 uint8 queue_size = 0;
 

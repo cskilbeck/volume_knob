@@ -1,11 +1,6 @@
 ﻿//////////////////////////////////////////////////////////////////////
 
-#include <stdint.h>
-
-#include "ch554.h"
-#include "types.h"
-#include "gpio.h"
-#include "debug.h"
+#include "main.h"
 
 #define _BAUD_X1(clk, baud) (10 * clk / baud / 16)
 #define _BAUD_X2(clk, baud) (_BAUD_X1(clk, baud) % 10)

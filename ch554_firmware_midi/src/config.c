@@ -1,13 +1,6 @@
-#include <string.h>
-#include "ch554.h"
-#include "types.h"
-#include "main.h"
-#include "gpio.h"
-#include "debug.h"
-#include "util.h"
-#include "config.h"
-
 //////////////////////////////////////////////////////////////////////
+
+#include "main.h"
 
 static uint32 current_save_index = 1;
 static uint8 current_save_offset = 0;
