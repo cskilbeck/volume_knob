@@ -598,6 +598,32 @@ function firmware_version() {
                 </div>
                 <div class="row">
                     <div class="col-lg">
+                        <div class="row px-2">
+                            <div class="col">
+                                <div class="form-check">
+                                    <label class="form-check-label user-select-none" for="extended_check_btn">Extended
+                                        CC</label>
+                                    <input class="form-check-input pull-left" type="checkbox" id="extended_check_btn"
+                                        v-model="ui.btn_extended">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <CCDropDown v-model="ui.btn_control_msb" v-on:update:modelValue="cc_btn_msb_changed">
+                                    {{ ui.btn_extended ? 'MSB' : 'CC' }}
+                                </CCDropDown>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col mb-2" :class="{ hide: !ui.btn_extended }">
+                                <CCDropDown v-model="ui.btn_control_lsb">
+                                    LSB
+                                </CCDropDown>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg">
                         <div class="row">
                             <div class="col">
                                 <div class="input-group">
@@ -656,32 +682,6 @@ function firmware_version() {
                                         {{ ui.btn_momentary ? "OFF" : "B" }}
                                     </span>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg">
-                        <div class="row px-2">
-                            <div class="col">
-                                <div class="form-check">
-                                    <label class="form-check-label user-select-none" for="extended_check_btn">Extended
-                                        CC</label>
-                                    <input class="form-check-input pull-left" type="checkbox" id="extended_check_btn"
-                                        v-model="ui.btn_extended">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col">
-                                <CCDropDown v-model="ui.btn_control_msb" v-on:update:modelValue="cc_btn_msb_changed">
-                                    {{ ui.btn_extended ? 'MSB' : 'CC' }}
-                                </CCDropDown>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col mb-2" :class="{ hide: !ui.btn_extended }">
-                                <CCDropDown v-model="ui.btn_control_lsb">
-                                    LSB
-                                </CCDropDown>
                             </div>
                         </div>
                     </div>
