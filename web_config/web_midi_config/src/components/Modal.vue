@@ -2,12 +2,6 @@
 
 const emit = defineEmits(["update:modelValue"]);
 
-const backdropClick = (event) => {
-    if (event.target.id == 'backdrop' && props.closeable == true) {
-        emit("update:modelValue", false);
-    }
-}
-
 const props = defineProps({
     modelValue: {
         type: Boolean,
@@ -15,6 +9,11 @@ const props = defineProps({
         default: false
     },
     closeable: {
+        type: Boolean,
+        required: false,
+        default: false
+    },
+    backdropNoClose: {
         type: Boolean,
         required: false,
         default: false
@@ -35,6 +34,12 @@ const props = defineProps({
         default: null
     }
 })
+
+const backdropClick = (event) => {
+    if (event.target.id == 'backdrop' && props.closeable && !props.backdropNoClose) {
+        emit("update:modelValue", false);
+    }
+}
 
 </script>
 

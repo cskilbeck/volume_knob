@@ -27,8 +27,13 @@ const props = defineProps({
 // 3 modal dialogs
 
 const flashModal = ref(false);
-const importModal = ref(false);
 const disconnectModal = ref(false);
+const pasteConfigModal = ref(false);
+const errorModal = ref(false);
+
+let config_paste_textarea_contents = ref("");
+
+let error_messages = ref([]);
 
 //////////////////////////////////////////////////////////////////////
 
@@ -144,6 +149,32 @@ function config_from_ui() {
 // get a ui object from a config object
 
 function ui_from_config(config) {
+
+    let errors = [];
+
+    for (const field in config) {
+        if (midi.default_config[field] == undefined) {
+            errors.push(`Unknown field: ${field}`);
+        }
+    }
+
+    for (const field in midi.default_config) {
+
+        if (config[field] == undefined) {
+            errors.push(`Missing field: ${field}`);
+        } else {
+            const cfg_type = typeof config[field];
+            const default_type = typeof midi.default_config[field];
+            if (cfg_type !== default_type) {
+                errors.push(`Field [${field}] is ${cfg_type}, should be ${default_type}`);
+            }
+        }
+    }
+
+    if (errors.length != 0) {
+        error_messages.value = errors;
+        return null;
+    }
 
     return {
         config_version: config.config_version,
@@ -268,7 +299,7 @@ watch(() => { return ui },
 props.device.on_config_loaded = () => {
     loading_config = true;
     stored_config = Object.assign({}, toRaw(props.device.config));
-    ui.value = ui_from_config(props.device.config);
+    ui.value = ui_from_config(props.device.config) || midi.default_config;
     nextTick(() => {
         loading_config = false;
         config_changed.value = false;
@@ -337,7 +368,7 @@ function rotation_matrix(cx, cy, angle) {
     let a = angle * 3.14159265 / 180;
     let c = Math.cos(a);
     let s = Math.sin(a);
-    return `matrix(${c}, ${s}, ${-s}, ${c}, ${cx * (1 - c) + cy * s}, ${cy * (1 - c) - cx * s})`;
+    return `matrix(${c}, ${s}, ${- s}, ${c}, ${cx * (1 - c) + cy * s}, ${cy * (1 - c) - cx * s})`;
 }
 
 function is_LSB(cc) {
@@ -383,6 +414,38 @@ let collapsed = ref(false);
 
 function toggle_expand() {
     collapsed.value = !collapsed.value;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+function copy_config() {
+    navigator.clipboard.writeText(JSON.stringify(config_from_ui(), 4, " "));
+}
+
+function show_paste_dialog() {
+    config_paste_textarea_contents.value = "";
+    pasteConfigModal.value = true;
+}
+
+function paste_config(json_text) {
+
+    let new_config = {};
+
+    try {
+        new_config = JSON.parse(json_text);
+    } catch (err) {
+        error_messages.value = [err.message];
+        errorModal.value = true;
+        return;
+    }
+
+    let original_config = config_from_ui();
+    let new_ui = ui_from_config(new_config);
+    if (new_ui == null) {
+        errorModal.value = true;
+    } else {
+        ui.value = new_ui;
+    }
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -484,16 +547,31 @@ function toggle_expand() {
                                 <span class="mx-2">Store to device</span>
                             </button>
 
-                            <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
-                                v-if='device.active || 1'
-                                @click="fileDownload(midi.get_config_json(device.device_index), 'midi_knob_settings.json');">
-                                <span class="mx-2">Export config</span>
-                            </button>
-
-                            <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
-                                @click="importModal = true">
-                                <span class="mx-2">Import config</span>
-                            </button>
+                            <div class="dropdown w-100">
+                                <button
+                                    class="w-100 btn btn-sm rounded-0 tertiary-bg border-secondary-subtle btn-secondary dropdown-toggle border-top-0"
+                                    href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Settings
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a class="dropdown-item" href="#"
+                                            @click="fileDownload(JSON.stringify(config_from_ui(), 4, ' '), 'midi_knob_settings.json');">
+                                            Export
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#" @click="copy_config()">
+                                            Copy
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#" @click='show_paste_dialog()'>
+                                            Paste
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
 
                             <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
                                 @click='flashModal = true'>
@@ -811,8 +889,8 @@ function toggle_expand() {
     <Modal v-model="flashModal" maxwidth="25%" closeable header="Advanced Functions">
         <div class="row mx-2 my-1">
             <div class="col">
-                <p class="text-center red-text">Warning! Only click this if you
-                    know what you're doing</p>
+                <p class="text-center red-text">
+                    Warning! Only click this if you know what you're doing</p>
                 <p class="text-center">
                     Instructions for firmware updating are
                     <a href='https://skilbeck.com/tiny-usb-midi-knob' target="_blank" rel="noreferrer noopener">
@@ -832,31 +910,11 @@ function toggle_expand() {
         </div>
     </Modal>
 
-    <Modal v-model="importModal" maxwidth="20%" closeable header="Import Settings">
-        <div class="row mx-2 my-2">
-            <div class="col mb-2 text-center">
-                <input class="btn btn-sm border" type="file" id="import_settings" />
-            </div>
-        </div>
-        <div class="row mx-2 my-3">
-            <div class="col text-center">
-                <button class="btn btn-sm btn-primary">
-                    Import
-                </button>
-            </div>
-        </div>
-        <div class="row mx-2 my-3">
-            <div class="col text-center">
-                This is not yet implemented, sorry
-            </div>
-        </div>
-    </Modal>
-
     <Modal v-model="disconnectModal" maxwidth="25%" closeable header="Disconnect">
         <div class="row mx-2">
             <div class="col text-center">
-                Sorry, I can't seem to make disconnect work. You have to close the tab to disconnect all
-                devices.
+                Sorry, I can't seem to make disconnect work.<br>
+                You have to close the tab to disconnect all devices.
             </div>
         </div>
         <div class="row mt-4 mb-2">
@@ -867,6 +925,59 @@ function toggle_expand() {
             </div>
         </div>
     </Modal>
+
+    <Modal v-model="pasteConfigModal" maxwidth="30%" closeable backdrop-no-close header="Paste Settings">
+        <div class="row mx-2">
+            <textarea class="font-monospace form-control smaller-text" style="height:26rem;"
+                v-model="config_paste_textarea_contents" placeholder="Paste your settings JSON in here...">
+        </textarea>
+        </div>
+        <div class="row mt-4 mb-2">
+            <div class="col-8 ps-4">
+
+            </div>
+            <div class="col-4 text-right">
+                <div class="row">
+                    <div class="col">
+                        <button class="btn btn-secondary btn-sm" @click='pasteConfigModal = false'>
+                            Cancel
+                        </button>
+                    </div>
+                    <div class="col">
+                        <button class="btn btn-primary btn-sm"
+                            @click='pasteConfigModal = false; paste_config(config_paste_textarea_contents)'>
+                            Apply
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </Modal>
+
+    <Modal v-model="errorModal" maxwidth="40%" closeable header='Errors'>
+        <div class="row mx-2">
+            <div class="col">
+                <ul v-for="(err, idx) in error_messages" :key="idx" class="list-group list-group-flush">
+                    <li class="list-group-item font-monospace"
+                        :class='(idx != error_messages.length - 1) ? "border-bottom" : ""'>
+                        {{ err }}
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="row mt-4 mb-2">
+            <div class="col text-end pe-4">
+                <div class="row">
+                    <div class="col text-right">
+                        <button class="btn btn-primary btn-sm" @click='errorModal = false'>
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </Modal>
+
 </template>
 
 <style>
@@ -924,12 +1035,14 @@ function toggle_expand() {
 input.bright-focus-input:active,
 input.bright-focus-input:focus {
     color: var(--bs-body-color) !important;
-    border: var(--bs-border-width) var(--bs-border-style) color-mix(in srgb, var(--bs-primary) 50%, white) !important;
+    border:
+        var(--bs-border-width) var(--bs-border-style) color-mix(in srgb, var(--bs-primary) 50%, white) !important;
 }
 
 input.bright-focus-input,
 input.bright-focus-input {
-    border: var(--bs-border-width) solid transparent !important;
+    border:
+        var(--bs-border-width) solid transparent !important;
 }
 
 [data-bs-theme='light'] .value-bar {

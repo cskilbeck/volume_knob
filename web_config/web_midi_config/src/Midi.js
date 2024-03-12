@@ -593,20 +593,6 @@ function on_midi_message(event) {
 
 //////////////////////////////////////////////////////////////////////
 
-function get_config_json(device_index) {
-    let c = {
-        error: "No such device"
-    };
-    let d = midi_devices.value[device_index];
-    if (d != undefined) {
-        c = Object.assign({}, d.config);
-        delete c.value;
-    }
-    return JSON.stringify(c, null, 4);
-}
-
-//////////////////////////////////////////////////////////////////////
-
 function on_midi_startup(midi_obj) {
 
     midi = midi_obj;
@@ -644,7 +630,6 @@ export default {
     flash_mode,
     read_flash,
     write_flash,
-    get_config_json,
     default_config,
     flags
 }
