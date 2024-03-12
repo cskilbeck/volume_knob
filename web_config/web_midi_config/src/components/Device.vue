@@ -30,11 +30,20 @@ const flashModal = ref(false);
 const importModal = ref(false);
 const disconnectModal = ref(false);
 
+//////////////////////////////////////////////////////////////////////
+
 function cookie_name() {
     return `${props.device.name}_label`;
 }
 
 let device_label = ref(cookie.get(cookie_name()) || "Unnamed");
+
+function save_name() {
+    if (device_label.value.length == 0) {
+        device_label.value = "Unnamed";
+    }
+    cookie.set(cookie_name(), device_label.value, 400);
+}
 
 //////////////////////////////////////////////////////////////////////
 // is the current config different from what's on the device?
@@ -378,12 +387,6 @@ function toggle_expand() {
 
 //////////////////////////////////////////////////////////////////////
 
-function save_name() {
-    cookie.set(cookie_name(), device_label.value, 400);
-}
-
-//////////////////////////////////////////////////////////////////////
-
 </script>
 
 <template>
@@ -415,8 +418,9 @@ function save_name() {
                                 <strong>{{ device.name }}</strong>
                                 <span class="d-inline-block" style="width:1em"></span>
                                 <input
-                                    class="bg-secondary-subtle text-secondary border-0 rounded focus-ring ps-2 bright-focus-input"
-                                    type="text" @input="save_name()" v-model="device_label">
+                                    class="bg-secondary-subtle text-secondary rounded focus-ring ps-2 bright-focus-input"
+                                    type="text" @blur="save_name()" v-model="device_label"
+                                    @keypress='(e) => { e.key === "Enter" && e.currentTarget.blur(); }'>
                             </div>
                         </div>
                     </div>
@@ -920,6 +924,12 @@ function save_name() {
 input.bright-focus-input:active,
 input.bright-focus-input:focus {
     color: var(--bs-body-color) !important;
+    border: var(--bs-border-width) var(--bs-border-style) color-mix(in srgb, var(--bs-primary) 50%, white) !important;
+}
+
+input.bright-focus-input,
+input.bright-focus-input {
+    border: var(--bs-border-width) solid transparent !important;
 }
 
 [data-bs-theme='light'] .value-bar {
