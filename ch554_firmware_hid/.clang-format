@@ -34,7 +34,7 @@ BraceWrapping: {
 BreakBeforeTernaryOperators: 'false'
 BreakConstructorInitializersBeforeComma: 'true'
 BreakStringLiterals: 'true'
-ColumnLimit: '84'
+ColumnLimit: '140'
 ConstructorInitializerAllOnOneLineOrOnePerLine: 'true'
 ConstructorInitializerIndentWidth: '4'
 ContinuationIndentWidth: '4'

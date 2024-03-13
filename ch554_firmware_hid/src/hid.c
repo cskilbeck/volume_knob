@@ -1,29 +1,4 @@
-//////////////////////////////////////////////////////////////////////
-
-#include <stdint.h>
-#include <string.h>
-#include <ch554.h>
-
-//////////////////////////////////////////////////////////////////////
-// uncomment this line for full speed (12Mb)
-// comment it out for low speed (1.5Mb)
-
-// #define USB_FULL_SPEED 1
-
-#if defined(USB_FULL_SPEED)
-#define UDEV_LOW_SPEED 0
-#define UCTL_LOW_SPEED 0
-#define MAX_PACKET_SIZE 64
-#else
-#define UDEV_LOW_SPEED bUD_LOW_SPEED
-#define UCTL_LOW_SPEED bUC_LOW_SPEED
-#define MAX_PACKET_SIZE 8
-#endif
-
-//////////////////////////////////////////////////////////////////////
-
-#include <ch554_usb.h>
-#include "hid.h"
+#include "main.h"
 
 //////////////////////////////////////////////////////////////////////
 
@@ -40,44 +15,11 @@
 
 #define LANGUAGE_DESCRIPTION 0x09, 0x04
 
-#define MANUFACTURER_DESCRIPTION                                                 \
-    'C', 0, 'H', 0, ' ', 0, 'S', 0, 'k', 0, 'i', 0, 'l', 0, 'b', 0, 'e', 0, 'c', \
-        0, 'k', 0
-
-#define PRODUCT_DESCRIPTION                                                      \
-    'V', 0, 'o', 0, 'l', 0, 'u', 0, 'm', 0, 'e', 0, ' ', 0, 'K', 0, 'n', 0, 'o', \
-        0, 'b', 0
-
-#define DEVICE1_DESCRIPTION                                                      \
-    'T', 0, 'i', 0, 'n', 0, 'y', 0, 'U', 0, 'S', 0, 'B', 0, 'V', 0, 'o', 0, 'l', \
-        0, 'u', 0, 'm', 0, 'e', 0, 'K', 0, 'n', 0, 'o', 0, 'b', '(', 0, '1', 0,  \
-        ')', 0
-
-#define DEVICE2_DESCRIPTION                                                      \
-    'T', 0, 'i', 0, 'n', 0, 'y', 0, 'U', 0, 'S', 0, 'B', 0, 'V', 0, 'o', 0, 'l', \
-        0, 'u', 0, 'm', 0, 'e', 0, 'K', 0, 'n', 0, 'o', 0, 'b', '(', 0, '1', 0,  \
-        ')', 0
-
+#define MANUFACTURER_DESCRIPTION 'C', 0, 'H', 0, ' ', 0, 'S', 0, 'k', 0, 'i', 0, 'l', 0, 'b', 0, 'e', 0, 'c', 0, 'k', 0
 
 //////////////////////////////////////////////////////////////////////
 
-#define FIXED_ADDRESS_EP0_BUFFER 0x0000
-#define FIXED_ADDRESS_EP1_BUFFER 0x0010
-#define FIXED_ADDRESS_EP2_BUFFER 0x0020
-
 #define UsbSetupBuf ((USB_SETUP_REQ *)Ep0Buffer)
-
-// Endpoint0 OUT & IN
-__xdata __at(FIXED_ADDRESS_EP0_BUFFER)
-uint8_t Ep0Buffer[DEFAULT_ENDP0_SIZE];
-
-// Endpoint1 IN
-__xdata __at(FIXED_ADDRESS_EP1_BUFFER)
-uint8_t Ep1Buffer[MAX_PACKET_SIZE];
-
-// Endpoint2 IN
-__xdata __at(FIXED_ADDRESS_EP2_BUFFER)
-uint8_t Ep2Buffer[MAX_PACKET_SIZE];
 
 //////////////////////////////////////////////////////////////////////
 
@@ -85,7 +27,7 @@ uint8_t SetupReq;
 uint8_t SetupLen;
 uint8_t UsbConfig;
 
-__code uint8_t const *pDescr;
+uint8_t const *pDescr;
 
 volatile __idata uint8_t usb_idle = 3;
 volatile __idata uint8_t usb_active = 0;
@@ -182,7 +124,7 @@ __code const uint8_t device_desc[] = {
     0x01,                    // bcdDevice(2)
     0x01,                    // iManufacturer
     0x02,                    // iProduct
-    0x00,                    // iSerialNumber
+    0x03,                    // iSerialNumber
     0x01                     // bNumConfigurations
 };
 
@@ -228,8 +170,8 @@ __code const uint8_t config_desc[] = {
     USB_DESCR_TYP_ENDP,        // bDescriptorType: ENDPOINT
     0x81,                      // bEndpointAddress: IN/Endpoint1
     0x03,                      // bmAttributes: Interrupt
-    MAX_PACKET_SIZE & 0xff,    // wMaxPacketSize (1)
-    MAX_PACKET_SIZE >> 8,      // wMaxPacketSize (2)
+    USB_PACKET_SIZE & 0xff,    // wMaxPacketSize (1)
+    USB_PACKET_SIZE >> 8,      // wMaxPacketSize (2)
     0x02,                      // bInterval
 
     // Interface
@@ -259,43 +201,18 @@ __code const uint8_t config_desc[] = {
     USB_DESCR_TYP_ENDP,        // bDescriptorType: ENDPOINT
     0x82,                      // bEndpointAddress: IN/Endpoint2
     0x03,                      // bmAttributes: Interrupt
-    MAX_PACKET_SIZE & 0xff,    // wMaxPacketSize (1)
-    MAX_PACKET_SIZE >> 8,      // wMaxPacketSize (2)
+    USB_PACKET_SIZE & 0xff,    // wMaxPacketSize (1)
+    USB_PACKET_SIZE >> 8,      // wMaxPacketSize (2)
     0x02                       // bInterval
 };
 
 //////////////////////////////////////////////////////////////////////
 
 // String Descriptor (Language)
-__code const unsigned char language_desc[] = { sizeof(language_desc),
-                                               USB_DESCR_TYP_STRING,
-                                               LANGUAGE_DESCRIPTION };
+__code const unsigned char language_desc[] = { sizeof(language_desc), USB_DESCR_TYP_STRING, LANGUAGE_DESCRIPTION };
 
 // String Descriptor (Manufacturer)
-__code const unsigned char manufacturer_desc[] = { sizeof(manufacturer_desc),
-                                                   USB_DESCR_TYP_STRING,
-                                                   MANUFACTURER_DESCRIPTION };
-
-// String Descriptor (Product)
-__code const unsigned char product_desc[] = { sizeof(product_desc),
-                                              USB_DESCR_TYP_STRING,
-                                              PRODUCT_DESCRIPTION };
-
-// clang-format off
-__code const unsigned char *string_descs[3] =
-{
-    language_desc,
-    manufacturer_desc,
-    product_desc
-};
-
-__code const uint8_t string_lens[3] =
-{
-    sizeof(language_desc),
-    sizeof(manufacturer_desc),
-    sizeof(product_desc)
-};
-// clang-format on
+__code const unsigned char manufacturer_desc[] = { sizeof(manufacturer_desc), USB_DESCR_TYP_STRING, MANUFACTURER_DESCRIPTION };
 
 //////////////////////////////////////////////////////////////////////
 
@@ -383,12 +300,28 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                             break;
 
                         case USB_DESCR_TYP_STRING: {
-                            uint8_t string_index = UsbSetupBuf->wValueL;
-                            if(string_index < COUNTOF(string_descs)) {
-                                pDescr = string_descs[string_index];
-                                len = string_lens[string_index];
-                            } else {
+                            switch(UsbSetupBuf->wValueL) {
+                            case 0:
+                                pDescr = language_desc;
+                                len = sizeof(language_desc);
+                                break;
+
+                            case 1:
+                                pDescr = manufacturer_desc;
+                                len = sizeof(manufacturer_desc);
+                                break;
+
+                            case 2:
+                                pDescr = product_string;
+                                len = PRODUCT_NAME_STRING_LEN;
+                                break;
+                            case 3:
+                                pDescr = serial_number_string;
+                                len = SERIAL_STRING_LEN;
+                                break;
+                            default:
                                 len = 0xff;
+                                break;
                             }
                         } break;
 
@@ -418,7 +351,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                         }
 
                         // send at most 8 bytes per request (coalesced on host)
-                        len = MIN(SetupLen, MAX_PACKET_SIZE);
+                        len = MIN(SetupLen, USB_PACKET_SIZE);
                         memcpy(Ep0Buffer, pDescr, len);
                         SetupLen -= len;
                         pDescr += len;
@@ -442,21 +375,16 @@ void usb_isr(void) __interrupt(INT_NO_USB)
 
                     case USB_CLEAR_FEATURE:
 
-                        if((request_type & USB_REQ_RECIP_MASK) ==
-                           USB_REQ_RECIP_ENDP) {
+                        if((request_type & USB_REQ_RECIP_MASK) == USB_REQ_RECIP_ENDP) {
 
                             switch(UsbSetupBuf->wIndexL) {
 
                             case USB_ENDP_DIR_MASK | 1:
-                                UEP1_CTRL =
-                                    (UEP1_CTRL & ~(bUEP_T_TOG | MASK_UEP_T_RES)) |
-                                    UEP_T_RES_NAK;
+                                UEP1_CTRL = (UEP1_CTRL & ~(bUEP_T_TOG | MASK_UEP_T_RES)) | UEP_T_RES_NAK;
                                 break;
 
                             case 1:
-                                UEP1_CTRL =
-                                    (UEP1_CTRL & ~(bUEP_R_TOG | MASK_UEP_R_RES)) |
-                                    UEP_R_RES_ACK;
+                                UEP1_CTRL = (UEP1_CTRL & ~(bUEP_R_TOG | MASK_UEP_R_RES)) | UEP_R_RES_ACK;
                                 break;
 
                             default:
@@ -492,8 +420,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                             if(*(uint16_t *)&UsbSetupBuf->wValueL == 0x0000) {
                                 switch(*(uint16_t *)&UsbSetupBuf->wIndexL) {
                                 case 0x81:
-                                    UEP1_CTRL =
-                                        UEP1_CTRL & (~bUEP_T_TOG) | UEP_T_RES_STALL;
+                                    UEP1_CTRL = UEP1_CTRL & (~bUEP_T_TOG) | UEP_T_RES_STALL;
                                     break;
                                 default:
                                     len = 0xff;
@@ -528,8 +455,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
             // and indicate stall
             if(len == 0xff) {
                 SetupReq = 0xff;
-                UEP0_CTRL =
-                    bUEP_R_TOG | bUEP_T_TOG | UEP_R_RES_STALL | UEP_T_RES_STALL;
+                UEP0_CTRL = bUEP_R_TOG | bUEP_T_TOG | UEP_R_RES_STALL | UEP_T_RES_STALL;
 
             }
             // if len <= 8, some valid data is sitting in EP0Buffer
@@ -647,12 +573,9 @@ void usb_init()
     UEP1_T_LEN = 0;
     UEP2_T_LEN = 0;
 
-    UEP4_1_MOD =
-        ~(bUEP4_RX_EN | bUEP4_TX_EN | bUEP1_RX_EN | bUEP1_BUF_MOD) | bUEP1_TX_EN;
+    UEP4_1_MOD = ~(bUEP4_RX_EN | bUEP4_TX_EN | bUEP1_RX_EN | bUEP1_BUF_MOD) | bUEP1_TX_EN;
 
-    UEP2_3_MOD =
-        ~(bUEP3_RX_EN | bUEP3_TX_EN | bUEP3_BUF_MOD | bUEP2_RX_EN | bUEP2_BUF_MOD) |
-        bUEP2_TX_EN;
+    UEP2_3_MOD = ~(bUEP3_RX_EN | bUEP3_TX_EN | bUEP3_BUF_MOD | bUEP2_RX_EN | bUEP2_BUF_MOD) | bUEP2_TX_EN;
 
     USB_DEV_AD = 0x00;
 
@@ -667,6 +590,4 @@ void usb_init()
     USB_INT_EN = bUIE_SUSPEND | bUIE_TRANSFER | bUIE_BUS_RST;
 
     IE_USB = 1;
-
-    EA = 1;
 }

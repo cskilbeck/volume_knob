@@ -1,14 +1,32 @@
+XRAM_SIZE = 0x0400
+CODE_SIZE = 0x3800
+XRAM_LOC = 0x0100
+FREQ_SYS = 24000000
 
-PROJECT := volume_knob
+# pass in DEVICE=TYPE
+#
+# where type is one of:
+#
+# 	ORIGINAL
+# 	DIRECT
+# 	DEVKIT
 
-EXTRA_FLAGS = --opt-code-speed --std-sdcc23
+EXTRA_FLAGS += --std-c23 --opt-code-speed -DDEVICE=DEVICE_$(DEVICE_TYPE)
 
-C_FILES = \
-	src/main.c \
-	src/hid.c \
-	src/gpio.c \
-	lib/debug.c
+SRC = src/
+INC = include/
+OBJ = obj/$(DEVICE_TYPE)/
+BIN = bin/$(DEVICE_TYPE)/
 
-pre-flash:
+PROJECT = hid_knob_$(DEVICE_TYPE)
+
+.PHONY: check-env
+
+build: check-env
+
+check-env:
+ifndef DEVICE_TYPE
+	$(error DEVICE_TYPE is undefined)
+endif
 
 include Makefile.include
