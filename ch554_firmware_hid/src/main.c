@@ -1,11 +1,23 @@
 #include "main.h"
 
 //////////////////////////////////////////////////////////////////////
+// TIMER0 = LED pwm
+// TIMER1 = UART
+// TIMER2 = 1KHz tick
 
-#undef XDATA
-#define XDATA __xdata
+//////////////////////////////////////////////////////////////////////
+// Define ROTARY_DIRECTION as CLOCKWISE for one kind of encoders, ANTI_CLOCKWISE for
+// the other ones (some are reversed). This sets the default rotation (after first
+// flash), reverse by triple-clicking the knob
 
-#include "xdata.h"
+#define CLOCKWISE 2
+#define ANTI_CLOCKWISE 0
+
+#if DEVICE == DEVICE_DEVKIT
+#define ROTARY_DIRECTION (ANTI_CLOCKWISE)
+#else
+#define ROTARY_DIRECTION (CLOCKWISE)
+#endif
 
 //////////////////////////////////////////////////////////////////////
 
@@ -14,14 +26,11 @@
 
 //////////////////////////////////////////////////////////////////////
 
-volatile uint8 tick = 0;
+// time between buttons clicks to be considered quick clicks
+#define BUTTON_QUICK_CLICK_MS 500
 
-void timer0_irq_handler(void) __interrupt(INT_NO_TMR0)
-{
-    TL0  = TIMER0_LOW;
-    TH0  = TIMER0_HIGH;
-    tick = 1;
-}
+// # of quick clicks to reverse direction
+#define BUTTON_QUICK_CLICK_COUNT 3
 
 //////////////////////////////////////////////////////////////////////
 // a queue of key states to send
@@ -71,91 +80,32 @@ uint16 queue_get()
 
 void do_press(uint16 k)
 {
-    if(queue_space() > 1) {
+    if(queue_space() >= 2) {
         queue_put(k);
         queue_put(k & 0x8000);
         led_flash();
-    } else {
-
-        print_uint8("Space", queue_space());
     }
 }
 
 //////////////////////////////////////////////////////////////////////
 
-#define DEBOUNCE_TIME 0x1Cu
-#define T2_DEBOUNCE (0xFFu - DEBOUNCE_TIME)
-
-uint16 press_time = 0;
-
-uint8 vol_direction;
-int8 turn_value;
-
-__code uint8 const product_name[] = PRODUCT_NAME;
-
 void main()
 {
-    // init clock
     clk_init();
-    delay_mS(5);
-
-#if DEVICE == DEVICE_DEVKIT
-    gpio_init(UART_TX_PORT, UART_TX_PIN, gpio_output_push_pull);
-    gpio_init(UART_RX_PORT, UART_RX_PIN, gpio_output_open_drain);
+    tick_init();
     uart0_init();
-#endif
+    chip_id_init();
+    led_init();
+    encoder_init();
 
-    putstr("================ BOOT =================\n");
-
-    init_chip_id();
-
-    print_uint32("CHIP ID", chip_id);
-
-    // insert chip id into serial string and product name string
-
-    product_string[0] = PRODUCT_NAME_STRING_LEN;
-    product_string[1] = USB_DESCR_TYP_STRING;
-
-    for(uint8 i = 0; i < PRODUCT_NAME_LEN; ++i) {
-        product_string[2 + i * 2] = product_name[i];
-        product_string[3 + i * 2] = 0;
-    }
-
-    serial_number_string[0] = SERIAL_STRING_LEN;
-    serial_number_string[1] = USB_DESCR_TYP_STRING;
-
-    uint32 n = chip_id;
-
-    for(uint8 i = 0; i < SERIAL_LEN; ++i) {
-
-        uint8 c = (uint8)(n >> 28);    // @hardcoded
-
-        if(c < 10) {
-            c += '0';
-        } else {
-            c += 'A' - 10;
-        }
-        serial_number_string[2 + i * 2] = c;
-        serial_number_string[3 + i * 2] = 0;
-
-        product_string[2 + i * 2 + PRODUCT_NAME_LEN * 2] = c;
-        product_string[3 + i * 2 + PRODUCT_NAME_LEN * 2] = 0;
-        n <<= 4;
-    }
-
-    hexdump("SERIAL", serial_number_string, SERIAL_STRING_LEN);
-    hexdump("PRODUCT", product_string, PRODUCT_NAME_STRING_LEN);
-
-    gpio_init(ROTA_PORT, ROTA_PIN, gpio_input_pullup);
-    gpio_init(ROTB_PORT, ROTB_PIN, gpio_input_pullup);
-    gpio_init(BTN_PORT, BTN_PIN, gpio_input_pullup);
-    gpio_init(LED_PORT, LED_PIN, gpio_output_push_pull);
+    uint8 vol_direction;
+    int8 turn_value;
 
     read_flash_data(0, 1, &vol_direction);
 
     switch(vol_direction) {
     case 0:
-        turn_value = 1;
+        turn_value = -1;
         break;
     case 2:
         turn_value = 1;
@@ -167,74 +117,29 @@ void main()
     }
     print_uint8("TURN", turn_value);
 
+    usb_init_strings();
     usb_device_config();
-    usb_device_endpoint_config();    // Endpoint configuration
-    usb_device_int_config();         // Interrupt initialization
-
-    UEP0_T_LEN = 0;
-    UEP1_T_LEN = 0;    // Be pre -use and sending length must be empty
-    UEP2_T_LEN = 0;    // Be pre -use and sending length must be empty
-
-    // setup timers
-
-    // timer2 uses defaults
-    TL2 = 0;
-    TH2 = 0;
-    TF2 = 0;
-
-    // timer0 16 bit mode
-    TMOD = (TMOD & ~MASK_T0_MOD) | 0x01;
-
-    TL0 = TIMER0_LOW;
-    TH0 = TIMER0_HIGH;
-
-    // clear overflow flag
-    TF0 = 0;
-
-    // enable irq
-    ET0 = 1;
-
-    // enable the timers
-    TR0 = 1;    // 1 KHz tick
-    TR1 = 1;    // UART
-    TR2 = 1;    // debounce
+    usb_device_endpoint_config();
+    usb_device_int_config();
 
     // global irq enable
     EA = 1;
 
-    flash_led(BOOT_FLASH_LED_COUNT, BOOT_FLASH_LED_SPEED);
+    led_flash_n_times(BOOT_FLASH_LED_COUNT, BOOT_FLASH_LED_SPEED);
+
+    usb_wait_for_connection();
+
+    uint16 press_time = 0;
 
     // Triple click admin
-
-    // time between buttons clicks to be considered quick clicks
-#define BUTTON_QUICK_CLICK_MS 400
-
-    // # of quick clicks to activate boot loader
-#define BUTTON_QUICK_CLICK_COUNT 3
 
     uint16 button_click_tick_count = 0;
     uint8 button_quick_clicks      = 0;
 
-    // flash led slowly until USB is connected (in case of power-only cable)
-
-    {
-        uint8_t flash = 0;
-
-        while(!usb_active) {
-
-            if(TF2 == 1) {
-                TL2 = 0;
-                TH2 = 0;
-                TF2 = 0;
-                flash += 1;
-                LED_BIT = (flash >> 4) & 1;
-            }
-        }
-    }
+    bool button_state  = false;    // for debouncing the button
+    uint8 button_ticks = 0;
 
     // main loop
-
-    bool button_state = false;    // for debouncing the button
 
     while(1) {
 
@@ -242,47 +147,38 @@ void main()
         bool pressed   = false;
         bool new_state = !BTN_BIT;
 
-        if(new_state != button_state && TF2 == 1) {
+        if(new_state != button_state && button_ticks > 1) {
 
-            TL2 = 0;
-            TH2 = T2_DEBOUNCE;
-            TF2 = 0;
-
+            button_ticks = 0;
             pressed      = new_state;
             button_state = new_state;
         }
 
         if(tick) {
             tick = 0;
+            if(button_ticks < 8) {
+                button_ticks += 1;
+            }
             if(button_state) {
                 press_time += 1;
-                if(press_time == BOOTLOADER_BUTTON_DELAY) {
+                if(press_time == BOOTLOADER_BUTTON_DELAY_MS) {
                     goto_bootloader();
                 }
             } else {
                 press_time = 0;
             }
 
-            // 400ms delay counter for knob triple-click
+            // delay counter for knob triple-click
             if(button_click_tick_count < BUTTON_QUICK_CLICK_MS) {
                 button_click_tick_count += 1;
             } else {
                 button_quick_clicks = 0;
             }
-            led_tick();
+            led_on_tick();
         }
 
         // read the rotary encoder (returns -1, 0 or 1)
-        int8 direction = read_encoder();
-
-        // Timer2 does double duty, debounces encoder as well
-        if(direction != 0 && TF2 == 1) {
-            TL2 = 0;
-            TH2 = T2_DEBOUNCE;
-            TF2 = 0;
-        } else {
-            direction = 0;
-        }
+        int8 direction = encoder_read();
 
         // check for triple-click
         if(pressed) {
@@ -291,6 +187,7 @@ void main()
                 if(button_quick_clicks == (BUTTON_QUICK_CLICK_COUNT - 1)) {
                     vol_direction = 2 - vol_direction;
                     turn_value    = (int8)vol_direction - 1;
+                    print_uint8("NEW TURN", vol_direction);
                     write_flash_data(0, 1, &vol_direction);
                     pressed = false;
                 }

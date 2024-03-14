@@ -1,23 +1,3 @@
 {
-    "C_Cpp.errorSquiggles": "disabled",
-    "makefile.configurations": [
-        {
-            "name": "ORIGINAL",
-            "makeArgs": [
-                "DEVICE_TYPE=ORIGINAL"
-            ],
-        },
-        {
-            "name": "DIRECT",
-            "makeArgs": [
-                "DEVICE_TYPE=DIRECT"
-            ],
-        },
-        {
-            "name": "DEVKIT",
-            "makeArgs": [
-                "DEVICE_TYPE=DEVKIT"
-            ],
-        }
-    ],
+    "C_Cpp.errorSquiggles": "disabled"
 }

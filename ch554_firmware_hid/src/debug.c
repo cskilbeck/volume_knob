@@ -41,11 +41,12 @@ void clk_init()
 #warning FREQ_SYS invalid or not set
 #endif
 
-    SAFE_MOD = 0x55;
-    SAFE_MOD = 0xAA;
-    CLOCK_CFG = (CLOCK_CFG & ~(MASK_SYS_CK_SEL | bOSC_EN_INT | bOSC_EN_XT)) |
-                (OSC_ON | CLK);
-    SAFE_MOD = 0x00;
+    SAFE_MOD  = 0x55;
+    SAFE_MOD  = 0xAA;
+    CLOCK_CFG = (CLOCK_CFG & ~(MASK_SYS_CK_SEL | bOSC_EN_INT | bOSC_EN_XT)) | (OSC_ON | CLK);
+    SAFE_MOD  = 0x00;
+
+    delay_mS(5);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -113,104 +114,6 @@ void delay_mS(uint16_t n)
 
 //////////////////////////////////////////////////////////////////////
 
-void uart0_alternate_pins()
-{
-    PIN_FUNC |= bUART0_PIN_X;    // Map in serial port to P1.2 and P1.3
-}
-
-//////////////////////////////////////////////////////////////////////
-
-void uart0_init()
-{
-    SM0 = 0;         // 8 bits
-    SM1 = 1;         // mode 1
-    SM2 = 0;         // SM2 not relevant in mode 1
-    RCLK = 0;        // receive use T1
-    TCLK = 0;        // send use T1
-    PCON |= SMOD;    // fast baud mode
-    TMOD = TMOD & ~(bT1_GATE | bT1_CT | MASK_T1_MOD) |
-           bT1_M1;                           // Timer 1 8-bit automatic load
-    T2MOD |= bTMR_CLK | bT1_CLK;             // Timer 1 clock select
-    TH1 = BAUD_SET(FREQ_SYS, UART0_BAUD);    // baud rate
-    TI = 1;     // Set transmit done flag so we don't wait indefinitely before
-                // sending 1st byte
-    RI = 0;     // clear receive flag
-    TR1 = 1;    // start T1
-    REN = 1;    // receive enable
-}
-
-//////////////////////////////////////////////////////////////////////
-
-uint8_t uart0_get_gyte()
-{
-    while(RI == 0) {
-    }
-    RI = 0;
-    return SBUF;
-}
-
-//////////////////////////////////////////////////////////////////////
-
-void uart0_send_byte(uint8_t SendDat)
-{
-    SBUF = SendDat;
-    while(TI == 0) {
-    }
-    TI = 0;
-}
-
-//////////////////////////////////////////////////////////////////////
-
-void putchar(char c)
-{
-    while(!TI) {
-    }
-    TI = 0;
-    SBUF = c;
-}
-
-//////////////////////////////////////////////////////////////////////
-
-char getchar()
-{
-    while(!RI) {
-    }
-    RI = 0;
-    return SBUF;
-}
-
-//////////////////////////////////////////////////////////////////////
-
-void uart1_init()
-{
-    U1SM0 = 0;     // UART1 Select 8 -bit data bit
-    U1SMOD = 1;    // Fast mode
-    U1REN = 1;     // Be able to receive
-    SBAUD1 = BAUD_SET(FREQ_SYS, UART1_BUAD);
-}
-
-//////////////////////////////////////////////////////////////////////
-
-uint8_t uart1_get_gyte()
-{
-    while(U1RI == 0) {
-    }
-    U1RI = 0;
-    return SBUF1;
-}
-
-//////////////////////////////////////////////////////////////////////
-
-void uart1_send_byte(uint8_t SendDat)
-{
-    SBUF1 = SendDat;
-    while(U1TI == 0) {
-    }
-    U1TI = 1;
-}
-
-//////////////////////////////////////////////////////////////////////
-
 void watchdog_mode_select(uint8_t mode)
 {
     SAFE_MOD = 0x55;
@@ -219,7 +122,7 @@ void watchdog_mode_select(uint8_t mode)
         GLOBAL_CFG |= bWDOG_EN;
     } else
         GLOBAL_CFG &= ~bWDOG_EN;
-    SAFE_MOD = 0x00;
+    SAFE_MOD   = 0x00;
     WDOG_COUNT = 0;
 }
 
@@ -232,7 +135,49 @@ void watchdog_feed(uint8_t tim)
 
 //////////////////////////////////////////////////////////////////////
 
-#if DEVICE == DEVICE_DEVKIT
+#if defined(DEBUG)
+
+//////////////////////////////////////////////////////////////////////
+
+void uart0_alternate_pins()
+{
+    PIN_FUNC |= bUART0_PIN_X;    // Map in serial port to P1.2 and P1.3
+}
+
+//////////////////////////////////////////////////////////////////////
+
+void uart0_init()
+{
+    gpio_init(UART_TX_PORT, UART_TX_PIN, gpio_output_push_pull);
+    gpio_init(UART_RX_PORT, UART_RX_PIN, gpio_output_open_drain);
+
+    SM0  = 0;                                                     // 8 bits
+    SM1  = 1;                                                     // mode 1
+    SM2  = 0;                                                     // SM2 not relevant in mode 1
+    RCLK = 0;                                                     // receive use T1
+    TCLK = 0;                                                     // send use T1
+    PCON |= SMOD;                                                 // fast baud mode
+    TMOD = TMOD & ~(bT1_GATE | bT1_CT | MASK_T1_MOD) | bT1_M1;    // Timer 1 8-bit automatic load
+    T2MOD |= bTMR_CLK | bT1_CLK;                                  // Timer 1 clock select
+    TH1 = BAUD_SET(FREQ_SYS, UART0_BAUD);                         // baud rate
+    TI  = 1;                                                      // Set tx done flag so we don't wait before sending 1st byte
+    RI  = 0;                                                      // clear receive flag
+    TR1 = 1;                                                      // start T1
+    REN = 1;                                                      // receive enable
+}
+
+//////////////////////////////////////////////////////////////////////
+
+void putchar(char c)
+{
+    while(!TI) {
+    }
+    TI   = 0;
+    SBUF = c;
+}
+
+//////////////////////////////////////////////////////////////////////
+
 void putnibble(uint8 n)
 {
     if(n > 9) {

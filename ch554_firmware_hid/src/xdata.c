@@ -1,6 +1,7 @@
-#pragma once
+#include "main.h"
 
 //////////////////////////////////////////////////////////////////////
 
-void encoder_init();
-int8 encoder_read();
+#define XDATA __xdata
+
+#include "xdata.h"

@@ -4,12 +4,20 @@
 
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
 
-#define COUNTOF(x) (sizeof(x) / sizeof((x)[0]))
+//////////////////////////////////////////////////////////////////////
+
+#define VENDOR_ID 0x16D0
+#define PRODUCT_ID 0x114B
 
 //////////////////////////////////////////////////////////////////////
 
-#define VENDOR_ID 0x16D0     // VID = 16D0
-#define PRODUCT_ID 0x114B    // PID = 114B
+#if defined(USB_FULL_SPEED)
+#define UDEV_LOW_SPEED 0
+#define UCTL_LOW_SPEED 0
+#else
+#define UDEV_LOW_SPEED bUD_LOW_SPEED
+#define UCTL_LOW_SPEED bUC_LOW_SPEED
+#endif
 
 //////////////////////////////////////////////////////////////////////
 // UINT16s in here...
@@ -27,6 +35,24 @@ __code const uint16 manufacturer_string[] = { STR_HDR(manufacturer_string), MANU
 __code const uint16 keyboard_string[]     = { STR_HDR(keyboard_string), KEYBOARD_STRING };
 __code const uint16 media_string[]        = { STR_HDR(media_string), MEDIA_STRING };
 __code const uint16 config_string[]       = { STR_HDR(config_string), CONFIG_STRING };
+
+typedef struct string_desc
+{
+    uint8 const *p;
+    uint8 len;
+} string_desc_t;
+
+__code const string_desc_t string_descs[] = {
+    { language_desc, sizeof(language_desc) },                  // 0
+    { manufacturer_string, sizeof(manufacturer_string) },      // 1
+    { product_name_string, sizeof(product_name_string) },      // 2 - dynamic in xdata
+    { serial_number_string, sizeof(serial_number_string) },    // 3 - dynamic in xdata
+    { keyboard_string, sizeof(keyboard_string) },              // 4
+    { media_string, sizeof(media_string) },                    // 5
+    { config_string, sizeof(config_string) }                   // 6
+};
+
+#define NUM_STRING_DESCS COUNTOF(string_descs)
 
 //////////////////////////////////////////////////////////////////////
 
@@ -260,8 +286,6 @@ void usb_isr(void) __interrupt(INT_NO_USB)
             // should be this much, anything else seems to be an error
             if(USB_RX_LEN == (sizeof(USB_SETUP_REQ))) {
 
-                usb_active = 1;
-
                 // how much it wants, capped at 127
                 SetupLen = UsbSetupBuf->wLengthL;
                 if(UsbSetupBuf->wLengthH || SetupLen > 0x7f) {
@@ -312,40 +336,14 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                             break;
 
                         case USB_DESCR_TYP_STRING: {
-                            switch(UsbSetupBuf->wValueL) {
-                            case 0:
-                                pDescr = language_desc;
-                                len    = sizeof(language_desc);
-                                break;
 
-                            case 1:
-                                pDescr = (uint8 const *)manufacturer_string;
-                                len    = sizeof(manufacturer_string);
-                                break;
+                            uint8 desc = UsbSetupBuf->wValueL;
 
-                            case 2:
-                                pDescr = product_string;
-                                len    = PRODUCT_NAME_STRING_LEN;
-                                break;
-                            case 3:
-                                pDescr = serial_number_string;
-                                len    = SERIAL_STRING_LEN;
-                                break;
-                            case 4:
-                                pDescr = keyboard_string;
-                                len    = sizeof(keyboard_string);
-                                break;
-                            case 5:
-                                pDescr = media_string;
-                                len    = sizeof(media_string);
-                                break;
-                            case 6:
-                                pDescr = config_string;
-                                len    = sizeof(config_string);
-                                break;
-                            default:
+                            if(desc < NUM_STRING_DESCS) {
+                                pDescr = string_descs[desc].p;
+                                len    = string_descs[desc].len;
+                            } else {
                                 len = 0xff;
-                                break;
                             }
                         } break;
 
@@ -382,34 +380,45 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                         break;
 
                     case USB_SET_ADDRESS:
+                        putstr("SetAddr\n");
                         SetupLen = UsbSetupBuf->wValueL;
                         break;
 
                     case USB_GET_CONFIGURATION:
+                        putstr("GetConfig\n");
                         Ep0Buffer[0] = UsbConfig;
                         SetupLen     = MIN(SetupLen, 1);
                         break;
 
                     case USB_SET_CONFIGURATION:
-                        UsbConfig = UsbSetupBuf->wValueL;
+                        putstr("SetConfig\n");
+                        UsbConfig  = UsbSetupBuf->wValueL;
+                        usb_active = 1;
                         break;
 
                     case USB_GET_INTERFACE:
                         break;
 
                     case USB_CLEAR_FEATURE:
-                        if((UsbSetupBuf->bRequestType & 0x1F) == USB_REQ_RECIP_DEVICE)    // Device
-                        {
+
+                        switch(UsbSetupBuf->bRequestType & 0x1F) {
+
+                        case USB_REQ_RECIP_DEVICE:    // Device
+
                             if((((uint16)UsbSetupBuf->wValueH << 8) | UsbSetupBuf->wValueL) == 0x01) {
                                 if((config_desc[7] & 0x20) != 0) {
-                                    // wake
+                                    putstr("Wake\n");
                                 } else {
+                                    putstr("Wake not supported\n");
                                     len = 0xFF;    // operation failed
                                 }
                             } else {
                                 len = 0xFF;    // operation failed
                             }
-                        } else if((UsbSetupBuf->bRequestType & USB_REQ_RECIP_MASK) == USB_REQ_RECIP_ENDP) {    // Endpoint
+                            break;
+
+                        case USB_REQ_RECIP_ENDP:    // Endpoint
+
                             switch(UsbSetupBuf->wIndexL) {
                             case 0x83:
                                 UEP3_CTRL = UEP3_CTRL & ~(bUEP_T_TOG | MASK_UEP_T_RES) | UEP_T_RES_NAK;
@@ -433,11 +442,12 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                                 len = 0xFF;    // unknown endpoint
                                 break;
                             }
-                        } else {
-                            len = 0xFF;    // unsupported
-                        }
-                        break;
+                            break;
 
+                        default:
+                            len = 0xFF;    // unsupported
+                            break;
+                        }
 
                     case USB_SET_FEATURE:
 
@@ -458,6 +468,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                         } break;
 
                         case USB_REQ_RECIP_ENDP: {
+
                             if(*(uint16_t *)&UsbSetupBuf->wValueL == 0x0000) {
                                 switch(*(uint16_t *)&UsbSetupBuf->wIndexL) {
                                 case 0x83:
@@ -495,7 +506,8 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                     case USB_GET_STATUS:
                         Ep0Buffer[0] = 0x00;    // bus powered
                         Ep0Buffer[1] = 0x00;    // no remote wakeup
-                        len          = MIN(SetupLen, 2);
+
+                        len = MIN(SetupLen, 2);
                         break;
 
                     default:
@@ -516,7 +528,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
             // if len <= 8, some valid data is sitting in EP0Buffer
             // so send it (also set the toggles!?)
             // although it could be zero bytes, in which case we just ack it
-            else if(len <= 8) {
+            else if(len <= DEFAULT_ENDP0_SIZE) {
                 UEP0_T_LEN = len;
                 UEP0_CTRL  = bUEP_R_TOG | bUEP_T_TOG | UEP_R_RES_ACK | UEP_T_RES_ACK;
             }
@@ -561,6 +573,20 @@ void usb_isr(void) __interrupt(INT_NO_USB)
         }
         UIF_TRANSFER = 0;
     }
+
+    // bus reset
+    if(UIF_BUS_RST) {
+        putstr("reset\n");
+        UEP0_CTRL    = UEP_R_RES_ACK | UEP_T_RES_NAK;
+        UEP1_CTRL    = bUEP_AUTO_TOG | UEP_T_RES_NAK;
+        UEP2_CTRL    = bUEP_AUTO_TOG | UEP_T_RES_NAK | UEP_R_RES_ACK;
+        USB_DEV_AD   = 0x00;
+        UIF_SUSPEND  = 0;
+        UIF_TRANSFER = 0;
+        UsbConfig    = 0;
+        usb_idle     = 3;
+    }
+
     // USB bus hangs/Wake up
     if(UIF_SUSPEND) {
         UIF_SUSPEND = 0;
@@ -588,7 +614,6 @@ void usb_isr(void) __interrupt(INT_NO_USB)
 
 void usb_set_keystate(uint16_t key)
 {
-    print_uint16("KEY", key);
     if(IS_MEDIA_KEY(key)) {
         key &= 0x7fff;
         Ep2Buffer[0] = 0x02;    // REPORT ID
@@ -616,8 +641,8 @@ void usb_set_keystate(uint16_t key)
 
 void usb_device_config()
 {
-    USB_CTRL = bUC_DEV_PU_EN | bUC_INT_BUSY | bUC_DMA_EN;    // The USB device and internal pull-up are enabled, and automatically return
-                                                             // to NAK before the interrupt flag is cleared during the interrupt.
+    USB_CTRL = bUC_DEV_PU_EN | bUC_INT_BUSY | bUC_DMA_EN;    // The USB device and internal pull-up are enabled, and automatically
+                                                             // return to NAK before the interrupt flag is cleared during the interrupt.
 
     USB_DEV_AD = 0x00;    // device address 0 before host assigns it
 
@@ -650,10 +675,9 @@ void usb_device_endpoint_config()
     UEP1_T_LEN = 0;
     UEP2_T_LEN = 0;
 
-    UEP0_DMA = (uint16)Ep0Buffer;    // Point 0 data transmission address
-    UEP1_DMA = (uint16)Ep1Buffer;    // Point point 1 Send data transmission address
-    UEP2_DMA = (uint16)Ep2Buffer;    // Writer 2 in data transmission address (endpoint_2_out_buffer must immediately follow
-                                     // endpoint_2_in_buffer)
+    UEP0_DMA = (uint16)Ep0Buffer;
+    UEP1_DMA = (uint16)Ep1Buffer;
+    UEP2_DMA = (uint16)Ep2Buffer;
 
     UEP0_CTRL = UEP_R_RES_ACK | UEP_T_RES_NAK;
     UEP1_CTRL = bUEP_AUTO_TOG | UEP_T_RES_NAK;
@@ -663,40 +687,66 @@ void usb_device_endpoint_config()
     UEP2_3_MOD = ~(bUEP3_RX_EN | bUEP3_TX_EN | bUEP3_BUF_MOD | bUEP2_RX_EN | bUEP2_BUF_MOD) | bUEP2_TX_EN;
 }
 
-//////////////////////////////////////////////////////////////////////
+static __code uint8 const product_name[] = PRODUCT_NAME;
 
-void usb_init()
+void usb_init_strings()
 {
-    IE_USB   = 0;
-    USB_CTRL = 0x00;
+#define PRODUCT_PREFIX (sizeof(product_name) - 1 - SERIAL_LEN)
 
-    UEP0_DMA = (uint16_t)Ep0Buffer;
-    UEP1_DMA = (uint16_t)Ep1Buffer;
-    UEP2_DMA = (uint16_t)Ep2Buffer;
+    // insert chip id into serial string and product name string
 
-    UEP0_CTRL = UEP_R_RES_ACK | UEP_T_RES_NAK;
-    UEP1_CTRL = bUEP_T_TOG | UEP_T_RES_NAK;
-    UEP2_CTRL = bUEP_T_TOG | UEP_T_RES_NAK;
+    product_name_string[0] = sizeof(product_name_string);
+    product_name_string[1] = USB_DESCR_TYP_STRING;
 
-    UEP0_T_LEN = 0;
-    UEP1_T_LEN = 0;
-    UEP2_T_LEN = 0;
+    for(uint8 i = 0; i < PRODUCT_PREFIX; ++i) {
+        product_name_string[2 + i * 2] = product_name[i];
+        product_name_string[3 + i * 2] = 0;
+    }
 
-    UEP4_1_MOD = ~(bUEP4_RX_EN | bUEP4_TX_EN | bUEP1_RX_EN | bUEP1_BUF_MOD) | bUEP1_TX_EN;
+    serial_number_string[0] = sizeof(serial_number_string);
+    serial_number_string[1] = USB_DESCR_TYP_STRING;
 
-    UEP2_3_MOD = ~(bUEP3_RX_EN | bUEP3_TX_EN | bUEP3_BUF_MOD | bUEP2_RX_EN | bUEP2_BUF_MOD) | bUEP2_TX_EN;
+    uint32 n = chip_id;
 
-    USB_DEV_AD = 0x00;
+    for(uint8 i = 0; i < SERIAL_LEN; ++i) {
 
-    UDEV_CTRL = bUD_PD_DIS | UDEV_LOW_SPEED;
+        uint8 c = (uint8)(n >> 28);    // @hardcoded
 
-    USB_CTRL = bUC_DEV_PU_EN | bUC_INT_BUSY | bUC_DMA_EN | UCTL_LOW_SPEED;
+        if(c < 10) {
+            c += '0';
+        } else {
+            c += 'A' - 10;
+        }
 
-    UDEV_CTRL |= bUD_PORT_EN;
+        serial_number_string[2 + 2 * i] = c;
+        serial_number_string[3 + 2 * i] = 0;
 
-    USB_INT_FG = 0xff;
+        product_name_string[2 + 2 * (i + PRODUCT_PREFIX)] = c;
+        product_name_string[3 + 2 * (i + PRODUCT_PREFIX)] = 0;
 
-    USB_INT_EN = bUIE_SUSPEND | bUIE_TRANSFER | bUIE_BUS_RST;
+        n <<= 4;
+    }
+}
 
-    IE_USB = 1;
+//////////////////////////////////////////////////////////////////////
+// flash led slowly until USB is connected (in case of power-only cable)
+
+void usb_wait_for_connection()
+{
+    LED_BIT = LED_OFF;
+
+    uint16_t flash = 0;
+
+    while(!usb_active) {
+
+        while(!tick) {
+        }
+        tick = 0;
+
+        flash += 1;
+        if(flash == 1000) {
+            flash = 0;
+            LED_BIT ^= 1;
+        }
+    }
 }
