@@ -38,7 +38,7 @@
 #if defined(USB_FULL_SPEED)
 #define UDEV_LOW_SPEED 0
 #define UCTL_LOW_SPEED 0
-#define USB_PACKET_SIZE 8
+#define USB_PACKET_SIZE 64
 #else
 #define UDEV_LOW_SPEED bUD_LOW_SPEED
 #define UCTL_LOW_SPEED bUC_LOW_SPEED

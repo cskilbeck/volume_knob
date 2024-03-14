@@ -16,9 +16,9 @@ uint8 const led_gamma[256] = { 0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  
                                169, 171, 173, 175, 177, 180, 182, 184, 186, 189, 191, 193, 196, 198, 200, 203, 205, 208, 210, 213, 215, 218,
                                220, 223, 225, 228, 231, 233, 236, 239, 241, 244, 247, 249, 252, 255 };
 
-uint16 led_brightness = 0;
+uint8 led_brightness = 0;
 
-#define LED_FADE_SPEED 200
+#define LED_FADE_SPEED 1
 
 void led_tick()
 {
@@ -31,5 +31,5 @@ void led_tick()
 
 void led_update()
 {
-    LED_BIT = (led_gamma[led_brightness >> 8] <= TL2) ? LED_OFF : LED_ON;
+    LED_BIT = (led_gamma[led_brightness] <= TL2) ? LED_OFF : LED_ON;
 }

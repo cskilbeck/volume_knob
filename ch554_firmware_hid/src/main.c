@@ -2,12 +2,10 @@
 
 //////////////////////////////////////////////////////////////////////
 
-// Endpoint0 OUT & IN
-__xdata uint8 Ep0Buffer[DEFAULT_ENDP0_SIZE];
-__xdata uint8 Ep1Buffer[DEFAULT_ENDP1_SIZE];
-__xdata uint8 Ep2Buffer[USB_PACKET_SIZE * 2];
-__xdata uint8 serial_number_string[SERIAL_STRING_LEN];    // e.g "012345678"
-__xdata uint8 product_string[PRODUCT_NAME_STRING_LEN];    // e.g. "Tiny Midi Knob 012345678"
+#undef XDATA
+#define XDATA __xdata
+
+#include "xdata.h"
 
 //////////////////////////////////////////////////////////////////////
 
@@ -20,8 +18,8 @@ volatile uint8 tick = 0;
 
 void timer0_irq_handler(void) __interrupt(INT_NO_TMR0)
 {
-    TL0 = TIMER0_LOW;
-    TH0 = TIMER0_HIGH;
+    TL0  = TIMER0_LOW;
+    TH0  = TIMER0_HIGH;
     tick = 1;
 }
 
@@ -117,6 +115,7 @@ void main()
 
     product_string[0] = PRODUCT_NAME_STRING_LEN;
     product_string[1] = USB_DESCR_TYP_STRING;
+
     for(uint8 i = 0; i < PRODUCT_NAME_LEN; ++i) {
         product_string[2 + i * 2] = product_name[i];
         product_string[3 + i * 2] = 0;
@@ -124,9 +123,13 @@ void main()
 
     serial_number_string[0] = SERIAL_STRING_LEN;
     serial_number_string[1] = USB_DESCR_TYP_STRING;
+
     uint32 n = chip_id;
+
     for(uint8 i = 0; i < SERIAL_LEN; ++i) {
+
         uint8 c = (uint8)(n >> 28);    // @hardcoded
+
         if(c < 10) {
             c += '0';
         } else {
@@ -134,6 +137,7 @@ void main()
         }
         serial_number_string[2 + i * 2] = c;
         serial_number_string[3 + i * 2] = 0;
+
         product_string[2 + i * 2 + PRODUCT_NAME_LEN * 2] = c;
         product_string[3 + i * 2 + PRODUCT_NAME_LEN * 2] = 0;
         n <<= 4;
@@ -158,7 +162,7 @@ void main()
         break;
     default:
         vol_direction = ROTARY_DIRECTION;
-        turn_value = ROTARY_DIRECTION - 1;
+        turn_value    = ROTARY_DIRECTION - 1;
         break;
     }
     print_uint8("TURN", turn_value);
@@ -166,6 +170,7 @@ void main()
     usb_device_config();
     usb_device_endpoint_config();    // Endpoint configuration
     usb_device_int_config();         // Interrupt initialization
+
     UEP0_T_LEN = 0;
     UEP1_T_LEN = 0;    // Be pre -use and sending length must be empty
     UEP2_T_LEN = 0;    // Be pre -use and sending length must be empty
@@ -200,8 +205,15 @@ void main()
     flash_led(BOOT_FLASH_LED_COUNT, BOOT_FLASH_LED_SPEED);
 
     // Triple click admin
-    uint16 t1_count = 0;
-    uint8 clicks = 0;
+
+    // time between buttons clicks to be considered quick clicks
+#define BUTTON_QUICK_CLICK_MS 400
+
+    // # of quick clicks to activate boot loader
+#define BUTTON_QUICK_CLICK_COUNT 3
+
+    uint16 button_click_tick_count = 0;
+    uint8 button_quick_clicks      = 0;
 
     // flash led slowly until USB is connected (in case of power-only cable)
 
@@ -227,13 +239,16 @@ void main()
     while(1) {
 
         // read/debounce the button
-        bool pressed = false;
+        bool pressed   = false;
         bool new_state = !BTN_BIT;
+
         if(new_state != button_state && TF2 == 1) {
+
             TL2 = 0;
             TH2 = T2_DEBOUNCE;
             TF2 = 0;
-            pressed = new_state;
+
+            pressed      = new_state;
             button_state = new_state;
         }
 
@@ -249,10 +264,10 @@ void main()
             }
 
             // 400ms delay counter for knob triple-click
-            if(t1_count < 400) {
-                t1_count += 1;
+            if(button_click_tick_count < BUTTON_QUICK_CLICK_MS) {
+                button_click_tick_count += 1;
             } else {
-                clicks = 0;
+                button_quick_clicks = 0;
             }
             led_tick();
         }
@@ -271,22 +286,22 @@ void main()
 
         // check for triple-click
         if(pressed) {
-            if(t1_count < 400) {
-                clicks += 1;
-                if(clicks == 2) {
+            if(button_click_tick_count < BUTTON_QUICK_CLICK_MS) {
+                button_quick_clicks += 1;
+                if(button_quick_clicks == (BUTTON_QUICK_CLICK_COUNT - 1)) {
                     vol_direction = 2 - vol_direction;
-                    turn_value = (int8)vol_direction - 1;
+                    turn_value    = (int8)vol_direction - 1;
                     write_flash_data(0, 1, &vol_direction);
                     pressed = false;
                 }
             }
-            t1_count = 0;
+            button_click_tick_count = 0;
         }
 
         // queue up some keypresses if something happened
         if(pressed) {
 
-            do_press(KEY_1);
+            do_press(MEDIA_KEY(KEY_MEDIA_MUTE));
         }
 
         if(direction == turn_value) {
@@ -299,7 +314,7 @@ void main()
         }
 
         // send key on/off to usb hid if there are some waiting to be sent
-        if((usb_idle & 2) != 0 && !queue_empty()) {
+        if(usb_idle == 3 && !queue_empty()) {
 
             usb_set_keystate(queue_get());
         }
