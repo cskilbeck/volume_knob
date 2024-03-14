@@ -220,21 +220,6 @@ props.device.on_control_change = (channel, cc, val) => {
 
     if (channel == get_rot_channel(stored_config)) {
 
-        // if (!is_rot_extended(stored_config)) {
-
-        // } else {
-
-        //     if (is_LSB(cc) && cc == stored_config.rot_control_lsb) {
-
-        //         rotation_value = (rotation_value & 0x3f80) | val;
-
-        //     } else if (cc == stored_config.rot_control_msb) {
-
-        //         rotation_value = (rotation_value & 0x7f) | (val << 7);
-        //     }
-
-        // }
-
         if (is_LSB(cc) && is_rot_extended(stored_config) && cc == stored_config.rot_control_lsb) {
 
             if (is_rot_relative(stored_config)) {

@@ -2,7 +2,9 @@
 
 void usb_isr(void) __interrupt(INT_NO_USB);
 
-void usb_init();
+void usb_device_config();
+void usb_device_endpoint_config();    // Endpoint configuration
+void usb_device_int_config();         // Interrupt initialization
 
 void usb_set_keystate(uint16_t key);
 

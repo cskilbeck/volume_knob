@@ -33,12 +33,12 @@
 
 // uncomment this line for full speed (12Mb), comment it out for low speed (1.5Mb)
 
-// #define USB_FULL_SPEED 1
+#define USB_FULL_SPEED 1
 
 #if defined(USB_FULL_SPEED)
 #define UDEV_LOW_SPEED 0
 #define UCTL_LOW_SPEED 0
-#define USB_PACKET_SIZE 64
+#define USB_PACKET_SIZE 8
 #else
 #define UDEV_LOW_SPEED bUD_LOW_SPEED
 #define UCTL_LOW_SPEED bUC_LOW_SPEED

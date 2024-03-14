@@ -4,7 +4,7 @@
 
 // Endpoint0 OUT & IN
 __xdata uint8 Ep0Buffer[DEFAULT_ENDP0_SIZE];
-__xdata uint8 Ep1Buffer[USB_PACKET_SIZE];
+__xdata uint8 Ep1Buffer[DEFAULT_ENDP1_SIZE];
 __xdata uint8 Ep2Buffer[USB_PACKET_SIZE * 2];
 __xdata uint8 serial_number_string[SERIAL_STRING_LEN];    // e.g "012345678"
 __xdata uint8 product_string[PRODUCT_NAME_STRING_LEN];    // e.g. "Tiny Midi Knob 012345678"
@@ -78,7 +78,8 @@ void do_press(uint16 k)
         queue_put(k & 0x8000);
         led_flash();
     } else {
-        led_flash();
+
+        print_uint8("Space", queue_space());
     }
 }
 
@@ -162,8 +163,12 @@ void main()
     }
     print_uint8("TURN", turn_value);
 
-    // start usb client
-    usb_init();
+    usb_device_config();
+    usb_device_endpoint_config();    // Endpoint configuration
+    usb_device_int_config();         // Interrupt initialization
+    UEP0_T_LEN = 0;
+    UEP1_T_LEN = 0;    // Be pre -use and sending length must be empty
+    UEP2_T_LEN = 0;    // Be pre -use and sending length must be empty
 
     // setup timers
 
@@ -249,6 +254,7 @@ void main()
             } else {
                 clicks = 0;
             }
+            led_tick();
         }
 
         // read the rotary encoder (returns -1, 0 or 1)
@@ -280,7 +286,7 @@ void main()
         // queue up some keypresses if something happened
         if(pressed) {
 
-            do_press(MEDIA_KEY(KEY_MEDIA_MUTE));
+            do_press(KEY_1);
         }
 
         if(direction == turn_value) {
@@ -293,7 +299,7 @@ void main()
         }
 
         // send key on/off to usb hid if there are some waiting to be sent
-        if(usb_idle == 3 && !queue_empty()) {
+        if((usb_idle & 2) != 0 && !queue_empty()) {
 
             usb_set_keystate(queue_get());
         }
