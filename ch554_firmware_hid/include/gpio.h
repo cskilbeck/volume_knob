@@ -26,15 +26,15 @@
 
 // USB A version
 
-#define ROTA_PORT PORT3
-#define ROTB_PORT PORT3
-#define BTN_PORT PORT3
+#define ROTA_PORT PORT1
+#define ROTB_PORT PORT1
+#define BTN_PORT PORT1
 #define LED_PORT PORT1
 
-#define ROTA_PIN 3
+#define ROTA_PIN 6
 #define ROTB_PIN 4
-#define BTN_PIN 2
-#define LED_PIN 6
+#define BTN_PIN 7
+#define LED_PIN 5
 
 #define LED_ON 0
 #define LED_OFF 1
@@ -71,10 +71,10 @@ SBIT(LED_BIT, LED_PORT, LED_PIN);
 
 typedef enum gpio_state
 {
-    gpio_input_no_pullup = 0,
-    gpio_output_push_pull = 1,
+    gpio_input_no_pullup   = 0,
+    gpio_output_push_pull  = 1,
     gpio_output_open_drain = 2,
-    gpio_input_pullup = 3
+    gpio_input_pullup      = 3
 } gpio_state_t;
 
 void gpio_init(uint8 port, uint8 bit, gpio_state_t state);

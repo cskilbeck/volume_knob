@@ -18,17 +18,31 @@ void timer2_irq_handler(void) __interrupt(INT_NO_TMR2)
 
 void tick_init()
 {
-    // setup reload value
+    // switch off T2
+    TR2 = 0;
+
+    // set T2 counter reload value
     RCAP2 = (uint16)(65535U - TICK_PERIOD);
 
+    // reset T2 counter
     T2COUNT = 0;
 
-    // clear overflow flag
+    // clear T2 overflow flag
     TF2 = 0;
 
-    // enable irq
+    // enable T2 irq
     ET2 = 1;
 
-    // switch on T0
+    // switch on T2
     TR2 = 1;
+}
+
+//////////////////////////////////////////////////////////////////////
+// wait for next tick (up to 1ms later - might be very soon...)
+
+void tick_wait()
+{
+    tick = 0;
+    while(!tick) {
+    }
 }

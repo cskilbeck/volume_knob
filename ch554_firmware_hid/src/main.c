@@ -38,9 +38,9 @@
 // must be a power of 2
 #define KEY_QUEUE_LEN 16
 
-uint16 queue_buffer[KEY_QUEUE_LEN];
-uint8 queue_head = 0;
-uint8 queue_size = 0;
+__idata uint16 queue_buffer[KEY_QUEUE_LEN];
+__idata uint8 queue_head = 0;
+__idata uint8 queue_size = 0;
 
 inline bool queue_full()
 {
@@ -98,6 +98,8 @@ void main()
     led_init();
     encoder_init();
 
+    printf("\033c\033[3J\033[2J----------\nCHIP ID: %08x\n", chip_id);
+
     uint8 vol_direction;
     int8 turn_value;
 
@@ -115,7 +117,7 @@ void main()
         turn_value    = ROTARY_DIRECTION - 1;
         break;
     }
-    print_uint8("TURN", turn_value);
+    printf("TURN: %d\n", turn_value);
 
     usb_init_strings();
     usb_device_config();
@@ -187,7 +189,7 @@ void main()
                 if(button_quick_clicks == (BUTTON_QUICK_CLICK_COUNT - 1)) {
                     vol_direction = 2 - vol_direction;
                     turn_value    = (int8)vol_direction - 1;
-                    print_uint8("NEW TURN", vol_direction);
+                    printf("NEW TURN: %d\n", turn_value);
                     write_flash_data(0, 1, &vol_direction);
                     pressed = false;
                 }

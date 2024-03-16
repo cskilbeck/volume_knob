@@ -18,8 +18,6 @@ void chip_id_init()
     cip[1]     = (chip_id >> 14) & 0x7f;
     cip[2]     = (chip_id >> 7) & 0x7f;
     cip[3]     = (chip_id >> 0) & 0x7f;
-
-    print_uint32("CHIP ID", chip_id);
 }
 
 //////////////////////////////////////////////////////////////////////

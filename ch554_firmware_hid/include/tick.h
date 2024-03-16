@@ -8,3 +8,4 @@ extern volatile uint8 tick;
 
 void timer2_irq_handler(void) __interrupt(INT_NO_TMR2);
 void tick_init();
+void tick_wait();

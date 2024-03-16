@@ -168,86 +168,24 @@ void uart0_init()
 
 //////////////////////////////////////////////////////////////////////
 
-void putchar(char c)
+int putchar(int c)
 {
     while(!TI) {
     }
     TI   = 0;
-    SBUF = c;
-}
-
-//////////////////////////////////////////////////////////////////////
-
-void putnibble(uint8 n)
-{
-    if(n > 9) {
-        n += 'A' - 10;
-    } else {
-        n += '0';
-    }
-    putchar(n);
-}
-
-//////////////////////////////////////////////////////////////////////
-
-void putstr(char *p)
-{
-    while(*p != 0) {
-        putchar(*p++);
-    }
-}
-
-//////////////////////////////////////////////////////////////////////
-
-void puthex(uint8 b)
-{
-    putnibble(b >> 4);
-    putnibble(b & 0xf);
-}
-
-//////////////////////////////////////////////////////////////////////
-
-void print_uint8(char *msg, uint8 v)
-{
-    putstr(msg);
-    putstr(": U8 = 0x");
-    puthex(v);
-    putstr("\n");
-}
-
-//////////////////////////////////////////////////////////////////////
-
-void print_uint16(char *msg, uint16 v)
-{
-    putstr(msg);
-    putstr(": U16 = 0x");
-    puthex(v >> 8);
-    puthex(v & 0xff);
-    putstr("\n");
-}
-
-//////////////////////////////////////////////////////////////////////
-
-void print_uint32(char *msg, uint32 v)
-{
-    putstr(msg);
-    putstr(": U32 = 0x");
-    puthex((v >> 24) & 0xff);
-    puthex((v >> 16) & 0xff);
-    puthex((v >> 8) & 0xff);
-    puthex(v & 0xff);
-    putstr("\n");
+    SBUF = (uint8)c;
+    return 0;
 }
 
 //////////////////////////////////////////////////////////////////////
 
 void hexdump(char *msg, uint8 *p, uint8 n)
 {
-    putstr(msg);
-    putchar(':');
+    printf("%s:", msg);
     while(n-- != 0) {
-        puthex(*p++);
+        printf("%02x", *p++);
     }
     putchar('\n');
 }
+
 #endif

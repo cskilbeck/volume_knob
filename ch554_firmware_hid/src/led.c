@@ -2,7 +2,7 @@
 
 //////////////////////////////////////////////////////////////////////
 
-uint8 led_brightness = 0;
+__idata uint8 led_brightness = 0;
 
 //////////////////////////////////////////////////////////////////////
 
@@ -55,9 +55,7 @@ void led_flash_n_times(uint8 n, uint8 speed)
     uint8 wait = 0;
     LED_BIT    = LED_OFF;
     while(n != 0) {
-        while(!tick) {
-        }
-        tick = 0;
+        tick_wait();
         wait += 1;
         if(wait == speed) {
             wait = 0;
