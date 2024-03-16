@@ -26,7 +26,7 @@
 
 //////////////////////////////////////////////////////////////////////
 
-// time between buttons clicks to be considered quick clicks
+// time between button clicks to be considered quick clicks
 #define BUTTON_QUICK_CLICK_MS 500
 
 // # of quick clicks to reverse direction
@@ -138,8 +138,8 @@ void main()
     uint16 button_click_tick_count = 0;
     uint8 button_quick_clicks      = 0;
 
-    bool button_state  = false;    // for debouncing the button
-    uint8 button_ticks = 0;
+    bool button_state  = false;
+    uint8 button_ticks = 0;    // for debouncing the button
 
     // main loop
 
@@ -157,10 +157,13 @@ void main()
         }
 
         if(tick) {
+
             tick = 0;
-            if(button_ticks < 8) {
+
+            if(button_ticks <= 2) {
                 button_ticks += 1;
             }
+
             if(button_state) {
                 press_time += 1;
                 if(press_time == BOOTLOADER_BUTTON_DELAY_MS) {
@@ -176,6 +179,8 @@ void main()
             } else {
                 button_quick_clicks = 0;
             }
+
+            // led flash fade
             led_on_tick();
         }
 
