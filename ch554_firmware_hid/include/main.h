@@ -46,7 +46,6 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////
-// USB config
 
 // uncomment this line for full speed (12Mb), comment it out for low speed (1.5Mb)
 #define USB_FULL_SPEED 1

@@ -14,4 +14,5 @@ void usb_set_keystate(uint16_t key);
 
 extern volatile __idata uint8 usb_idle;
 extern volatile __idata uint8 usb_active;
-extern volatile __idata uint8 ep3_recv_len;
+
+extern volatile __idata uint8 usb_recv_len[4];
