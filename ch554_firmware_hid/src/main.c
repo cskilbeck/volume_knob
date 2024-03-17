@@ -155,9 +155,10 @@ void main()
             button_state = new_state;
         }
 
-        if(tick) {
+        // if tick
+        if(TF2) {
 
-            tick = 0;
+            TF2 = 0;
 
             if(button_ticks <= 2) {
                 button_ticks += 1;
