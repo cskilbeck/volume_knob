@@ -41,10 +41,10 @@ void clk_init()
 #warning FREQ_SYS invalid or not set
 #endif
 
-    SAFE_MOD  = 0x55;
-    SAFE_MOD  = 0xAA;
+    SAFE_MOD = 0x55;
+    SAFE_MOD = 0xAA;
     CLOCK_CFG = (CLOCK_CFG & ~(MASK_SYS_CK_SEL | bOSC_EN_INT | bOSC_EN_XT)) | (OSC_ON | CLK);
-    SAFE_MOD  = 0x00;
+    SAFE_MOD = 0x00;
 
     delay_mS(5);
 }
@@ -122,7 +122,7 @@ void watchdog_mode_select(uint8_t mode)
         GLOBAL_CFG |= bWDOG_EN;
     } else
         GLOBAL_CFG &= ~bWDOG_EN;
-    SAFE_MOD   = 0x00;
+    SAFE_MOD = 0x00;
     WDOG_COUNT = 0;
 }
 
@@ -151,9 +151,9 @@ void uart0_init()
     gpio_init(UART_TX_PORT, UART_TX_PIN, gpio_output_push_pull);
     gpio_init(UART_RX_PORT, UART_RX_PIN, gpio_output_open_drain);
 
-    SM0  = 0;                                                     // 8 bits
-    SM1  = 1;                                                     // mode 1
-    SM2  = 0;                                                     // SM2 not relevant in mode 1
+    SM0 = 0;                                                      // 8 bits
+    SM1 = 1;                                                      // mode 1
+    SM2 = 0;                                                      // SM2 not relevant in mode 1
     RCLK = 0;                                                     // receive use T1
     TCLK = 0;                                                     // send use T1
     PCON |= SMOD;                                                 // fast baud mode
@@ -163,7 +163,7 @@ void uart0_init()
     TI  = 1;                                                      // Set tx done flag so we don't wait before sending 1st byte
     RI  = 0;                                                      // clear receive flag
     TR1 = 1;                                                      // start T1
-    REN = 1;                                                      // receive enable
+    // REN = 1;                                                   // receive enable
 }
 
 //////////////////////////////////////////////////////////////////////

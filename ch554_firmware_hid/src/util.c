@@ -10,8 +10,8 @@ void goto_bootloader()
     led_flash_n_times(BOOTLOADER_FLASH_LED_COUNT, BOOTLOADER_FLASH_LED_SPEED);
 
     // shutdown peripherals
-    EA        = 0;
-    USB_CTRL  = 0;
+    EA = 0;
+    USB_CTRL = 0;
     UDEV_CTRL = 0;
 
     // and jump to bootloader

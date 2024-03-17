@@ -89,6 +89,8 @@ void do_press(uint16 k)
 
 //////////////////////////////////////////////////////////////////////
 
+#define CLEAR_CONSOLE "\033c\033[3J\033[2J"
+
 void main()
 {
     clk_init();
@@ -97,7 +99,10 @@ void main()
     led_init();
     encoder_init();
 
-    printf("\033c\033[3J\033[2J---------- CHIP ID: %08lx ----------\n", chip_id);
+    // global irq enable
+    EA = 1;
+
+    printf(CLEAR_CONSOLE "---------- CHIP ID: %08lx ----------\n", chip_id);
 
     uint8 vol_direction;
     int8 turn_value;
@@ -113,7 +118,7 @@ void main()
         break;
     default:
         vol_direction = ROTARY_DIRECTION;
-        turn_value    = ROTARY_DIRECTION - 1;
+        turn_value = ROTARY_DIRECTION - 1;
         break;
     }
     printf("TURN: %d\n", turn_value);
@@ -122,9 +127,6 @@ void main()
     usb_device_config();
     usb_device_endpoint_config();
     usb_device_int_config();
-
-    // global irq enable
-    EA = 1;
 
     led_flash_n_times(BOOT_FLASH_LED_COUNT, BOOT_FLASH_LED_SPEED);
 
@@ -135,23 +137,25 @@ void main()
     // Triple click admin
 
     uint16 button_click_tick_count = 0;
-    uint8 button_quick_clicks      = 0;
+    uint8 button_quick_clicks = 0;
 
-    bool button_state  = false;
+    bool button_state = false;
     uint8 button_ticks = 0;    // for debouncing the button
 
     // main loop
 
+    puts("Main loop");
+
     while(1) {
 
         // read/debounce the button
-        bool pressed   = false;
+        bool pressed = false;
         bool new_state = !BTN_BIT;
 
         if(new_state != button_state && button_ticks > 1) {
 
             button_ticks = 0;
-            pressed      = new_state;
+            pressed = new_state;
             button_state = new_state;
         }
 
@@ -193,7 +197,7 @@ void main()
                 button_quick_clicks += 1;
                 if(button_quick_clicks == (BUTTON_QUICK_CLICK_COUNT - 1)) {
                     vol_direction = 2 - vol_direction;
-                    turn_value    = (int8)vol_direction - 1;
+                    turn_value = (int8)vol_direction - 1;
                     printf("NEW TURN: %d\n", turn_value);
                     write_flash_data(0, 1, &vol_direction);
                     pressed = false;

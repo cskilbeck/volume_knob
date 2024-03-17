@@ -40,7 +40,7 @@ volatile __idata uint8 ep3_recv_len;
 
 uint8 const *descriptor;
 
-volatile __idata uint8 usb_idle   = 3;
+volatile __idata uint8 usb_idle = 3;
 volatile __idata uint8 usb_active = 0;
 
 //////////////////////////////////////////////////////////////////////
@@ -293,12 +293,12 @@ __code const uint8 hid_config_desc[] = {
 
 #define STR_HDR(x) (sizeof(x) | (USB_DESCR_TYP_STRING << 8))
 
-__code const uint16 language_desc[]       = { STR_HDR(language_desc), LANGUAGE_DESC };
+__code const uint16 language_desc[] = { STR_HDR(language_desc), LANGUAGE_DESC };
 __code const uint16 manufacturer_string[] = { STR_HDR(manufacturer_string), MANUFACTURER_STRING };
-__code const uint16 keyboard_string[]     = { STR_HDR(keyboard_string), KEYBOARD_STRING };
-__code const uint16 media_string[]        = { STR_HDR(media_string), MEDIA_STRING };
-__code const uint16 config_string[]       = { STR_HDR(config_string), CONFIG_STRING };
-__code const uint16 custom_string[]       = { STR_HDR(custom_string), CUSTOM_STRING };
+__code const uint16 keyboard_string[] = { STR_HDR(keyboard_string), KEYBOARD_STRING };
+__code const uint16 media_string[] = { STR_HDR(media_string), MEDIA_STRING };
+__code const uint16 config_string[] = { STR_HDR(config_string), CONFIG_STRING };
+__code const uint16 custom_string[] = { STR_HDR(custom_string), CUSTOM_STRING };
 
 //////////////////////////////////////////////////////////////////////
 
@@ -352,21 +352,21 @@ void usb_isr(void) __interrupt(INT_NO_USB)
         // ENDPOINT 1 transmit to host complete
         case UIS_TOKEN_IN | 1:
             UEP1_T_LEN = 0;
-            UEP1_CTRL  = (UEP1_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_NAK;
+            UEP1_CTRL = (UEP1_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_NAK;
             usb_idle |= 1;
             break;
 
         // ENDPOINT 2 transmit to host complete
         case UIS_TOKEN_IN | 2:
             UEP2_T_LEN = 0;
-            UEP2_CTRL  = (UEP2_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_NAK;
+            UEP2_CTRL = (UEP2_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_NAK;
             usb_idle |= 2;
             break;
 
         // ENDPOINT 3 transmit to host complete
         case UIS_TOKEN_IN | 3:
             UEP3_T_LEN = 0;
-            UEP3_CTRL  = (UEP3_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_NAK;
+            UEP3_CTRL = (UEP3_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_NAK;
             usb_idle |= 4;
             break;
 
@@ -374,7 +374,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
         case UIS_TOKEN_OUT | 3:
             if(U_TOG_OK) {
                 ep3_recv_len = USB_RX_LEN;
-                UEP3_CTRL    = (UEP3_CTRL & ~MASK_UEP_R_RES) | UEP_R_RES_NAK;
+                UEP3_CTRL = (UEP3_CTRL & ~MASK_UEP_R_RES) | UEP_R_RES_NAK;
             }
             break;
 
@@ -392,8 +392,8 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                     setup_len = 0x7f;
                 }
 
-                len                = 0;
-                setup_request      = usb_setup->bRequest;
+                len = 0;
+                setup_request = usb_setup->bRequest;
                 uint8 request_type = usb_setup->bRequestType;
 
                 // all request types except 'standard' are ignored
@@ -409,14 +409,14 @@ void usb_isr(void) __interrupt(INT_NO_USB)
 
                         case USB_DESCR_TYP_DEVICE:
                             descriptor = device_desc;
-                            len        = sizeof(device_desc);
+                            len = sizeof(device_desc);
                             break;
 
                         case USB_DESCR_TYP_CONFIG: {
                             uint8 desc = usb_setup->wValueL;
                             if(desc < NUM_CONFIG_DESCS) {
                                 descriptor = config_descs[desc].p;
-                                len        = config_descs[desc].len;
+                                len = config_descs[desc].len;
                             } else {
                                 len = 0xff;
                             }
@@ -426,7 +426,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                             uint8 desc = usb_setup->wIndexL;    // !! Index!? I guess...
                             if(desc < NUM_REPORT_DESCS) {
                                 descriptor = report_descs[desc].p;
-                                len        = report_descs[desc].len;
+                                len = report_descs[desc].len;
                             } else {
                                 len = 0xff;
                             }
@@ -436,7 +436,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                             uint8 desc = usb_setup->wValueL;
                             if(desc < NUM_STRING_DESCS) {
                                 descriptor = string_descs[desc].p;
-                                len        = string_descs[desc].len;
+                                len = string_descs[desc].len;
                             } else {
                                 len = 0xff;
                             }
@@ -467,7 +467,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                     case USB_GET_CONFIGURATION:
                         puts("GetConfig");
                         Ep0Buffer[0] = usb_config;
-                        setup_len    = MIN(setup_len, 1);
+                        setup_len = MIN(setup_len, 1);
                         break;
 
                     case USB_SET_CONFIGURATION:
@@ -622,7 +622,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
             // and indicate stall
             if(len == 0xff) {
                 setup_request = 0xff;
-                UEP0_CTRL     = bUEP_R_TOG | bUEP_T_TOG | UEP_R_RES_STALL | UEP_T_RES_STALL;
+                UEP0_CTRL = bUEP_R_TOG | bUEP_T_TOG | UEP_R_RES_STALL | UEP_T_RES_STALL;
 
             }
             // if len <= 8, some valid data is sitting in EP0Buffer
@@ -630,7 +630,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
             // although it could be zero bytes, in which case we just ack it
             else if(len <= DEFAULT_ENDP0_SIZE) {
                 UEP0_T_LEN = len;
-                UEP0_CTRL  = bUEP_R_TOG | bUEP_T_TOG | UEP_R_RES_ACK | UEP_T_RES_ACK;
+                UEP0_CTRL = bUEP_R_TOG | bUEP_T_TOG | UEP_R_RES_ACK | UEP_T_RES_ACK;
             }
             break;
 
@@ -653,13 +653,13 @@ void usb_isr(void) __interrupt(INT_NO_USB)
             // setup_len was hijacked for device address!!!
             case USB_SET_ADDRESS:
                 USB_DEV_AD = USB_DEV_AD & bUDA_GP_BIT | setup_len;
-                UEP0_CTRL  = UEP_R_RES_ACK | UEP_T_RES_NAK;
+                UEP0_CTRL = UEP_R_RES_ACK | UEP_T_RES_NAK;
                 break;
 
             // else... huh?
             default:
                 UEP0_T_LEN = 0;
-                UEP0_CTRL  = UEP_R_RES_ACK | UEP_T_RES_NAK;
+                UEP0_CTRL = UEP_R_RES_ACK | UEP_T_RES_NAK;
                 break;
             }
             break;
@@ -668,7 +668,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
 
         case UIS_TOKEN_OUT | 0:
             UEP0_T_LEN = 0;
-            UEP0_CTRL  = UEP_R_RES_ACK | UEP_T_RES_ACK;
+            UEP0_CTRL = UEP_R_RES_ACK | UEP_T_RES_ACK;
             break;
 
         default:
@@ -680,16 +680,16 @@ void usb_isr(void) __interrupt(INT_NO_USB)
     // bus reset
     if(UIF_BUS_RST) {
         puts("reset");
-        UEP0_CTRL    = UEP_R_RES_ACK | UEP_T_RES_NAK;
-        UEP1_CTRL    = bUEP_AUTO_TOG | UEP_T_RES_NAK;
-        UEP2_CTRL    = bUEP_AUTO_TOG | UEP_T_RES_NAK | UEP_R_RES_ACK;
-        UEP3_CTRL    = bUEP_AUTO_TOG | UEP_T_RES_NAK | UEP_R_RES_ACK;
-        USB_DEV_AD   = 0x00;
-        UIF_SUSPEND  = 0;
+        UEP0_CTRL = UEP_R_RES_ACK | UEP_T_RES_NAK;
+        UEP1_CTRL = bUEP_AUTO_TOG | UEP_T_RES_NAK;
+        UEP2_CTRL = bUEP_AUTO_TOG | UEP_T_RES_NAK | UEP_R_RES_ACK;
+        UEP3_CTRL = bUEP_AUTO_TOG | UEP_T_RES_NAK | UEP_R_RES_ACK;
+        USB_DEV_AD = 0x00;
+        UIF_SUSPEND = 0;
         UIF_TRANSFER = 0;
-        usb_config   = 0;
-        usb_idle     = 3;
-        usb_active   = 0;
+        usb_config = 0;
+        usb_idle = 3;
+        usb_active = 0;
     }
 
     // USB bus hangs/Wake up
@@ -700,12 +700,12 @@ void usb_isr(void) __interrupt(INT_NO_USB)
             puts("suspend");
             while(XBUS_AUX & bUART0_TX) {    // Wait for msg to send
             }
-            SAFE_MOD  = 0x55;
-            SAFE_MOD  = 0xAA;
+            SAFE_MOD = 0x55;
+            SAFE_MOD = 0xAA;
             WAKE_CTRL = bWAK_BY_USB;
             PCON |= PD;
-            SAFE_MOD  = 0x55;
-            SAFE_MOD  = 0xAA;
+            SAFE_MOD = 0x55;
+            SAFE_MOD = 0xAA;
             WAKE_CTRL = 0x00;
         }
     }
@@ -729,7 +729,7 @@ void usb_set_keystate(uint16 key)
         Ep1Buffer[6] = 0x00;
         Ep1Buffer[7] = 0x00;
         usb_idle &= ~1;
-        UEP1_CTRL  = (UEP1_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_ACK;
+        UEP1_CTRL = (UEP1_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_ACK;
         UEP1_T_LEN = 8;
     } else {
         key &= 0x7fff;
@@ -737,7 +737,7 @@ void usb_set_keystate(uint16 key)
         Ep2Buffer[1] = key & 0xff;
         Ep2Buffer[2] = key >> 8;
         usb_idle &= ~2;
-        UEP2_CTRL  = (UEP2_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_ACK;
+        UEP2_CTRL = (UEP2_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_ACK;
         UEP2_T_LEN = 3;
     }
 }
@@ -797,6 +797,8 @@ void usb_device_endpoint_config()
 
     ep3_recv_len = 0;
 }
+
+//////////////////////////////////////////////////////////////////////
 
 static __code uint8 const product_name[] = PRODUCT_NAME;
 
