@@ -2,24 +2,6 @@
 
 #include "main.h"
 
-uint32 chip_id;
-uint32 chip_id_28;
-
-//////////////////////////////////////////////////////////////////////
-
-void chip_id_init()
-{
-    // get unique chip id
-    chip_id = CHIP_UNIQUE_ID_LO | ((uint32)CHIP_UNIQUE_ID_HI << 16);
-
-    // make a 28 bit version so we can send as 4 x 7bits for midi identification
-    uint8 *cip = (uint8 *)&chip_id_28;
-    cip[0]     = (chip_id >> 21) & 0x7f;
-    cip[1]     = (chip_id >> 14) & 0x7f;
-    cip[2]     = (chip_id >> 7) & 0x7f;
-    cip[3]     = (chip_id >> 0) & 0x7f;
-}
-
 //////////////////////////////////////////////////////////////////////
 
 void goto_bootloader()

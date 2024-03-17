@@ -7,15 +7,7 @@
 //////////////////////////////////////////////////////////////////////
 
 volatile const __code __at(ROM_CHIP_ID_LO)
-uint16_t CHIP_UNIQUE_ID_LO;
-
-volatile const __code __at(ROM_CHIP_ID_HI)
-uint16_t CHIP_UNIQUE_ID_HI;
-
-extern uint32 chip_id;
-extern uint32 chip_id_28;
-
-void chip_id_init();
+uint32 chip_id;
 
 //////////////////////////////////////////////////////////////////////
 

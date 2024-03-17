@@ -94,11 +94,10 @@ void main()
     clk_init();
     tick_init();
     uart0_init();
-    chip_id_init();
     led_init();
     encoder_init();
 
-    printf("\033c\033[3J\033[2J----------\nCHIP ID: %08x\n", chip_id);
+    printf("\033c\033[3J\033[2J---------- CHIP ID: %08lx ----------\n", chip_id);
 
     uint8 vol_direction;
     int8 turn_value;
