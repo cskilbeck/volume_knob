@@ -22,11 +22,13 @@ void tick_init()
 }
 
 //////////////////////////////////////////////////////////////////////
-// wait for next tick (up to 1ms later - might be very soon...)
+// wait for N ticks
 
-void tick_wait()
+void tick_wait(uint16 n)
 {
-    TF2 = 0;
-    while(!TF2) {
+    for(uint16 i = 0; i < n; ++i) {
+        TF2 = 0;
+        while(!TF2) {
+        }
     }
 }

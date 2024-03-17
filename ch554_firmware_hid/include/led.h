@@ -17,4 +17,4 @@ void led_init();
 void led_on_tick();
 void led_update();
 
-void led_flash_n_times(uint8 n, uint8 speed);
+void led_flash_n_times(uint8 n, uint16 speed);

@@ -52,18 +52,12 @@ void led_update()
 
 //////////////////////////////////////////////////////////////////////
 
-void led_flash_n_times(uint8 n, uint8 speed)
+void led_flash_n_times(uint8 n, uint16 speed)
 {
-    uint8 wait = 0;
-    LED_BIT = LED_OFF;
-    while(n != 0) {
-        tick_wait();
-        wait += 1;
-        if(wait == speed) {
-            wait = 0;
-            n -= 1;
-            LED_BIT ^= 1;
-        }
+    LED_BIT = LED_ON;
+    for(; n != 0; n--) {
+        tick_wait(speed);
+        LED_BIT ^= 1;
     }
     LED_BIT = LED_OFF;
 }

@@ -852,7 +852,7 @@ void usb_wait_for_connection()
 
     while(!usb_active) {
 
-        tick_wait();
+        tick_wait(1);
 
         flash += 1;
         if(flash == 1000) {

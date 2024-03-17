@@ -7,4 +7,4 @@ extern volatile uint8 tick;
 //////////////////////////////////////////////////////////////////////
 
 void tick_init();
-void tick_wait();
+void tick_wait(uint16 n);
