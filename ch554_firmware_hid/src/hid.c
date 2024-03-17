@@ -3,6 +3,7 @@
 //////////////////////////////////////////////////////////////////////
 
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
+#define U16(x) (*(uint16 *)(&(x)))
 
 //////////////////////////////////////////////////////////////////////
 
@@ -384,13 +385,10 @@ void usb_isr(void) __interrupt(INT_NO_USB)
             len = 0xff;
 
             // should be this much, anything else seems to be an error
-            if(USB_RX_LEN == (sizeof(USB_SETUP_REQ))) {
+            if(USB_RX_LEN == sizeof(USB_SETUP_REQ)) {
 
                 // how much it wants, capped at 127
-                setup_len = usb_setup->wLengthL;
-                if((usb_setup->wLengthH != 0) || setup_len > 0x7f) {
-                    setup_len = 0x7f;
-                }
+                setup_len = MIN(127, U16(usb_setup->wLengthL));
 
                 len = 0;
                 setup_request = usb_setup->bRequest;
@@ -486,7 +484,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
 
                         case USB_REQ_RECIP_DEVICE:    // Device
 
-                            if((((uint16)usb_setup->wValueH << 8) | usb_setup->wValueL) == 0x01) {
+                            if(U16(usb_setup->wValueL) == 0x01) {
                                 if((hid_config_desc[7] & 0x20) != 0) {
                                     puts("Wake");
                                 } else {
@@ -535,7 +533,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                         switch(request_type & USB_REQ_RECIP_MASK) {
 
                         case USB_REQ_RECIP_DEVICE: {
-                            if(*(uint16 *)&usb_setup->wValueL == 0x0001) {
+                            if(U16(usb_setup->wValueL) == 0x0001) {
 
                                 // asking to set remote wakeup!?
                                 if((hid_config_desc[7] & 0x20) != 0) {
@@ -550,8 +548,8 @@ void usb_isr(void) __interrupt(INT_NO_USB)
 
                         case USB_REQ_RECIP_ENDP: {
 
-                            if(*(uint16 *)&usb_setup->wValueL == 0x0000) {
-                                switch(*(uint16 *)&usb_setup->wIndexL) {
+                            if(U16(usb_setup->wValueL) == 0x0000) {
+                                switch(U16(usb_setup->wIndexL)) {
                                 case 0x83:
                                     UEP3_CTRL = UEP3_CTRL & (~bUEP_T_TOG) | UEP_T_RES_STALL;    // Set endpoint 3 IN STALL
                                     break;
@@ -587,7 +585,6 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                     case USB_GET_STATUS:
                         Ep0Buffer[0] = 0x00;    // bus powered
                         Ep0Buffer[1] = 0x00;    // no remote wakeup
-
                         len = MIN(setup_len, 2);
                         break;
 
@@ -617,17 +614,12 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                 }
             }
 
-            // if len == 0xff, some error has occurred
-            // set the data toggles to 1
-            // and indicate stall
+            // if len == 0xff, some error has occurred, set the data toggles to 1 and indicate stall
             if(len == 0xff) {
                 setup_request = 0xff;
                 UEP0_CTRL = bUEP_R_TOG | bUEP_T_TOG | UEP_R_RES_STALL | UEP_T_RES_STALL;
-
             }
-            // if len <= 8, some valid data is sitting in EP0Buffer
-            // so send it (also set the toggles!?)
-            // although it could be zero bytes, in which case we just ack it
+            // if len <= 8, some valid data is sitting in EP0Buffer (or 0 bytes, that's ok), so send it, ack and toggle
             else if(len <= DEFAULT_ENDP0_SIZE) {
                 UEP0_T_LEN = len;
                 UEP0_CTRL = bUEP_R_TOG | bUEP_T_TOG | UEP_R_RES_ACK | UEP_T_RES_ACK;
@@ -638,6 +630,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
 
         case UIS_TOKEN_IN | 0:
 
+            // what were we doing to cause data to be sent?
             switch(setup_request) {
 
             // continue to send existing stuff(based on setup_request)
@@ -746,30 +739,36 @@ void usb_set_keystate(uint16 key)
 
 void usb_device_config()
 {
-    USB_CTRL = bUC_DEV_PU_EN | bUC_INT_BUSY | bUC_DMA_EN;    // The USB device and internal pull-up are enabled, and automatically
-                                                             // return to NAK before the interrupt flag is cleared during the interrupt.
+    // USB device and internal pull-up enabled, automatically
+    // return to NAK before the interrupt flag is cleared during the interrupt.
+    USB_CTRL = bUC_DEV_PU_EN | bUC_INT_BUSY | bUC_DMA_EN;
 
-    USB_DEV_AD = 0x00;    // device address 0 before host assigns it
+    // device address 0 before host assigns it
+    USB_DEV_AD = 0x00;
 
 #if !defined(USB_FULL_SPEED)
     USB_CTRL |= bUC_LOW_SPEED;
     UDEV_CTRL |= bUD_LOW_SPEED;
 #else
-    UDEV_CTRL &= ~bUD_LOW_SPEED;    // full speed 12Mbit mode
+    UDEV_CTRL &= ~bUD_LOW_SPEED;
 #endif
 
-    UDEV_CTRL |= bUD_PD_DIS | bUD_PORT_EN;    // Disable DP/DM pull-downs, enable USB port
+    // Disable DP/DM pull-downs, enable USB port
+    UDEV_CTRL |= bUD_PD_DIS | bUD_PORT_EN;
 }
 
 //////////////////////////////////////////////////////////////////////
 
 void usb_device_int_config()
 {
-    USB_INT_EN |= bUIE_SUSPEND | bUIE_TRANSFER | bUIE_BUS_RST;    // suspend, transmission complete, bus reset IRQs enabled
+    // suspend, transmission complete, bus reset IRQs enabled
+    USB_INT_EN |= bUIE_SUSPEND | bUIE_TRANSFER | bUIE_BUS_RST;
 
-    USB_INT_FG |= 0x1F;    // Clear outstanding interrupts
+    // Clear outstanding interrupts
+    USB_INT_FG |= 0x1F;
 
-    IE_USB = 1;    // Enable USB interrupt
+    // Enable USB interrupt
+    IE_USB = 1;
 }
 
 //////////////////////////////////////////////////////////////////////
