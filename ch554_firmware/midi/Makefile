@@ -17,13 +17,13 @@ EXTRA_FLAGS += --std-c23 --opt-code-speed -DDEVICE=DEVICE_$(DEVICE_TYPE)
 
 COMMON = ../common/
 
-SRC = src/ $(COMMON)src/
+SRC = src/ $(COMMON)src/ 
 INC = include/ $(COMMON)include
 
 OBJ = obj/$(DEVICE_TYPE)/
 BIN = bin/$(DEVICE_TYPE)/
 
-PROJECT = hid_knob_$(DEVICE_TYPE)
+PROJECT = midi_knob_$(DEVICE_TYPE)
 
 .PHONY: check-env
 
@@ -34,4 +34,4 @@ ifndef DEVICE_TYPE
 	$(error DEVICE_TYPE is undefined)
 endif
 
-include $(COMMON)Makefile.include
+include $(COMMON)common.mk
