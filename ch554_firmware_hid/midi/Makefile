@@ -1,0 +1,38 @@
+# HID Makefile
+
+XRAM_SIZE = 0x0400
+CODE_SIZE = 0x3800
+XRAM_LOC = 0x0100
+FREQ_SYS = 24000000
+
+# pass in DEVICE=TYPE
+#
+# where type is one of:
+#
+# 	ORIGINAL
+# 	DIRECT
+# 	DEVKIT
+
+EXTRA_FLAGS += --std-c23 --opt-code-speed -DDEVICE=DEVICE_$(DEVICE_TYPE)
+
+COMMON = ../common/
+
+SRC = src/ $(COMMON)src/
+INC = include/ $(COMMON)include
+
+OBJ = obj/$(DEVICE_TYPE)/
+BIN = bin/$(DEVICE_TYPE)/
+
+PROJECT = midi_knob_$(DEVICE_TYPE)
+
+.PHONY: check-env
+
+build: check-env
+	@echo $(BIN)$(PROJECT).bin is up to date
+
+check-env:
+ifndef DEVICE_TYPE
+	$(error DEVICE_TYPE is undefined)
+endif
+
+include $(COMMON)Makefile.include

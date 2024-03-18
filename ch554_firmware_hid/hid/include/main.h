@@ -91,6 +91,7 @@
 #include "debug.h"
 #include "tick.h"
 #include "usb.h"
-#include "hid_keys.h"
 #include "led.h"
 #include "encoder.h"
+
+#include "hid_keys.h"

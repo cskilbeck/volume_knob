@@ -10,8 +10,6 @@ void usb_device_endpoint_config();
 void usb_device_int_config();
 void usb_wait_for_connection();
 
-void usb_set_keystate(uint16_t key);
-
 extern volatile __idata uint8 usb_idle;
 extern volatile __idata uint8 usb_active;
 

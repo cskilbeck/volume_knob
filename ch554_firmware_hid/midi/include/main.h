@@ -1,17 +1,18 @@
+//////////////////////////////////////////////////////////////////////
+
 #pragma once
 
 #pragma disable_warning 110
 #pragma disable_warning 154
 
 //////////////////////////////////////////////////////////////////////
-// device type config
 
 #define DEVICE_ORIGINAL 0
 #define DEVICE_DIRECT 1
 #define DEVICE_DEVKIT 2
 
 #if !defined(DEVICE)
-#error DEVICE is not defined?
+#error Please define DEVICE
 
 // uncomment one of these for VSCode section dimming thing
 #define DEVICE DEVICE_DEVKIT
@@ -42,7 +43,7 @@
 #if defined(DEBUG)
 #define BOOTLOADER_BUTTON_DELAY_MS 1000
 #else
-#define BOOTLOADER_BUTTON_DELAY_MS 5000
+#define BOOTLOADER_BUTTON_DELAY_MS 30000
 #endif
 
 //////////////////////////////////////////////////////////////////////
@@ -57,11 +58,14 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////
-// USB String descriptor stuff
 
-#define SERIAL_LEN 8    // 8 chars for 32 bit hex serial # from chip_id 01234567
+#define SERIAL_LEN 8    // 01234567
 
-#define PRODUCT_NAME "Tiny Volume Knob 00000000"    // last 8 chars filled in with serial #
+#define PRODUCT_NAME "Tiny Midi Knob 00000000"
+
+#define FIRMWARE_CURRENT_VERSION 0x010000
+
+#define FIRMWARE_VERSION ((FIRMWARE_CURRENT_VERSION << 8) | DEVICE)
 
 //////////////////////////////////////////////////////////////////////
 
@@ -72,17 +76,14 @@
 
 #if defined(DEBUG)
 #include <stdio.h>
+#define printf printf_fast
 #else
 #define printf(...) NOP_MACRO
 #define puts(...) NOP_MACRO
 #endif
 
-//////////////////////////////////////////////////////////////////////
-
 #include "ch554.h"
 #include "ch554_usb.h"
-
-//////////////////////////////////////////////////////////////////////
 
 #include "types.h"
 #include "util.h"
@@ -91,6 +92,8 @@
 #include "debug.h"
 #include "tick.h"
 #include "usb.h"
-#include "hid_keys.h"
 #include "led.h"
 #include "encoder.h"
+
+#include "config.h"
+#include "midi.h"

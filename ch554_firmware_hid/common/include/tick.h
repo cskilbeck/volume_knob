@@ -1,7 +1,6 @@
-#include "main.h"
+#pragma once
 
 //////////////////////////////////////////////////////////////////////
 
-#define XDATA __xdata
-
-#include "xdata_common.h"
+void tick_init();
+void tick_wait(uint16 n);
