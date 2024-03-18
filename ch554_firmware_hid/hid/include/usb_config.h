@@ -273,7 +273,8 @@ __code const usb_descriptor_t config_descs[] = {
 
 __code const usb_descriptor_t report_descs[] = {
     DESCRIPTOR(keyboard_rep_desc),    // keyboard HID report
-    DESCRIPTOR(media_rep_desc)        // media key HID report
+    DESCRIPTOR(media_rep_desc),       // media key HID report
+    DESCRIPTOR(custom_rep_desc)       // custom report
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -291,6 +292,6 @@ __code const usb_descriptor_t string_descs[] = {
 
 //////////////////////////////////////////////////////////////////////
 
-#define NUM_CONFIG_DESCS COUNTOF(config_descs)
-#define NUM_REPORT_DESCS COUNTOF(report_descs)
-#define NUM_STRING_DESCS COUNTOF(string_descs)
+#define NUM_CONFIG_DESCS ARRAY_COUNT(config_descs)
+#define NUM_REPORT_DESCS 3 //ARRAY_COUNT(report_descs)
+#define NUM_STRING_DESCS ARRAY_COUNT(string_descs)

@@ -121,7 +121,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
 
                         case USB_DESCR_TYP_REPORT: {
                             len = 0xff;
-#if NUM_REPORT_DESCS != 0
+#if NUM_REPORT_DESCS > 0
                             uint8 desc = usb_setup->wIndexL;    // !! Index!? I guess...
                             if(desc < NUM_REPORT_DESCS) {
                                 usb.current_descriptor = report_descs[desc].p;

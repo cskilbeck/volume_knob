@@ -142,6 +142,6 @@ __code const usb_descriptor_t string_descs[] = {
 
 //////////////////////////////////////////////////////////////////////
 
-#define NUM_CONFIG_DESCS COUNTOF(config_descs)
+#define NUM_CONFIG_DESCS ARRAY_COUNT(config_descs)
 #define NUM_REPORT_DESCS 0
-#define NUM_STRING_DESCS COUNTOF(string_descs)
+#define NUM_STRING_DESCS ARRAY_COUNT(string_descs)

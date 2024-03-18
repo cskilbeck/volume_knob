@@ -55,6 +55,7 @@ clean:
 .DEFAULT_GOAL := build
 
 build: $(TARGET).bin
+	@echo $(BIN)$(PROJECT).bin is up to date
 
 print-% : ; @echo $* = $($*)
 

@@ -17,6 +17,8 @@ XDATA uint8 usb_endpoint_3_buffer[USB_PACKET_SIZE * 2];
 XDATA uint8 serial_number_string[(2 + 2 * SERIAL_LEN)];                     // e.g "012345678"
 XDATA uint8 product_name_string[(2 + 2 * ((sizeof(PRODUCT_NAME) - 1)))];    // e.g. "Tiny USB Knob 012345678"
 
+XDATA struct usb_data usb;
+
 #include "xdata_extra.h"
 
 #undef XDATA

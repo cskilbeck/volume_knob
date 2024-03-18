@@ -103,7 +103,7 @@ void set_keystate(uint16 key)
         usb_endpoint_1_buffer[5] = 0x00;
         usb_endpoint_1_buffer[6] = 0x00;
         usb_endpoint_1_buffer[7] = 0x00;
-        usb_idle &= ~1;
+        usb.idle &= ~1;
         UEP1_CTRL = (UEP1_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_ACK;
         UEP1_T_LEN = 8;
     } else {
@@ -111,7 +111,7 @@ void set_keystate(uint16 key)
         usb_endpoint_2_buffer[0] = 0x02;    // REPORT ID
         usb_endpoint_2_buffer[1] = key & 0xff;
         usb_endpoint_2_buffer[2] = key >> 8;
-        usb_idle &= ~2;
+        usb.idle &= ~2;
         UEP2_CTRL = (UEP2_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_ACK;
         UEP2_T_LEN = 3;
     }
@@ -252,7 +252,7 @@ void main()
         }
 
         // send key on/off to usb hid if there are some waiting to be sent
-        if((usb_idle & 3) == 3 && !queue_empty()) {
+        if((usb.idle & 3) == 3 && !queue_empty()) {
 
             set_keystate(queue_get());
         }
