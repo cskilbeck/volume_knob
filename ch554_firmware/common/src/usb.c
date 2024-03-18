@@ -388,6 +388,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
         // Hang up
         if(USB_MIS_ST & bUMS_SUSPEND) {
             puts("USB Suspend");
+            
             while(XBUS_AUX & bUART0_TX) {    // Wait for msg to send
             }
             SAFE_MOD = 0x55;

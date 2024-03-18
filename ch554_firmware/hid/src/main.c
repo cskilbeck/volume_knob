@@ -95,7 +95,6 @@ void do_press(uint16 k)
 void set_keystate(uint16 key)
 {
     if(!IS_MEDIA_KEY(key)) {
-        printf("KEY: %d\n", key & 0xff);
         usb_endpoint_1_tx_buffer[0] = 0x00;    // keyboard modifier
         usb_endpoint_1_tx_buffer[1] = 0x00;
         usb_endpoint_1_tx_buffer[2] = key;    // keyboard key
@@ -108,7 +107,6 @@ void set_keystate(uint16 key)
         UEP1_CTRL = (UEP1_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_ACK;
         UEP1_T_LEN = 8;
     } else {
-        printf("MEDIA: %d\n", key & 0xff);
         key &= 0x7fff;
         usb_endpoint_2_tx_buffer[0] = 0x02;    // REPORT ID
         usb_endpoint_2_tx_buffer[1] = key & 0xff;

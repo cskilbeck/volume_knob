@@ -26,8 +26,7 @@ enum
     sysex_response_unused_01 = 0x01,
     sysex_response_device_id = 0x02,
     sysex_response_get_flash = 0x03,
-    sysex_response_set_flash_ack = 0x04,
-    sysex_response_firmware_version = 0x05
+    sysex_response_set_flash_ack = 0x04
 };
 
 //////////////////////////////////////////////////////////////////////

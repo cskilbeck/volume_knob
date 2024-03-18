@@ -7,5 +7,10 @@
 			"path": "../common"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"files.associations": {
+			"*.cst": "sdc",
+			"stdbool.h": "c"
+		}
+	}
 }
