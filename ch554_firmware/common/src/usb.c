@@ -31,53 +31,6 @@ void usb_isr(void) __interrupt(INT_NO_USB)
 
         switch(USB_INT_ST & (MASK_UIS_TOKEN | MASK_UIS_ENDP)) {
 
-        // ENDPOINT 1 transmit to host complete
-        case UIS_TOKEN_IN | 1:
-            UEP1_T_LEN = 0;
-            UEP1_CTRL = (UEP1_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_NAK;
-            usb.idle |= 1;
-            break;
-
-        // ENDPOINT 2 transmit to host complete
-        case UIS_TOKEN_IN | 2:
-            UEP2_T_LEN = 0;
-            UEP2_CTRL = (UEP2_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_NAK;
-            usb.idle |= 2;
-            break;
-
-        // ENDPOINT 3 transmit to host complete
-        case UIS_TOKEN_IN | 3:
-            UEP3_T_LEN = 0;
-            UEP3_CTRL = (UEP3_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_NAK;
-            usb.idle |= 4;
-            break;
-
-        // ENDPOINT 1 receive from host complete
-        case UIS_TOKEN_OUT | 1:
-            if(U_TOG_OK) {
-                puts("RECV 1");
-                usb.recv_len[1] = USB_RX_LEN;
-                UEP1_CTRL = (UEP1_CTRL & ~MASK_UEP_R_RES) | UEP_R_RES_NAK;
-            }
-            break;
-
-        // ENDPOINT 2 receive from host complete
-        case UIS_TOKEN_OUT | 2:
-            if(U_TOG_OK) {
-                usb.recv_len[2] = USB_RX_LEN;
-                UEP2_CTRL = (UEP2_CTRL & ~MASK_UEP_R_RES) | UEP_R_RES_NAK;
-            }
-            break;
-
-        // ENDPOINT 3 receive from host complete
-        case UIS_TOKEN_OUT | 3:
-            if(U_TOG_OK) {
-                puts("RECV 3");
-                usb.recv_len[3] = USB_RX_LEN;
-                UEP3_CTRL = (UEP3_CTRL & ~MASK_UEP_R_RES) | UEP_R_RES_NAK;
-            }
-            break;
-
         // setup request on interface 0
         case UIS_TOKEN_SETUP | 0:
 
@@ -121,7 +74,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
 
                         case USB_DESCR_TYP_REPORT: {
                             len = 0xff;
-#if NUM_REPORT_DESCS > 0
+#if defined(NUM_REPORT_DESCS)
                             uint8 desc = usb_setup->wIndexL;    // !! Index!? I guess...
                             if(desc < NUM_REPORT_DESCS) {
                                 usb.current_descriptor = report_descs[desc].p;
@@ -154,6 +107,8 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                         memcpy(usb_endpoint_0_buffer, usb.current_descriptor, len);
                         usb.setup_len -= len;
                         usb.current_descriptor += len;
+
+                        // remainder will get sent in subsequent packets
                         break;
 
                     case USB_SET_ADDRESS:
@@ -325,8 +280,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
             }
             break;
 
-            // endpoint0 IN - i.e. stuff was sent
-
+        // ENDPOINT 0 transmit to host complete
         case UIS_TOKEN_IN | 0:
 
             // what were we doing to cause data to be sent?
@@ -356,11 +310,55 @@ void usb_isr(void) __interrupt(INT_NO_USB)
             }
             break;
 
-            // endpoint 0 OUT
-
+        // ENDPOINT 0 receive from host complete, just ACK it
         case UIS_TOKEN_OUT | 0:
             UEP0_T_LEN = 0;
             UEP0_CTRL = UEP_R_RES_ACK | UEP_T_RES_ACK;
+            break;
+
+        // ENDPOINT 1 transmit to host complete
+        case UIS_TOKEN_IN | 1:
+            UEP1_T_LEN = 0;
+            UEP1_CTRL = (UEP1_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_NAK;
+            usb.idle |= 1;
+            break;
+
+        // ENDPOINT 1 receive from host complete
+        case UIS_TOKEN_OUT | 1:
+            if(U_TOG_OK) {
+                usb.recv_len[1] = USB_RX_LEN;
+                UEP1_CTRL = (UEP1_CTRL & ~MASK_UEP_R_RES) | UEP_R_RES_NAK;
+            }
+            break;
+
+        // ENDPOINT 2 transmit to host complete
+        case UIS_TOKEN_IN | 2:
+            UEP2_T_LEN = 0;
+            UEP2_CTRL = (UEP2_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_NAK;
+            usb.idle |= 2;
+            break;
+
+        // ENDPOINT 2 receive from host complete
+        case UIS_TOKEN_OUT | 2:
+            if(U_TOG_OK) {
+                usb.recv_len[2] = USB_RX_LEN;
+                UEP2_CTRL = (UEP2_CTRL & ~MASK_UEP_R_RES) | UEP_R_RES_NAK;
+            }
+            break;
+
+        // ENDPOINT 3 transmit to host complete
+        case UIS_TOKEN_IN | 3:
+            UEP3_T_LEN = 0;
+            UEP3_CTRL = (UEP3_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_NAK;
+            usb.idle |= 4;
+            break;
+
+        // ENDPOINT 3 receive from host complete
+        case UIS_TOKEN_OUT | 3:
+            if(U_TOG_OK) {
+                usb.recv_len[3] = USB_RX_LEN;
+                UEP3_CTRL = (UEP3_CTRL & ~MASK_UEP_R_RES) | UEP_R_RES_NAK;
+            }
             break;
 
         default:
@@ -371,7 +369,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
 
     // bus reset
     if(UIF_BUS_RST) {
-        puts("reset");
+        puts("USB Reset");
         UEP0_CTRL = UEP_R_RES_ACK | UEP_T_RES_NAK;
         UEP1_CTRL = bUEP_AUTO_TOG | UEP_T_RES_NAK;
         UEP2_CTRL = bUEP_AUTO_TOG | UEP_T_RES_NAK | UEP_R_RES_ACK;
@@ -389,7 +387,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
         UIF_SUSPEND = 0;
         // Hang up
         if(USB_MIS_ST & bUMS_SUSPEND) {
-            puts("suspend");
+            puts("USB Suspend");
             while(XBUS_AUX & bUART0_TX) {    // Wait for msg to send
             }
             SAFE_MOD = 0x55;
@@ -450,9 +448,9 @@ void usb_device_endpoint_config()
     UEP3_T_LEN = 0;
 
     UEP0_DMA = (uint16)usb_endpoint_0_buffer;
-    UEP1_DMA = (uint16)usb_endpoint_1_buffer;
-    UEP2_DMA = (uint16)usb_endpoint_2_buffer;
-    UEP3_DMA = (uint16)usb_endpoint_3_buffer;
+    UEP1_DMA = (uint16)usb_endpoint_1_rx_buffer;
+    UEP2_DMA = (uint16)usb_endpoint_2_rx_buffer;
+    UEP3_DMA = (uint16)usb_endpoint_3_rx_buffer;
 
     UEP0_CTRL = UEP_R_RES_ACK | UEP_T_RES_NAK;
 
@@ -460,7 +458,8 @@ void usb_device_endpoint_config()
     UEP2_CTRL = bUEP_AUTO_TOG | UEP_T_RES_NAK;
     UEP3_CTRL = bUEP_AUTO_TOG | UEP_T_RES_NAK;
 
-    UEP4_1_MOD = (uint8)(~(bUEP4_RX_EN | bUEP4_TX_EN | bUEP1_RX_EN | bUEP1_BUF_MOD) | bUEP1_TX_EN);
+    // EP4 disabled, EP1,2,3 enabled for TX,RX no double buffering
+    UEP4_1_MOD = (uint8)(~(bUEP4_RX_EN | bUEP4_TX_EN | bUEP1_BUF_MOD) | bUEP1_RX_EN | bUEP1_TX_EN);
     UEP2_3_MOD = (uint8)(~(bUEP3_BUF_MOD | bUEP2_BUF_MOD) | bUEP2_RX_EN | bUEP2_TX_EN | bUEP3_RX_EN | bUEP3_TX_EN);
 
     usb.recv_len[0] = 0;

@@ -152,7 +152,7 @@ __code const uint8 hid_config_desc[] = {
     0x01,                    // bInterfaceProtocol: Keyboard
     0x04,                    // iInterface
 
-    // HID
+    // HID KEYBOARD
     0x09,                                // bLength
     USB_DESCR_TYP_HID,                   // bDescriptorType: HID
     0x11,                                // bcdHID(1)
@@ -183,7 +183,7 @@ __code const uint8 hid_config_desc[] = {
     0x01,                    // bInterfaceProtocol: Keyboard
     0x05,                    // iInterface
 
-    // HID
+    // HID MEDIA CONTROL DEVICE
     0x09,                             // bLength
     USB_DESCR_TYP_HID,                // bDescriptorType: HID
     0x11,                             // bcdHID(1)
@@ -293,5 +293,5 @@ __code const usb_descriptor_t string_descs[] = {
 //////////////////////////////////////////////////////////////////////
 
 #define NUM_CONFIG_DESCS ARRAY_COUNT(config_descs)
-#define NUM_REPORT_DESCS 3 //ARRAY_COUNT(report_descs)
+#define NUM_REPORT_DESCS ARRAY_COUNT(report_descs)
 #define NUM_STRING_DESCS ARRAY_COUNT(string_descs)

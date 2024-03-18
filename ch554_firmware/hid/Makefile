@@ -29,6 +29,10 @@ PROJECT = hid_knob_$(DEVICE_TYPE)
 
 build: check-env
 
+flash: check-env
+
+clean: check-env
+
 check-env:
 ifndef DEVICE_TYPE
 	$(error DEVICE_TYPE is undefined)

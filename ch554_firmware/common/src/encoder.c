@@ -4,8 +4,8 @@
 
 static __code uint8 const encoder_valid_bits[16] = { 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0 };
 
-static __idata uint8 encoder_state = 0;
-static __idata uint8 encoder_store = 0;
+static uint8 encoder_state = 0;
+static uint8 encoder_store = 0;
 
 //////////////////////////////////////////////////////////////////////
 

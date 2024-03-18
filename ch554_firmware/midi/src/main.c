@@ -81,8 +81,8 @@ void send_button_cc(which_value_t val)
 
 //////////////////////////////////////////////////////////////////////
 
-static __idata int16 rotation_velocity = 0;
-static __idata uint8 deceleration_ticks = 0;
+static int16 rotation_velocity = 0;
+static uint8 deceleration_ticks = 0;
 
 void do_absolute_rotation(int16 offset)
 {

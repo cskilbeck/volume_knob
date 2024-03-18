@@ -61,7 +61,7 @@ enum midi_packet_header_t
     midi_packet_end_3 = 0x7,    // SysEx ends with following three bytes.
 };
 
-extern __idata uint8 queue_size;
+extern uint8 queue_size;
 
 //////////////////////////////////////////////////////////////////////
 // a queue of MIDI packets

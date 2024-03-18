@@ -8,10 +8,12 @@
 XDATA uint8 usb_endpoint_0_buffer[DEFAULT_ENDP0_SIZE];
 
 // User endpoint buffers
-XDATA uint8 usb_endpoint_1_buffer[USB_PACKET_SIZE * 2];
-XDATA uint8 usb_endpoint_2_buffer[USB_PACKET_SIZE * 2];
-XDATA uint8 usb_endpoint_3_buffer[USB_PACKET_SIZE * 2];
-// XDATA uint8 usb_endpoint_4_buffer[USB_PACKET_SIZE * 2];
+XDATA uint8 usb_endpoint_1_rx_buffer[USB_PACKET_SIZE];
+XDATA uint8 usb_endpoint_1_tx_buffer[USB_PACKET_SIZE];
+XDATA uint8 usb_endpoint_2_rx_buffer[USB_PACKET_SIZE];
+XDATA uint8 usb_endpoint_2_tx_buffer[USB_PACKET_SIZE];
+XDATA uint8 usb_endpoint_3_rx_buffer[USB_PACKET_SIZE];
+XDATA uint8 usb_endpoint_3_tx_buffer[USB_PACKET_SIZE];
 
 // serial number stuff
 XDATA uint8 serial_number_string[(2 + 2 * SERIAL_LEN)];                     // e.g "012345678"

@@ -95,22 +95,24 @@ void do_press(uint16 k)
 void set_keystate(uint16 key)
 {
     if(!IS_MEDIA_KEY(key)) {
-        usb_endpoint_1_buffer[0] = 0x00;    // keyboard modifier
-        usb_endpoint_1_buffer[1] = 0x00;
-        usb_endpoint_1_buffer[2] = key;    // keyboard key
-        usb_endpoint_1_buffer[3] = 0x00;
-        usb_endpoint_1_buffer[4] = 0x00;
-        usb_endpoint_1_buffer[5] = 0x00;
-        usb_endpoint_1_buffer[6] = 0x00;
-        usb_endpoint_1_buffer[7] = 0x00;
+        printf("KEY: %d\n", key & 0xff);
+        usb_endpoint_1_tx_buffer[0] = 0x00;    // keyboard modifier
+        usb_endpoint_1_tx_buffer[1] = 0x00;
+        usb_endpoint_1_tx_buffer[2] = key;    // keyboard key
+        usb_endpoint_1_tx_buffer[3] = 0x00;
+        usb_endpoint_1_tx_buffer[4] = 0x00;
+        usb_endpoint_1_tx_buffer[5] = 0x00;
+        usb_endpoint_1_tx_buffer[6] = 0x00;
+        usb_endpoint_1_tx_buffer[7] = 0x00;
         usb.idle &= ~1;
         UEP1_CTRL = (UEP1_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_ACK;
         UEP1_T_LEN = 8;
     } else {
+        printf("MEDIA: %d\n", key & 0xff);
         key &= 0x7fff;
-        usb_endpoint_2_buffer[0] = 0x02;    // REPORT ID
-        usb_endpoint_2_buffer[1] = key & 0xff;
-        usb_endpoint_2_buffer[2] = key >> 8;
+        usb_endpoint_2_tx_buffer[0] = 0x02;    // REPORT ID
+        usb_endpoint_2_tx_buffer[1] = key & 0xff;
+        usb_endpoint_2_tx_buffer[2] = key >> 8;
         usb.idle &= ~2;
         UEP2_CTRL = (UEP2_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_ACK;
         UEP2_T_LEN = 3;

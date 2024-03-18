@@ -7,5 +7,9 @@
 			"path": "../common"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"explorer.excludeGitIgnore": true,
+		"search.useIgnoreFiles": true,
+		"search.useParentIgnoreFiles": true
+	}
 }

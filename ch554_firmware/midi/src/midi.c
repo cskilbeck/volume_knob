@@ -2,14 +2,14 @@
 
 #include "main.h"
 
-__idata uint8 queue_size = 0;
+uint8 queue_size = 0;
 
-static __idata uint8 queue_head = 0;
-static __idata uint8 device_id = 0;
+static uint8 queue_head = 0;
+static uint8 device_id = 0;
 static uint8 *midi_send_ptr;
-static __idata uint8 midi_send_remain = 0;
-static __idata uint8 sysex_recv_length = 0;
-static __idata uint8 sysex_recv_packet_offset = 0;
+static uint8 midi_send_remain = 0;
+static uint8 sysex_recv_length = 0;
+static uint8 sysex_recv_packet_offset = 0;
 
 //////////////////////////////////////////////////////////////////////
 // expand some bytes into an array of 7 bit values
@@ -111,8 +111,6 @@ void *init_sysex_response(uint8 code)
 //////////////////////////////////////////////////////////////////////
 // send the next waiting packet if there is one and the usb is ready
 
-#define endpoint_2_out_buffer (usb_endpoint_2_buffer + USB_PACKET_SIZE)
-
 void midi_flush_queue()
 {
     if((usb.idle & 2) == 0) {
@@ -120,12 +118,12 @@ void midi_flush_queue()
     }
 
     uint8 *dst;
-    for(dst = endpoint_2_out_buffer; !queue_empty() && dst < (endpoint_2_out_buffer + MAX_PACKET_SIZE); dst += 4) {
+    for(dst = usb_endpoint_2_tx_buffer; !queue_empty() && dst < (usb_endpoint_2_tx_buffer + MAX_PACKET_SIZE); dst += 4) {
         queue_get_at(dst);
     }
-    if(dst != endpoint_2_out_buffer) {
-        hexdump("send", endpoint_2_out_buffer, dst - endpoint_2_out_buffer);
-        UEP2_T_LEN = dst - endpoint_2_out_buffer;
+    if(dst != usb_endpoint_2_tx_buffer) {
+        hexdump("send", usb_endpoint_2_tx_buffer, dst - usb_endpoint_2_tx_buffer);
+        UEP2_T_LEN = dst - usb_endpoint_2_tx_buffer;
         UEP2_CTRL = UEP2_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK;    // Answer ACK
         usb.idle &= ~2;
     }
@@ -253,7 +251,7 @@ static void sysex_parse_add(uint8 length)
     if(length > (sizeof(midi_recv_buffer) - sysex_recv_length)) {
         sysex_recv_length = 0;
     } else {
-        memcpy(midi_recv_buffer + sysex_recv_length, usb_endpoint_2_buffer + sysex_recv_packet_offset + 1, length);
+        memcpy(midi_recv_buffer + sysex_recv_length, usb_endpoint_2_rx_buffer + sysex_recv_packet_offset + 1, length);
         sysex_recv_length += length;
     }
 }
@@ -262,12 +260,12 @@ static void sysex_parse_add(uint8 length)
 
 void process_midi_packet_in(uint8 length)
 {
-    hexdump("midi_in", usb_endpoint_2_buffer, length);
+    hexdump("midi_in", usb_endpoint_2_rx_buffer, length);
 
     sysex_recv_packet_offset = 0;
 
     while(sysex_recv_packet_offset < length) {
-        uint8 cmd = usb_endpoint_2_buffer[sysex_recv_packet_offset];
+        uint8 cmd = usb_endpoint_2_rx_buffer[sysex_recv_packet_offset];
 
         switch(cmd) {
 

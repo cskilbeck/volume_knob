@@ -1,7 +1,7 @@
 CC = sdcc
 OBJCOPY = objcopy
 PACK_HEX = packihx
-WCHISP = wchisptool
+WCHISP = wchisp
 
 FREQ_SYS ?= 12000000
 XRAM_SIZE ?= 0x0400
@@ -38,13 +38,9 @@ $(OBJ)%.rel : %.c
 
 $(REL_FILES): $(MAKEFILE_LIST) | $(OBJ)
 
-$(TARGET).ihx: $(REL_FILES) $(SOURCES) | $(BIN)
-	@echo Link...
+$(TARGET).bin: $(REL_FILES) $(SOURCES) | $(BIN)
+	@echo Link
 	@$(CC) $(REL_FILES) $(LFLAGS) -o $(TARGET).ihx
-
-$(TARGET).bin: $(TARGET).ihx
-#	@echo Package $@
-	@$(PACK_HEX) $(TARGET).ihx > $(TARGET).hex 2> >(grep -v -e ': OK\.' 1>&2)
 	@$(OBJCOPY) -I ihex -O binary $(TARGET).ihx $(TARGET).bin
 
 clean:
@@ -54,8 +50,11 @@ clean:
 
 .DEFAULT_GOAL := build
 
+flash: $(TARGET).bin
+	$(WCHISP) flash $(TARGET).bin
+
 build: $(TARGET).bin
-	@echo $(BIN)$(PROJECT).bin is up to date
+	@echo $(notdir $<) built
 
 print-% : ; @echo $* = $($*)
 

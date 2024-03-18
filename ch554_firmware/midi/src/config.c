@@ -2,8 +2,8 @@
 
 #include "main.h"
 
-static __idata uint32 current_save_index = 1;
-static __idata uint8 current_save_offset = 0;
+static uint32 current_save_index = 1;
+static uint8 current_save_offset = 0;
 
 // should these be in here or in main.c?
 static __code uint8 const accel_values[2][4] = { { 0, 1, 2, 3 }, { 0, 20, 40, 80 } };
@@ -103,7 +103,7 @@ bool load_config()
 
         if(save_buffer_check_crc(&save_buffer)) {    // and it's valid
 
-            printf("Load config from offset %d (%02x)\n", offset_found, offset_found);
+            printf("Load config from offset %d (0x%x)\n", offset_found, offset_found);
 
             // prepare for next save
             current_save_index = highest_index;
@@ -130,7 +130,7 @@ bool save_config()
     current_save_index += 1;
     save_buffer.index = current_save_index;
     save_buffer_set_crc(&save_buffer);
-    printf("save config to offset %d (%02x)\n", current_save_offset, current_save_offset);
+    printf("save config to offset %d (0x%x)\n", current_save_offset, current_save_offset);
     printf("save index %ld\n", current_save_index);
     write_flash_data(current_save_offset, FLASH_SLOT_SIZE, (uint8 *)&save_buffer);
     return true;
