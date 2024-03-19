@@ -11,6 +11,7 @@
 		"files.associations": {
 			"*.cst": "sdc",
 			"stdbool.h": "c"
-		}
+		},
+		"explorer.excludeGitIgnore": true
 	}
 }

@@ -141,6 +141,7 @@ __code const usb_descriptor_t string_descs[] = {
 };
 
 //////////////////////////////////////////////////////////////////////
+// undef NUM_XXX_DESCS if there aren't any of that type
 
 #define NUM_CONFIG_DESCS ARRAY_COUNT(config_descs)
 #undef NUM_REPORT_DESCS

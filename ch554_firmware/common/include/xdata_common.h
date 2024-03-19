@@ -15,7 +15,7 @@ XDATA uint8 usb_endpoint_2_tx_buffer[USB_PACKET_SIZE];
 XDATA uint8 usb_endpoint_3_rx_buffer[USB_PACKET_SIZE];
 XDATA uint8 usb_endpoint_3_tx_buffer[USB_PACKET_SIZE];
 
-// serial number stuff
+// serial number stuff - see usb_init_strings()
 XDATA uint8 serial_number_string[(2 + 2 * SERIAL_LEN)];                     // e.g "012345678"
 XDATA uint8 product_name_string[(2 + 2 * ((sizeof(PRODUCT_NAME) - 1)))];    // e.g. "Tiny USB Knob 012345678"
 

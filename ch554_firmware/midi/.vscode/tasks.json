@@ -98,6 +98,44 @@
             "runOptions": {
                 "instanceLimit": 999
             }
+        },
+        {
+            "label": "make flash",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "flash",
+                "DEVICE_TYPE=${input:device_type}"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "problemMatcher": [
+                {
+                    "owner": "make",
+                    "fileLocation": [
+                        "relative",
+                        "${workspaceFolder}"
+                    ],
+                    "pattern": {
+                        "regexp": "^(.*):(.*):\\s*(.*)\\s*(.*):(.*)$",
+                        "file": 1,
+                        "line": 2,
+                        "severity": 3,
+                        "message": 5
+                    }
+                }
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
         }
     ]
 }

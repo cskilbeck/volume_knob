@@ -2,5 +2,10 @@
     "C_Cpp.errorSquiggles": "disabled",
     "C_Cpp.default.includePath": [
         "../common/include",
-    ]
+    ],
+    "explorer.excludeGitIgnore": true,
+    "search.useIgnoreFiles": true,
+    "files.exclude": {
+        "*.code-workspace": true
+    }
 }
