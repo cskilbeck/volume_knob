@@ -122,10 +122,9 @@ void midi_flush_queue()
         queue_get_at(dst);
     }
     if(dst != usb_endpoint_2_tx_buffer) {
-        hexdump("send", usb_endpoint_2_tx_buffer, dst - usb_endpoint_2_tx_buffer);
-        UEP2_T_LEN = dst - usb_endpoint_2_tx_buffer;
-        UEP2_CTRL = UEP2_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK;    // Answer ACK
-        usb.idle &= ~2;
+        uint8 len = dst - usb_endpoint_2_tx_buffer;
+        hexdump("send", usb_endpoint_2_tx_buffer, len);
+        usb_send(endpoint_2, len);
     }
 }
 

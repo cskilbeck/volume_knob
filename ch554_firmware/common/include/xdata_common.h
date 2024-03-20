@@ -1,3 +1,5 @@
+// DO NOT PUT #pragma once in here!
+
 //////////////////////////////////////////////////////////////////////
 
 #if !defined(XDATA)
@@ -20,6 +22,8 @@ XDATA uint8 serial_number_string[(2 + 2 * SERIAL_LEN)];                     // e
 XDATA uint8 product_name_string[(2 + 2 * ((sizeof(PRODUCT_NAME) - 1)))];    // e.g. "Tiny USB Knob 012345678"
 
 XDATA struct usb_data usb;
+
+XDATA struct save_buffer save_buffer;
 
 #include "xdata_extra.h"
 

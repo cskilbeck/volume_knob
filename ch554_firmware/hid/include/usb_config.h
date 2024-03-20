@@ -6,6 +6,8 @@
 #define USB_VID 0x16D0
 #define USB_PID 0x114B
 
+#define CUSTOM_PACKET_SIZE 32
+
 //////////////////////////////////////////////////////////////////////
 
 // uint8 media_key_report[3] = {
@@ -93,10 +95,10 @@ __code const uint8 custom_rep_desc[] = {
     0x15, 0x00,          //   LOGICAL_MINIMUM 0
     0x25, 0xff,          //   LOGICAL_MAXIMUM 255
     0x75, 0x08,          //   REPORT_SIZE 8 bits
-    0x95, 64,            //   REPORT_COUNT 64
+    0x95, 32,            //   REPORT_COUNT 32
     0x09, 0x01,          //   USAGE (Vendor Usage 1)
     0x81, 0x02,          //   INPUT (Data,Var,Abs)
-    0x95, 64,            //   REPORT_COUNT 64
+    0x95, 32,            //   REPORT_COUNT 32
     0x09, 0x01,          //   USAGE (Vendor Usage 1)
     0x91, 0x02,          //   OUTPUT (Data,Var,Abs)
     0xc0                 // END_COLLECTION
@@ -212,7 +214,7 @@ __code const uint8 hid_config_desc[] = {
     USB_DEV_CLASS_HID,       // bInterfaceClass
     0x00,                    // bInterfaceSubClass: none (no boot)
     0x00,                    // bInterfaceProtocol: none
-    0x07,                    // iInterface
+    0x02,                    // iInterface
 
     // HID
     0x09,                              // bLength
@@ -226,22 +228,22 @@ __code const uint8 hid_config_desc[] = {
     sizeof(custom_rep_desc) >> 8,      // wDescriptorLength (2)
 
     // Endpoint
-    0x07,                      // bLength
-    USB_DESCR_TYP_ENDP,        // bDescriptorType: ENDPOINT
-    0x83,                      // bEndpointAddress: IN/Endpoint3
-    USB_ENDP_TYPE_INTER,       // bmAttributes: Interrupt
-    USB_PACKET_SIZE & 0xff,    // wMaxPacketSize (1)
-    USB_PACKET_SIZE >> 8,      // wMaxPacketSize (2)
-    0x02,                      // bInterval
+    0x07,                         // bLength
+    USB_DESCR_TYP_ENDP,           // bDescriptorType: ENDPOINT
+    0x83,                         // bEndpointAddress: IN/Endpoint3
+    USB_ENDP_TYPE_INTER,          // bmAttributes: Interrupt
+    CUSTOM_PACKET_SIZE & 0xff,    // wMaxPacketSize (1)
+    CUSTOM_PACKET_SIZE >> 8,      // wMaxPacketSize (2)
+    0x02,                         // bInterval
 
     // Endpoint
-    0x07,                      // bLength
-    USB_DESCR_TYP_ENDP,        // bDescriptorType: ENDPOINT
-    0x03,                      // bEndpointAddress: OUT/Endpoint3
-    USB_ENDP_TYPE_INTER,       // bmAttributes: Interrupt
-    USB_PACKET_SIZE & 0xff,    // wMaxPacketSize (1)
-    USB_PACKET_SIZE >> 8,      // wMaxPacketSize (2)
-    0x02                       // bInterval
+    0x07,                         // bLength
+    USB_DESCR_TYP_ENDP,           // bDescriptorType: ENDPOINT
+    0x03,                         // bEndpointAddress: OUT/Endpoint3
+    USB_ENDP_TYPE_INTER,          // bmAttributes: Interrupt
+    CUSTOM_PACKET_SIZE & 0xff,    // wMaxPacketSize (1)
+    CUSTOM_PACKET_SIZE >> 8,      // wMaxPacketSize (2)
+    0x02                          // bInterval
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -249,10 +251,10 @@ __code const uint8 hid_config_desc[] = {
 
 #define LANGUAGE_DESC 0x0409
 #define MANUFACTURER_STRING 'T', 'i', 'n', 'y', ' ', 'L', 'i', 't', 't', 'l', 'e', ' ', 'T', 'h', 'i', 'n', 'g', 's'
-#define KEYBOARD_STRING 'K', 'b', 'd'
-#define MEDIA_STRING 'M', 'e', 'd', 'i', 'a'
+#define KEYBOARD_STRING 'T', 'i', 'n', 'y', ' ', 'U', 'S', 'B', ' ', 'K', 'n', 'o', 'b'
+#define MEDIA_STRING 'T', 'i', 'n', 'y', ' ', 'U', 'S', 'B', ' ', 'K', 'n', 'o', 'b'
 #define CONFIG_STRING 'C', 'o', 'n', 'f', 'i', 'g'
-#define CUSTOM_STRING 'C', 'u', 's', 't', 'o', 'm'
+#define CUSTOM_STRING 'T', 'i', 'n', 'y', ' ', 'U', 'S', 'B', ' ', 'K', 'n', 'o', 'b'
 
 #define STR_HDR(x) (sizeof(x) | (USB_DESCR_TYP_STRING << 8))
 

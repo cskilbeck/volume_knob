@@ -63,6 +63,10 @@
 
 #define PRODUCT_NAME "Tiny Volume Knob 00000000"    // last 8 chars filled in with serial #
 
+#define FIRMWARE_CURRENT_VERSION 0x010000
+
+#define FIRMWARE_VERSION ((FIRMWARE_CURRENT_VERSION << 8) | DEVICE)
+
 //////////////////////////////////////////////////////////////////////
 
 #include <stdint.h>
@@ -93,5 +97,7 @@
 #include "usb.h"
 #include "led.h"
 #include "encoder.h"
+#include "flash.h"
 
+#include "config.h"
 #include "hid_keys.h"

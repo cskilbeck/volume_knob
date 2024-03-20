@@ -6,6 +6,5 @@
 
 XDATA uint8 midi_send_buffer[48];
 XDATA uint8 midi_recv_buffer[48];
-XDATA struct save_buffer save_buffer;
 XDATA uint8 queue_buffer[MIDI_QUEUE_LEN * MIDI_PACKET_SIZE];
 XDATA struct config config;

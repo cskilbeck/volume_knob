@@ -21,8 +21,33 @@
 
 //////////////////////////////////////////////////////////////////////
 
-#define MEDIA_KEY(x) ((x) | 0x8000)
-#define NORMAL_KEY(x) (x)
+enum hid_custom_command
+{
+    // send the config to the web ui
+    hcc_get_config = 1,
+
+    // send the firmware version to the web ui
+    hcc_get_firmware_version = 2,
+
+    // flash the led please
+    hcc_flash_led = 3,
+
+    // here's a new config
+    hcc_set_config = 4,
+
+    // reboot into firmware flashing mode
+    hcc_goto_bootloader = 5
+};
+
+//////////////////////////////////////////////////////////////////////
+
+enum hid_custom_response
+{
+    hcc_here_is_config = 1,
+    hcc_here_is_firmware_version = 2,
+    hcc_led_flashed = 3,
+    hcc_set_config_ack = 4
+};
 
 //////////////////////////////////////////////////////////////////////
 
@@ -65,14 +90,29 @@ void queue_put(uint16 k)
     queue_size += 1;
 }
 
-// check it's not empty before calling this
+//////////////////////////////////////////////////////////////////////
+// check it's not empty before calling these
+
+void queue_pop_front()
+{
+    queue_size -= 1;
+    queue_head = ++queue_head & (KEY_QUEUE_LEN - 1);
+}
+
+//////////////////////////////////////////////////////////////////////
 
 uint16 queue_get()
 {
     uint16 next = queue_buffer[queue_head];
-    queue_size -= 1;
-    queue_head = ++queue_head & (KEY_QUEUE_LEN - 1);
+    queue_pop_front();
     return next;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+uint16 queue_peek()
+{
+    return queue_buffer[queue_head];
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -83,18 +123,23 @@ void do_press(uint16 k)
     if(queue_space() >= 2) {
         queue_put(k);
         queue_put(k & 0x8000);
-        led_flash();
     }
 }
 
 //////////////////////////////////////////////////////////////////////
 // top bit specifies whether it's a media key (1) or normal (0)
 
-#define IS_MEDIA_KEY(x) ((x & 0x8000) != 0)
-
-void set_keystate(uint16 key)
+bool set_keystate(uint16 key)
 {
-    if(!IS_MEDIA_KEY(key)) {
+    if(IS_MEDIA_KEY(key) && usb_is_endpoint_idle(endpoint_2)) {
+        key &= 0x7fff;
+        usb_endpoint_2_tx_buffer[0] = 0x02;    // REPORT ID
+        usb_endpoint_2_tx_buffer[1] = key & 0xff;
+        usb_endpoint_2_tx_buffer[2] = key >> 8;
+        usb_send(endpoint_2, 3);
+        return true;
+    }
+    if(!IS_MEDIA_KEY(key) && usb_is_endpoint_idle(endpoint_1)) {
         usb_endpoint_1_tx_buffer[0] = 0x00;    // keyboard modifier
         usb_endpoint_1_tx_buffer[1] = 0x00;
         usb_endpoint_1_tx_buffer[2] = key;    // keyboard key
@@ -103,17 +148,53 @@ void set_keystate(uint16 key)
         usb_endpoint_1_tx_buffer[5] = 0x00;
         usb_endpoint_1_tx_buffer[6] = 0x00;
         usb_endpoint_1_tx_buffer[7] = 0x00;
-        usb.idle &= ~1;
-        UEP1_CTRL = (UEP1_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_ACK;
-        UEP1_T_LEN = 8;
-    } else {
-        key &= 0x7fff;
-        usb_endpoint_2_tx_buffer[0] = 0x02;    // REPORT ID
-        usb_endpoint_2_tx_buffer[1] = key & 0xff;
-        usb_endpoint_2_tx_buffer[2] = key >> 8;
-        usb.idle &= ~2;
-        UEP2_CTRL = (UEP2_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_ACK;
-        UEP2_T_LEN = 3;
+        usb_send(endpoint_1, 8);
+        return true;
+    }
+    return false;
+}
+
+//////////////////////////////////////////////////////////////////////
+// Received something from the Web UI page
+
+void handle_custom_hid_packet()
+{
+    printf("Got HID cmd: %d\n", usb_endpoint_3_rx_buffer[0]);
+
+    switch(usb_endpoint_3_rx_buffer[0]) {
+
+    case hcc_get_config:
+        if(usb_is_endpoint_idle(endpoint_3)) {
+            usb_endpoint_3_tx_buffer[0] = hcc_here_is_config;
+            memcpy(usb_endpoint_3_tx_buffer + 1, &config, sizeof(config));
+            usb_send(endpoint_3, 32);
+        }
+        break;
+
+    case hcc_get_firmware_version:
+        if(usb_is_endpoint_idle(endpoint_3)) {
+            usb_endpoint_3_tx_buffer[0] = hcc_here_is_firmware_version;
+            usb_endpoint_3_tx_buffer[1] = FIRMWARE_VERSION & 0xff;
+            usb_endpoint_3_tx_buffer[2] = (uint8)(FIRMWARE_VERSION >> 8);
+            usb_send(endpoint_3, 32);
+        }
+        break;
+
+    case hcc_flash_led:
+        led_flash();
+        puts("flashed");
+        if(usb_is_endpoint_idle(endpoint_3)) {
+            puts("replied");
+            usb_endpoint_3_tx_buffer[0] = hcc_led_flashed;
+            usb_send(endpoint_3, 32);
+        } else {
+            printf("%d", usb.idle);
+        }
+        break;
+
+    case hcc_goto_bootloader:
+        goto_bootloader();
+        break;
     }
 }
 
@@ -134,24 +215,7 @@ void main()
 
     printf(CLEAR_CONSOLE "---------- HID ----------\nCHIP ID: %08lx\n", chip_id);
 
-    uint8 vol_direction;
-    int8 turn_value;
-
-    read_flash_data(0, 1, &vol_direction);
-
-    switch(vol_direction) {
-    case 0:
-        turn_value = -1;
-        break;
-    case 2:
-        turn_value = 1;
-        break;
-    default:
-        vol_direction = ROTARY_DIRECTION;
-        turn_value = ROTARY_DIRECTION - 1;
-        break;
-    }
-    printf("TURN: %d\n", turn_value);
+    load_config();
 
     usb_init_strings();
     usb_device_config();
@@ -226,35 +290,51 @@ void main()
             if(button_click_tick_count < BUTTON_QUICK_CLICK_MS) {
                 button_quick_clicks += 1;
                 if(button_quick_clicks == (BUTTON_QUICK_CLICK_COUNT - 1)) {
-                    vol_direction = 2 - vol_direction;
-                    turn_value = (int8)vol_direction - 1;
-                    printf("NEW TURN: %d\n", turn_value);
-                    write_flash_data(0, 1, &vol_direction);
+                    config.flags ^= cf_reverse_rotation;
+                    save_config();
                     pressed = false;
                 }
             }
             button_click_tick_count = 0;
         }
 
+        if(usb.recv_len[3] != 0) {
+            handle_custom_hid_packet();
+            usb.recv_len[3] = 0;
+        }
+
         // queue up some keypresses if something happened
         if(pressed) {
+
+            if((config.flags & cf_led_flash_on_press) != 0) {
+                led_flash();
+            }
 
             do_press(MEDIA_KEY(KEY_MEDIA_MUTE));
         }
 
+        int8 turn_value = ((config.flags & cf_reverse_rotation) != 0) ? -1 : 1;
+
         if(direction == turn_value) {
+
+            if((config.flags & cf_led_flash_on_cw) != 0) {
+                led_flash();
+            }
 
             do_press(MEDIA_KEY(KEY_MEDIA_VOLUMEUP));
 
         } else if(direction == -turn_value) {
 
+            if((config.flags & cf_led_flash_on_ccw) != 0) {
+                led_flash();
+            }
+
             do_press(MEDIA_KEY(KEY_MEDIA_VOLUMEDOWN));
         }
 
         // send key on/off to usb hid if there are some waiting to be sent
-        if((usb.idle & 3) == 3 && !queue_empty()) {
-
-            set_keystate(queue_get());
+        if(!queue_empty() && set_keystate(queue_peek())) {
+            queue_pop_front();
         }
         led_update();
     }

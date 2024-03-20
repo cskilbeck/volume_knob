@@ -1,3 +1,3 @@
-#pragma once
+// DO NOT PUT #pragma once in here!
 
-// No other xdata items for hid
+XDATA struct config config;

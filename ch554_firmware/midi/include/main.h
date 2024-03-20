@@ -94,6 +94,7 @@
 #include "usb.h"
 #include "led.h"
 #include "encoder.h"
+#include "flash.h"
 
 #include "config.h"
 #include "midi.h"

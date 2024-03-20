@@ -125,7 +125,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                     case USB_SET_CONFIGURATION:
                         puts("SetConfig");
                         usb.config = usb_setup->wValueL;
-                        usb.active = 1;
+                        usb.active = true;
                         break;
 
                     case USB_GET_INTERFACE:
@@ -327,7 +327,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
         case UIS_TOKEN_OUT | 1:
             if(U_TOG_OK) {
                 usb.recv_len[1] = USB_RX_LEN;
-                UEP1_CTRL = (UEP1_CTRL & ~MASK_UEP_R_RES) | UEP_R_RES_NAK;
+                UEP1_CTRL = (UEP1_CTRL & ~MASK_UEP_R_RES) | UEP_R_RES_ACK;
             }
             break;
 
@@ -342,7 +342,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
         case UIS_TOKEN_OUT | 2:
             if(U_TOG_OK) {
                 usb.recv_len[2] = USB_RX_LEN;
-                UEP2_CTRL = (UEP2_CTRL & ~MASK_UEP_R_RES) | UEP_R_RES_NAK;
+                UEP2_CTRL = (UEP2_CTRL & ~MASK_UEP_R_RES) | UEP_R_RES_ACK;
             }
             break;
 
@@ -357,7 +357,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
         case UIS_TOKEN_OUT | 3:
             if(U_TOG_OK) {
                 usb.recv_len[3] = USB_RX_LEN;
-                UEP3_CTRL = (UEP3_CTRL & ~MASK_UEP_R_RES) | UEP_R_RES_NAK;
+                UEP3_CTRL = (UEP3_CTRL & ~MASK_UEP_R_RES) | UEP_R_RES_ACK;
             }
             break;
 
@@ -373,13 +373,13 @@ void usb_isr(void) __interrupt(INT_NO_USB)
         UEP0_CTRL = UEP_R_RES_ACK | UEP_T_RES_NAK;
         UEP1_CTRL = bUEP_AUTO_TOG | UEP_T_RES_NAK;
         UEP2_CTRL = bUEP_AUTO_TOG | UEP_T_RES_NAK | UEP_R_RES_ACK;
-        UEP3_CTRL = bUEP_AUTO_TOG | UEP_T_RES_NAK | UEP_R_RES_ACK;
+        UEP3_CTRL = bUEP_AUTO_TOG | UEP_T_RES_ACK | UEP_R_RES_ACK;
         USB_DEV_AD = 0x00;
         UIF_SUSPEND = 0;
         UIF_TRANSFER = 0;
         usb.config = 0;
         usb.idle = 7;
-        usb.active = 0;
+        usb.active = false;
     }
 
     // USB bus hangs/Wake up
@@ -388,7 +388,6 @@ void usb_isr(void) __interrupt(INT_NO_USB)
         // Hang up
         if(USB_MIS_ST & bUMS_SUSPEND) {
             puts("USB Suspend");
-            
             while(XBUS_AUX & bUART0_TX) {    // Wait for msg to send
             }
             SAFE_MOD = 0x55;
@@ -463,7 +462,8 @@ void usb_device_endpoint_config()
     UEP4_1_MOD = (uint8)(~(bUEP4_RX_EN | bUEP4_TX_EN | bUEP1_BUF_MOD) | bUEP1_RX_EN | bUEP1_TX_EN);
     UEP2_3_MOD = (uint8)(~(bUEP3_BUF_MOD | bUEP2_BUF_MOD) | bUEP2_RX_EN | bUEP2_TX_EN | bUEP3_RX_EN | bUEP3_TX_EN);
 
-    usb.recv_len[0] = 0;
+    usb.recv_len[0] = 0;    // this is a dummy - endpoint 0 is for config
+
     usb.recv_len[1] = 0;
     usb.recv_len[2] = 0;
     usb.recv_len[3] = 0;
@@ -531,4 +531,37 @@ void usb_wait_for_connection()
             LED_BIT ^= 1;
         }
     }
+}
+
+//////////////////////////////////////////////////////////////////////
+
+void usb_send(uint8 endpoint, uint8 len)
+{
+    printf("Send: %d of %d\n", endpoint, len);
+    switch(endpoint) {
+    case 1:
+        UEP1_T_LEN = len;
+        UEP1_CTRL = (UEP1_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_ACK;
+        break;
+    case 2:
+        UEP2_T_LEN = len;
+        UEP2_CTRL = (UEP2_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_ACK;
+        break;
+    case 3:
+        UEP3_T_LEN = len;
+        UEP3_CTRL = (UEP3_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_ACK;
+        break;
+    case 4:
+        UEP4_T_LEN = len;
+        UEP4_CTRL = (UEP4_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_ACK;
+        break;
+    }
+    usb.idle &= ~(1 << (endpoint - 1));
+}
+
+//////////////////////////////////////////////////////////////////////
+
+bool usb_is_endpoint_idle(usb_endpoint_t endpoint)
+{
+    return (usb.idle & (1 << (endpoint - 1))) != 0;
 }

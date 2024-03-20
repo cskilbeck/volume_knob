@@ -428,7 +428,7 @@ function init_devices() {
     midi_devices.value = [];
     device_index = 0;
 
-    scanned.value.done = true;
+    scanned.done = true;
 
     console.log(`${midi.inputs.size} inputs, ${midi.outputs.size} outputs`);
 
