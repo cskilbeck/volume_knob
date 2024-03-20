@@ -116,17 +116,6 @@ uint16 queue_peek()
 }
 
 //////////////////////////////////////////////////////////////////////
-// add a momentary keypress to the queue and flash the led
-
-void do_press(uint16 k)
-{
-    if(queue_space() >= 2) {
-        queue_put(k);
-        queue_put(k & 0x8000);
-    }
-}
-
-//////////////////////////////////////////////////////////////////////
 // top bit specifies whether it's a media key (1) or normal (0)
 
 bool set_keystate(uint16 key)
@@ -171,12 +160,23 @@ void handle_custom_hid_packet()
         }
         break;
 
+    case hcc_set_config:
+        memcpy(&config, usb_endpoint_3_rx_buffer + 1, sizeof(config));
+        save_config();
+        usb_endpoint_3_tx_buffer[0] = hcc_set_config_ack;
+        usb_send(endpoint_3, 32);
+        break;
+
     case hcc_get_firmware_version:
         if(usb_is_endpoint_idle(endpoint_3)) {
             usb_endpoint_3_tx_buffer[0] = hcc_here_is_firmware_version;
-            usb_endpoint_3_tx_buffer[1] = FIRMWARE_VERSION & 0xff;
+            usb_endpoint_3_tx_buffer[1] = (uint8)(FIRMWARE_VERSION >> 0);
             usb_endpoint_3_tx_buffer[2] = (uint8)(FIRMWARE_VERSION >> 8);
+            usb_endpoint_3_tx_buffer[3] = (uint8)(FIRMWARE_VERSION >> 16);
+            usb_endpoint_3_tx_buffer[4] = (uint8)(FIRMWARE_VERSION >> 24);
             usb_send(endpoint_3, 32);
+        } else {
+            puts("3 busy!");
         }
         break;
 
@@ -244,12 +244,14 @@ void main()
 
         // read/debounce the button
         bool pressed = false;
+        bool released = false;
         bool new_state = !BTN_BIT;
 
         if(new_state != button_state && button_ticks > 1) {
 
             button_ticks = 0;
             pressed = new_state;
+            released = !new_state;
             button_state = new_state;
         }
 
@@ -310,7 +312,28 @@ void main()
                 led_flash();
             }
 
-            do_press(MEDIA_KEY(KEY_MEDIA_MUTE));
+            uint8 space = 1;
+            bool send_release = config.key_release == 0;
+            if(send_release) {
+                space = 2;
+            }
+
+            if(queue_space() >= space) {
+                queue_put(config.key_press);
+                if(send_release) {
+                    queue_put(config.key_press & 0x8000);
+                }
+            }
+        }
+
+        if(released) {
+            if((config.flags & cf_led_flash_on_release) != 0) {
+                led_flash();
+            }
+
+            if(config.key_release != 0 && queue_space() >= 1) {
+                queue_put(config.key_release);
+            }
         }
 
         int8 turn_value = ((config.flags & cf_reverse_rotation) != 0) ? -1 : 1;
@@ -321,7 +344,10 @@ void main()
                 led_flash();
             }
 
-            do_press(MEDIA_KEY(KEY_MEDIA_VOLUMEUP));
+            if(queue_space() >= 2) {
+                queue_put(config.key_clockwise);
+                queue_put(config.key_clockwise & 0x8000);
+            }
 
         } else if(direction == -turn_value) {
 
@@ -329,7 +355,10 @@ void main()
                 led_flash();
             }
 
-            do_press(MEDIA_KEY(KEY_MEDIA_VOLUMEDOWN));
+            if(queue_space() >= 2) {
+                queue_put(config.key_counterclockwise);
+                queue_put(config.key_counterclockwise & 0x8000);
+            }
         }
 
         // send key on/off to usb hid if there are some waiting to be sent

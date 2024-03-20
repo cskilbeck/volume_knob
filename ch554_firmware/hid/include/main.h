@@ -63,9 +63,9 @@
 
 #define PRODUCT_NAME "Tiny Volume Knob 00000000"    // last 8 chars filled in with serial #
 
-#define FIRMWARE_CURRENT_VERSION 0x010000
+#define FIRMWARE_CURRENT_VERSION 0x01000000lu
 
-#define FIRMWARE_VERSION ((FIRMWARE_CURRENT_VERSION << 8) | DEVICE)
+#define FIRMWARE_VERSION (FIRMWARE_CURRENT_VERSION | DEVICE)
 
 //////////////////////////////////////////////////////////////////////
 

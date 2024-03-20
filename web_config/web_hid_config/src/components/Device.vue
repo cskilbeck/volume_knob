@@ -6,9 +6,8 @@ import { toRaw, watch, ref, nextTick } from 'vue';
 
 import Toggle from './Toggle.vue'
 import Modal from './Modal.vue'
-import CCDropDown from './CCDropDown.vue';
+import HIDDropDown from './HIDDropDown.vue';
 
-import CC from '../CC.js'
 import hid from '../hid.js'
 import cookie from '../cookie.js'
 
@@ -202,6 +201,7 @@ props.device.on_config_loaded = () => {
 // in theory there's a little race in here but in practice not a problem
 
 props.device.on_config_saved = () => {
+    console.log("SAVED!");
     stored_config = Object.assign({}, toRaw(props.device.config));
     config_changed.value = false;
 };
@@ -211,8 +211,9 @@ props.device.on_config_saved = () => {
 // update stored_config when we get the ack that it was written
 
 function store_config() {
+    console.log("STORE?");
     props.device.config = config_from_ui();
-    hid.write_flash(props.device.device_index);
+    hid.set_config(props.device.device_index);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -326,7 +327,7 @@ function rotation_matrix(cx, cy, angle) {
                             </button>
 
                             <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
-                                @click='hid.read_flash(device.device_index)'>
+                                @click='hid.get_config(device.device_index)'>
                                 <span class="mx-2">Read from device</span>
                             </button>
 
@@ -379,6 +380,24 @@ function rotation_matrix(cx, cy, angle) {
                         <strong>Rotation</strong>
                     </div>
                 </div>
+                <div class="row">
+                    <div class='col-lg'>
+                        <div class="row">
+                            <div class='col'>
+                                <HIDDropDown v-model="ui.key_clockwise">
+                                    CW
+                                </HIDDropDown>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class='col'>
+                                <HIDDropDown v-model="ui.key_counterclockwise">
+                                    CCW
+                                </HIDDropDown>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Button -->
@@ -397,6 +416,59 @@ function rotation_matrix(cx, cy, angle) {
                 <div class="row pt-2">
                     <div class="col mb-1">
                         <strong>LED</strong>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <div class="row">
+                            <div class="col">
+                                Flash on:
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <div class="form-check">
+                                <label class="form-check-label user-select-none" for="flash_on_rot">
+                                    Rotate clockwise
+                                </label>
+                                <input class="form-check-input pull-left" type="checkbox" id="flash_on_rot"
+                                    v-model="ui.cf_led_flash_on_cw">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <div class="form-check">
+                                <label class="form-check-label user-select-none" for="flash_on_limit">
+                                    Rotate counter-clockwise
+                                </label>
+                                <input class="form-check-input pull-left" type="checkbox" id="flash_on_limit"
+                                    v-model="ui.cf_led_flash_on_ccw">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <div class="form-check">
+                                <label class="form-check-label user-select-none" for="flash_on_click">
+                                    Press
+                                </label>
+                                <input class="form-check-input pull-left" type="checkbox" id="flash_on_click"
+                                    v-model="ui.cf_led_flash_on_press">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col">
+                            <div class="form-check">
+                                <label class="form-check-label user-select-none" for="flash_on_release">
+                                    Release
+                                </label>
+                                <input class="form-check-input pull-left" type="checkbox" id="flash_on_release"
+                                    v-model="ui.cf_led_flash_on_release">
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -422,7 +494,8 @@ function rotation_matrix(cx, cy, angle) {
         </div>
         <div class="row mx-2 my-2">
             <div class="col text-center">
-                <button class='btn btn-sm btn-danger' @click='hid.flash_mode(device.device_index); flashModal = false'>
+                <button class='btn btn-sm btn-danger'
+                    @click='hid.goto_firmware_update_mode(device.device_index); flashModal = false'>
                     Put device in Firmware Update Mode
                 </button>
             </div>
@@ -571,4 +644,4 @@ input.bright-focus-input {
 [data-bs-theme='dark'] .value-bar {
     background-color: var(--bs-primary-border-subtle);
 }
-</style>
+</style>./HIDDropDown.vue

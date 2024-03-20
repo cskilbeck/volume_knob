@@ -54,11 +54,11 @@ let default_config = {
     config_version: CONFIG_VERSION,
 
     // what keys to send for rotation
-    key_clockwise: keys.consumer_control_keys['Volume Up'],
-    key_counterclockwise: keys.consumer_control_keys['Volume Down'],
+    key_clockwise: 0xE9, //keys.consumer_control_keys['Volume Up'],
+    key_counterclockwise: 0xEA, //keys.consumer_control_keys['Volume Down'],
 
     // key to send when pressed
-    key_press: keys.consumer_control_keys['Mute'],
+    key_press: 0xE2, //keys.consumer_control_keys['Mute'],
 
     // if key_release != 0 then don't send key up after key_press
     // and send key_release when released
@@ -90,11 +90,11 @@ let config_map = [
 //////////////////////////////////////////////////////////////////////
 // this is super nasty - marshal/unmarshal from bytes to config struct
 
-function config_from_bytes(bytes) {
+function config_from_bytes(bytes, offset) {
 
     let config = default_config;
 
-    if (bytes[0] != CONFIG_VERSION) {
+    if (bytes[offset] != CONFIG_VERSION) {
         return default_config;
     }
 
@@ -121,7 +121,7 @@ function config_from_bytes(bytes) {
         }
         let value = 0;
         for (let i = 0; i < field_size; ++i) {
-            value |= bytes[field_offset] << (i * 8);
+            value |= bytes[field_offset + offset] << (i * 8);
             field_offset += 1;
         }
         config[field_name] = value;
@@ -133,9 +133,8 @@ function config_from_bytes(bytes) {
 
 function bytes_from_config(config) {
 
-    let bytes = new Uint8Array(CONFIG_LEN);
+    let bytes = [];
 
-    let field_offset = 0;
     for (const field of config_map) {
         const field_type = field[0];
         const field_name = field[1];
@@ -154,12 +153,11 @@ function bytes_from_config(config) {
         }
         let value = config[field_name];
         for (let i = 0; i < field_size; ++i) {
-            bytes[field_offset] = value & 0xff;
+            bytes.push(value & 0xff);
             value >>= 8;
-            field_offset += 1;
         }
     }
-    return bytes;
+    return new Uint8Array(bytes);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -194,27 +192,71 @@ function device_from_index(index) {
 
 //////////////////////////////////////////////////////////////////////
 
-function send(device, data) {
+async function send(index, data) {
+
+    let device = device_from_index(index);
+    if (device == null) {
+        console.log(`SEND: no device for ${index}`);
+        return;
+    }
 
     console.log(`SEND: [${data}]`);
 
-    device.sendReport(0, new Uint8Array(data)).then(
-        () => {
-            console.log(`Sent: [${data}]`);
-        },
-        (err) => {
-            console.log(`Error sending report: ${err}`);
-        });
+    try {
+        await device.hid_device.sendReport(0, new Uint8Array(data)).then(
+            () => {
+                console.log(`Sent: [${data}]`);
+            },
+            (err) => {
+                console.log(`Error sending report: ${err}`);
+            });
+    } catch (err) {
+        console.log(err);
+    }
 }
 
 //////////////////////////////////////////////////////////////////////
 
-function flash_device_led(index) {
+async function flash_device_led(index) {
 
+    await send(index, [hid_custom_command.hcc_flash_led]);
+}
+
+//////////////////////////////////////////////////////////////////////
+
+async function get_firmware_version(index) {
+
+    await send(index, [hid_custom_command.hcc_get_firmware_version]);
+}
+
+//////////////////////////////////////////////////////////////////////
+
+async function get_config(index) {
+
+    await send(index, [hid_custom_command.hcc_get_config]);
+}
+
+//////////////////////////////////////////////////////////////////////
+
+async function goto_firmware_update_mode(index) {
+    await send(index, [hid_custom_command.hcc_goto_bootloader]);
+}
+
+//////////////////////////////////////////////////////////////////////
+
+async function set_config(index) {
     let device = device_from_index(index);
-    if (device != null) {
-        send(device.hid_device, [hid_custom_command.hcc_flash_led, 44, 55, 66]);
+    if (device == null) {
+        console.log(`set_config: no device at index ${index}`);
+        return;
     }
+    let cur_config = bytes_from_config(device.config);
+    let msg = new Uint8Array(cur_config.length + 1);
+    msg[0] = hid_custom_command.hcc_set_config;
+    for (let i = 0; i < cur_config.length; ++i) {
+        msg[i + 1] = cur_config[i];
+    }
+    await send(index, msg);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -223,7 +265,30 @@ function on_hid_input_report(index, e) {
 
     let device = device_from_index(index);
     if (device != null) {
-        console.log("Got input report", new Uint8Array(e.data.buffer));
+        let data = new Uint8Array(e.data.buffer);
+        console.log(`Got ${data[0]}`);
+        switch (data[0]) {
+            case hid_custom_response.hcc_here_is_firmware_version:
+                let b0 = data[1] || 0;
+                let b1 = data[2] || 0;
+                let b2 = data[3] || 0;
+                let b3 = data[4] || 0;
+                device.firmware_version = b3 | (b2 << 7) | (b1 << 14) | (b0 << 21);
+                device.firmware_version_str = `${b3}.${b2}.${b1}.${b0}`;
+                console.log(`Firmware version ${device.firmware_version_str}`);
+                break;
+            case hid_custom_response.hcc_here_is_config:
+                device.config = config_from_bytes(data, 1);
+                if (device.on_config_loaded != null) {
+                    device.on_config_loaded();
+                }
+                console.log("Got config", device.config);
+                break;
+            case hid_custom_response.hcc_set_config_ack:
+                if (device.on_config_saved != null) {
+                    device.on_config_saved();
+                }
+        }
     } else {
         console.log(`No device at index ${index}`);
     }
@@ -231,7 +296,7 @@ function on_hid_input_report(index, e) {
 
 //////////////////////////////////////////////////////////////////////
 
-function init_device(d) {
+async function init_device(d) {
 
     for (let hid_device of hid_devices.value) {
         if (hid_device.name == d.productName) {
@@ -239,6 +304,8 @@ function init_device(d) {
             return;
         }
     }
+
+    console.log(`New device ${d.productName}`);
 
     let device = {
         device_index: device_index,
@@ -266,17 +333,10 @@ function init_device(d) {
         on_hid_input_report(device.device_index, event);
     });
 
+    await get_config(device.device_index);
+    await get_firmware_version(device.device_index);
+
     device_index += 1;
-}
-
-//////////////////////////////////////////////////////////////////////
-
-function flash_mode(index) {
-}
-
-//////////////////////////////////////////////////////////////////////
-
-function write_flash(index) {
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -315,7 +375,8 @@ export default {
     scanned,
     flags,
     flash_device_led,
-    flash_mode,
-    init_devices,
-    write_flash
+    goto_firmware_update_mode,
+    get_config,
+    set_config,
+    init_devices
 }
