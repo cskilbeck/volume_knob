@@ -251,8 +251,8 @@ __code const uint8 hid_config_desc[] = {
 
 #define LANGUAGE_DESC 0x0409
 #define MANUFACTURER_STRING 'T', 'i', 'n', 'y', ' ', 'L', 'i', 't', 't', 'l', 'e', ' ', 'T', 'h', 'i', 'n', 'g', 's'
-#define KEYBOARD_STRING 'T', 'i', 'n', 'y', ' ', 'U', 'S', 'B', ' ', 'K', 'n', 'o', 'b'
-#define MEDIA_STRING 'T', 'i', 'n', 'y', ' ', 'U', 'S', 'B', ' ', 'K', 'n', 'o', 'b'
+#define KEYBOARD_STRING 'T', 'i', 'n', 'y', ' ', 'U', 'S', 'B', ' ', 'K', 'n', 'o', 'b', ' ', '(', 'K', 'B', 'D', ')'
+#define MEDIA_STRING 'T', 'i', 'n', 'y', ' ', 'U', 'S', 'B', ' ', 'K', 'n', 'o', 'b', ' ', '(', 'C', 'C', ')'
 #define CONFIG_STRING 'C', 'o', 'n', 'f', 'i', 'g'
 #define CUSTOM_STRING 'T', 'i', 'n', 'y', ' ', 'U', 'S', 'B', ' ', 'K', 'n', 'o', 'b'
 

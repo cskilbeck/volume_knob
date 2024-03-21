@@ -219,7 +219,7 @@ props.device.on_config_saved = () => {
 function store_config() {
     console.log("Store config");
     props.device.config = config_from_ui();
-    hid.set_config(props.device.device_index);
+    hid.set_config(props.device);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -348,12 +348,12 @@ function rotation_matrix(cx, cy, angle) {
                         <div class='btn-group-vertical' role="group" v-if='device.active'>
 
                             <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
-                                @click='hid.flash_device_led(device.device_index)'>
+                                @click='hid.flash_device_led(device)'>
                                 <span class="mx-2">Flash LED</span>
                             </button>
 
                             <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
-                                @click='hid.get_config(device.device_index)'>
+                                @click='hid.get_config(device)'>
                                 <span class="mx-2">Read from device</span>
                             </button>
 
@@ -544,7 +544,7 @@ function rotation_matrix(cx, cy, angle) {
         <div class="row mx-2 my-2">
             <div class="col text-center">
                 <button class='btn btn-sm btn-danger'
-                    @click='hid.goto_firmware_update_mode(device.device_index); flashModal = false'>
+                    @click='hid.goto_firmware_update_mode(device); flashModal = false'>
                     Put device in Firmware Update Mode
                 </button>
             </div>

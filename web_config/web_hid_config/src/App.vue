@@ -36,8 +36,8 @@ function scan_hid() {
       <div class="row">
         <div class="col-2 pt-4">
           <span v-show='hid.scanned.done'>
-            Found {{ hid.hid_devices.value.length }}
-            device{{ hid.hid_devices.value.length != 1 ? "s" : "" }}
+            Found {{ Object.keys(hid.hid_devices).length }}
+            device{{ Object.keys(hid.hid_devices).length != 1 ? "s" : "" }}
           </span>
         </div>
         <div class="col-8">

@@ -3,7 +3,7 @@
 import { ref } from 'vue'
 import keys from './hid_keys.js'
 
-let hid_devices = ref([]);
+let hid_devices = ref({});
 
 let scanned = ref({});
 
@@ -168,23 +168,22 @@ function bytes_from_config(config) {
 
 //////////////////////////////////////////////////////////////////////
 
-function device_from_index(index) {
-    if (index < hid_devices.value.length) {
-        return hid_devices.value[index];
+function device_from_name(name) {
+    if (hid_devices.value[name]) {
+        return hid_devices.value[name];
     }
-    console.log(`No device from index ${index}`);
     return null;
 }
 
 //////////////////////////////////////////////////////////////////////
 
-async function send(index, data) {
+function device_from_hid_device(hid_device) {
+    return device_from_name(hid_device.productName);
+}
 
-    let device = device_from_index(index);
-    if (device == null) {
-        console.log(`SEND: no device for ${index}`);
-        return;
-    }
+//////////////////////////////////////////////////////////////////////
+
+async function send(device, data) {
 
     try {
         await device.hid_device.sendReport(0, new Uint8Array(data)).then(
@@ -201,41 +200,36 @@ async function send(index, data) {
 
 //////////////////////////////////////////////////////////////////////
 
-async function flash_device_led(index) {
+async function flash_device_led(device) {
 
-    await send(index, [hid_custom_command.hcc_flash_led]);
+    await send(device, [hid_custom_command.hcc_flash_led]);
 }
 
 //////////////////////////////////////////////////////////////////////
 
-async function get_firmware_version(index) {
+async function get_firmware_version(device) {
 
-    await send(index, [hid_custom_command.hcc_get_firmware_version]);
+    await send(device, [hid_custom_command.hcc_get_firmware_version]);
 }
 
 //////////////////////////////////////////////////////////////////////
 
-async function get_config(index) {
+async function get_config(device) {
 
-    await send(index, [hid_custom_command.hcc_get_config]);
+    await send(device, [hid_custom_command.hcc_get_config]);
 }
 
 //////////////////////////////////////////////////////////////////////
 
-async function goto_firmware_update_mode(index) {
+async function goto_firmware_update_mode(device) {
 
-    await send(index, [hid_custom_command.hcc_goto_bootloader]);
+    await send(device, [hid_custom_command.hcc_goto_bootloader]);
 }
 
 //////////////////////////////////////////////////////////////////////
 
-async function set_config(index) {
+async function set_config(device) {
 
-    let device = device_from_index(index);
-    if (device == null) {
-        console.log(`set_config: no device at index ${index}`);
-        return;
-    }
     let cur_config = bytes_from_config(device.config);
     let msg = new Uint8Array(cur_config.length + 1);
     msg[0] = hid_custom_command.hcc_set_config;
@@ -247,9 +241,9 @@ async function set_config(index) {
 
 //////////////////////////////////////////////////////////////////////
 
-function on_hid_input_report(index, e) {
+function on_hid_input_report(e) {
 
-    let device = device_from_index(index);
+    let device = device_from_hid_device(e.device);
 
     if (device != null) {
 
@@ -293,10 +287,10 @@ async function init_device(d) {
 
     let device = null;
 
-    for (let hid_device of hid_devices.value) {
-        if (hid_device.name == d.productName) {
+    for (let h in hid_devices.value) {
+        if (h == d.productName) {
             console.log(`Already got ${d.productName}`);
-            device = hid_device;
+            device = hid_devices.value[h];
             break;
         }
     }
@@ -326,20 +320,49 @@ async function init_device(d) {
         console.log(`add device ${device_index}`);
 
         d.addEventListener("inputreport", (event) => {
-            on_hid_input_report(device.device_index, event);
+            on_hid_input_report(event);
         });
 
-        hid_devices.value[device_index] = device;
-        device_index += 1;
+        hid_devices.value[d.productName] = device;
     }
 
-    await get_config(device.device_index);
-    await get_firmware_version(device.device_index);
+    await get_config(device);
+    await get_firmware_version(device);
+}
+
+//////////////////////////////////////////////////////////////////////
+
+function on_connect(event) {
+
+    let name = event.device.productName;
+    let event_type = event.type;
+    console.log("connect", name, event_type);
+    console.log(hid_devices[name]);
+
+    if (hid_devices.value[event.device.productName] && event.type == 'disconnect') {
+        delete hid_devices.value[event.device.productName];
+    }
+    // if can't find device in the list, return
+    // if event.type == 'disconnect', remove entry from list
+    // if event.type == 'connect', init_device(event.device)
+}
+
+//////////////////////////////////////////////////////////////////////
+
+function on_disconnect(event) {
+    console.log("disconnect", event);
 }
 
 //////////////////////////////////////////////////////////////////////
 
 function init_devices() {
+
+    navigator.hid.removeEventListener("connect", on_connect);
+    navigator.hid.removeEventListener("disconnect", on_connect);
+
+    navigator.hid.addEventListener("connect", on_connect);
+    navigator.hid.addEventListener("disconnect", on_connect);
+
     navigator.hid.requestDevice({
         filters: [{
             vendorId: 0x16D0,
@@ -350,7 +373,7 @@ function init_devices() {
     }).then(
 
         (devices) => {
-            scanned.done = true;
+            scanned.value.done = true;
 
             for (let d of devices) {
                 console.log("FOUND", d.productName, d.opened);
