@@ -362,7 +362,7 @@ function rotation_matrix(cx, cy, angle) {
 
                             <div class="dropdown w-100">
                                 <button
-                                    class="w-100 btn btn-sm rounded-0 tertiary-bg border-secondary-subtle btn-secondary dropdown-toggle border-top-0"
+                                    class="w-100 btn btn-sm rounded-0 tertiary-bg border-secondary-subtle dropdown-toggle border-top-0"
                                     href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                     Settings
                                 </button>
