@@ -18,6 +18,14 @@ void encoder_init()
 
 //////////////////////////////////////////////////////////////////////
 
+#if DEVICE == DEVICE_DEVKIT
+#define ROTATE_CW 1
+#define ROTATE_CWW -1
+#else
+#define ROTATE_CW -1
+#define ROTATE_CWW 1
+#endif
+
 int8 encoder_read()
 {
     uint8 a = 0;
@@ -36,9 +44,9 @@ int8 encoder_read()
         encoder_store = (encoder_store << 4) | encoder_state;
         switch(encoder_store) {
         case 0xe8:
-            return 1;
+            return ROTATE_CW;
         case 0x2b:
-            return -1;
+            return ROTATE_CWW;
         }
     }
     return 0;
