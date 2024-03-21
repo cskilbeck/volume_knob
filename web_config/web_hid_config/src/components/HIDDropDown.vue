@@ -79,6 +79,16 @@ const modifier_label = computed(() => {
 
 //////////////////////////////////////////////////////////////////////
 
+const modifier_class = computed(() => {
+    if ((current_keycode.value & 0x8000) != 0) {
+        return "dimmer-text";
+    } else {
+        return "";
+    }
+});
+
+//////////////////////////////////////////////////////////////////////
+
 function update_modifiers(checked, value) {
     if (checked) {
         current_mod.value |= value;
@@ -180,7 +190,7 @@ function update_modifiers(checked, value) {
 
     </div>
     <div class="row">
-        <div class="col small-text ms-2 mt-1" style="min-height: 1lh;">
+        <div class="col small-text ms-2 mt-1" :class="modifier_class" style="min-height: 1lh;">
             {{ modifier_label }}
         </div>
     </div>
@@ -189,6 +199,10 @@ function update_modifiers(checked, value) {
 <style>
 .modifiers-dropdown {
     min-width: 12.75rem;
+}
+
+.dimmer-text {
+    color: var(--bs-secondary) !important;
 }
 
 .hide {

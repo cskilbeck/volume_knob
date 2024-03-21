@@ -416,14 +416,14 @@ function rotation_matrix(cx, cy, angle) {
                 <div class="row mb-3">
                     <div class='col-lg'>
                         <div class="row">
-                            <div class='col'>
+                            <div class='col mx-3'>
                                 <HIDDropDown v-model:keycode="ui.key_clockwise" v-model:mod="ui.mod_clockwise">
                                     Clockwise
                                 </HIDDropDown>
                             </div>
                         </div>
                         <div class="row">
-                            <div class='col'>
+                            <div class='col mx-3'>
                                 <HIDDropDown v-model:keycode="ui.key_counterclockwise"
                                     v-model:mod="ui.mod_counterclockwise">
                                     Counter-clockwise
@@ -443,7 +443,7 @@ function rotation_matrix(cx, cy, angle) {
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col">
+                    <div class="col mx-3">
                         <HIDDropDown v-model:keycode="ui.key_press" v-model:mod="ui.mod_press">Key</HIDDropDown>
                     </div>
                 </div>
