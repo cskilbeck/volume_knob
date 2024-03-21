@@ -105,12 +105,10 @@ function config_from_ui() {
         key_clockwise: ui.value.key_clockwise,
         key_counterclockwise: ui.value.key_counterclockwise,
         key_press: ui.value.key_press,
-        key_release: ui.value.key_release,
 
         mod_clockwise: ui.value.mod_clockwise,
         mod_counterclockwise: ui.value.mod_counterclockwise,
         mod_press: ui.value.mod_press,
-        mod_release: ui.value.mod_release,
 
         flags: (ui.value.cf_led_flash_on_cw ? hid.flags.cf_led_flash_on_cw : 0)
             | (ui.value.cf_led_flash_on_ccw ? hid.flags.cf_led_flash_on_ccw : 0)
@@ -157,12 +155,10 @@ function ui_from_config(config) {
         key_clockwise: config.key_clockwise,
         key_counterclockwise: config.key_counterclockwise,
         key_press: config.key_press,
-        key_release: config.key_release,
 
         mod_clockwise: config.mod_clockwise,
         mod_counterclockwise: config.mod_counterclockwise,
         mod_press: config.mod_press,
-        mod_release: config.mod_release,
 
         cf_led_flash_on_cw: (config.flags & hid.flags.cf_led_flash_on_cw) != 0,
         cf_led_flash_on_ccw: (config.flags & hid.flags.cf_led_flash_on_ccw) != 0,
@@ -404,8 +400,17 @@ function rotation_matrix(cx, cy, angle) {
 
             <div v-if='device.active' class='col-lg-3 mx-3 bg-body border border-secondary rounded'>
                 <div class="row pt-2">
-                    <div class='col'>
+                    <div class='col-8'>
                         <strong>Rotation</strong>
+                    </div>
+                    <div class='col-3'>
+                        <div class="form-check pb-0 pt-1 m-0">
+                            <input class="form-check-input" type="checkbox" id="reverse_rotation"
+                                v-model="ui.cf_reverse_rotation">
+                            <label class="form-check-label user-select-none" for="reverse_rotation">
+                                Reversed
+                            </label>
+                        </div>
                     </div>
                 </div>
                 <div class="row mb-3">
@@ -435,6 +440,11 @@ function rotation_matrix(cx, cy, angle) {
                 <div class="row pt-2">
                     <div class="col mb-1">
                         <strong>Button</strong>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <HIDDropDown v-model:keycode="ui.key_press" v-model:mod="ui.mod_press">Key</HIDDropDown>
                     </div>
                 </div>
             </div>

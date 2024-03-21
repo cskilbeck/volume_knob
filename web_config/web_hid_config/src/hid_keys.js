@@ -8,7 +8,10 @@ const key_modifiers = {
 
 //////////////////////////////////////////////////////////////////////
 
+// tacky - " None" has a space at the front so it sorts to the top of the list
+
 const hid_keys = {
+    0x00: " None",
     0x04: "A",
     0x05: "B",
     0x06: "C",

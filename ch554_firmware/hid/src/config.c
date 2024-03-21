@@ -11,16 +11,14 @@
 //////////////////////////////////////////////////////////////////////
 
 __code const config_t default_config = {
-    CONFIG_VERSION,                                                                      //
-    MEDIA_KEY(KEY_MEDIA_VOLUMEUP),                                                       //
-    MEDIA_KEY(KEY_MEDIA_VOLUMEDOWN),                                                     //
-    MEDIA_KEY(KEY_MEDIA_MUTE),                                                           //
-    0,                                                                                   //
-    0,                                                                                   //
-    0,                                                                                   //
-    0,                                                                                   //
-    0,                                                                                   //
-    cf_led_flash_on_cw | cf_led_flash_on_ccw | cf_led_flash_on_press | ROTATE_REVERSE    //
+    CONFIG_VERSION,                                                     //
+    MEDIA_KEY(KEY_MEDIA_VOLUMEUP),                                      //
+    MEDIA_KEY(KEY_MEDIA_VOLUMEDOWN),                                    //
+    MEDIA_KEY(KEY_MEDIA_MUTE),                                          //
+    0,                                                                  //
+    0,                                                                  //
+    0,                                                                  //
+    cf_led_flash_on_cw | cf_led_flash_on_ccw | cf_led_flash_on_press    //
 };
 
 //////////////////////////////////////////////////////////////////////

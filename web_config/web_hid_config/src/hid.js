@@ -12,7 +12,7 @@ let scanned = ref({});
 
 let device_index = 0;
 
-const CONFIG_VERSION = 0x81;
+const CONFIG_VERSION = 0x82;
 
 //////////////////////////////////////////////////////////////////////
 
@@ -88,12 +88,10 @@ let config_map = [
     ["uint16", "key_clockwise"],
     ["uint16", "key_counterclockwise"],
     ["uint16", "key_press"],
-    ["uint16", "key_release"],
 
     ["uint8", "mod_clockwise"],
     ["uint8", "mod_counterclockwise"],
     ["uint8", "mod_press"],
-    ["uint8", "mod_release"],
 
     ["uint16", "flags"]
 ];

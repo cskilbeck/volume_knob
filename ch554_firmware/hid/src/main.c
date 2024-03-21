@@ -65,7 +65,6 @@ typedef enum event
     event_clockwise = 1,
     event_counterclockwise = 2,
     event_press = 3,
-    event_release = 4,
 
     event_mask = 0x3f,
 
@@ -160,11 +159,6 @@ bool process_event(event_t e)
     case event_press:
         key = config.key_press;
         modifiers = config.mod_press;
-        break;
-
-    case event_release:
-        key = config.key_release;
-        modifiers = config.mod_release;
         break;
     }
 
@@ -363,8 +357,6 @@ void main()
             usb.recv_len[3] = 0;
         }
 
-        bool momentary = (config.flags & cf_press_momentary) != 0;
-
         // queue up some keypresses if something happened
         if(pressed) {
 
@@ -372,16 +364,8 @@ void main()
                 led_flash();
             }
 
-            uint8 space = 1;
-            if(momentary) {
-                space = 2;
-            }
-
-            if(queue_space() >= space) {
+            if(queue_space() >= 1) {
                 queue_put(event_press | event_keydown);
-                if(!momentary) {
-                    queue_put(event_press | event_keyup);
-                }
             }
         }
 
@@ -391,13 +375,8 @@ void main()
                 led_flash();
             }
 
-            if(momentary) {
-                if(queue_space() >= 1) {
-                    queue_put(event_press | event_keyup);
-                }
-            } else if(config.key_release && queue_space() >= 2) {
-                queue_put(event_release | event_keydown);
-                queue_put(event_release | event_keyup);
+            if(queue_space() >= 1) {
+                queue_put(event_press | event_keyup);
             }
         }
 

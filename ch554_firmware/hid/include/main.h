@@ -40,9 +40,9 @@
 #define BOOT_FLASH_LED_SPEED 20
 
 #if defined(DEBUG)
-#define BOOTLOADER_BUTTON_DELAY_MS 1000
+#define BOOTLOADER_BUTTON_DELAY_MS 30000
 #else
-#define BOOTLOADER_BUTTON_DELAY_MS 5000
+#define BOOTLOADER_BUTTON_DELAY_MS 30000
 #endif
 
 //////////////////////////////////////////////////////////////////////
