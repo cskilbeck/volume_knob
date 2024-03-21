@@ -12,7 +12,7 @@ let scanned = ref({});
 
 let device_index = 0;
 
-const CONFIG_VERSION = 0x80;
+const CONFIG_VERSION = 0x81;
 
 //////////////////////////////////////////////////////////////////////
 
@@ -64,6 +64,12 @@ let default_config = {
     // and send key_release when released
     key_release: 0,
 
+    // modifiers
+    mod_clockwise: 0,
+    mod_counterclockwise: 0,
+    mod_press: 0,
+    mod_release: 0,
+
     // flags
     flags: default_flags
 };
@@ -78,10 +84,17 @@ let default_config = {
 
 let config_map = [
     ["uint8", "config_version"],
+
     ["uint16", "key_clockwise"],
     ["uint16", "key_counterclockwise"],
     ["uint16", "key_press"],
     ["uint16", "key_release"],
+
+    ["uint8", "mod_clockwise"],
+    ["uint8", "mod_counterclockwise"],
+    ["uint8", "mod_press"],
+    ["uint8", "mod_release"],
+
     ["uint16", "flags"]
 ];
 
@@ -200,12 +213,10 @@ async function send(index, data) {
         return;
     }
 
-    console.log(`SEND: [${data}]`);
-
     try {
         await device.hid_device.sendReport(0, new Uint8Array(data)).then(
             () => {
-                console.log(`Sent: [${data}]`);
+                //console.log(`Sent: [${data}]`);
             },
             (err) => {
                 console.log(`Error sending report: ${err}`);
@@ -264,10 +275,14 @@ async function set_config(index) {
 function on_hid_input_report(index, e) {
 
     let device = device_from_index(index);
+
     if (device != null) {
+
         let data = new Uint8Array(e.data.buffer);
-        console.log(`Got ${data[0]}`);
+        //console.log(`Got ${data[0]}`);
+
         switch (data[0]) {
+
             case hid_custom_response.hcc_here_is_firmware_version:
                 let b0 = data[1] || 0;
                 let b1 = data[2] || 0;
@@ -277,6 +292,7 @@ function on_hid_input_report(index, e) {
                 device.firmware_version_str = `${b3}.${b2}.${b1}.${b0}`;
                 console.log(`Firmware version ${device.firmware_version_str}`);
                 break;
+
             case hid_custom_response.hcc_here_is_config:
                 device.config = config_from_bytes(data, 1);
                 if (device.on_config_loaded != null) {
@@ -284,10 +300,12 @@ function on_hid_input_report(index, e) {
                 }
                 console.log("Got config", device.config);
                 break;
+
             case hid_custom_response.hcc_set_config_ack:
                 if (device.on_config_saved != null) {
                     device.on_config_saved();
                 }
+                break;
         }
     } else {
         console.log(`No device at index ${index}`);
@@ -326,12 +344,13 @@ async function init_device(d) {
         }
     });
 
-    hid_devices.value[device_index] = device;
-
     console.log(`add device ${device_index}`);
+
     d.addEventListener("inputreport", (event) => {
         on_hid_input_report(device.device_index, event);
     });
+
+    hid_devices.value[device_index] = device;
 
     await get_config(device.device_index);
     await get_firmware_version(device.device_index);
@@ -357,9 +376,11 @@ function init_devices() {
             for (let d of devices) {
                 console.log("FOUND", d.productName, d.opened);
                 if (d.opened) {
+                    console.log(`${d.productName} already open...`);
                     init_device(d);
                 } else {
                     d.open().then(() => {
+                        console.log(`${d.productName} opened`);
                         init_device(d);
                     });
                 }

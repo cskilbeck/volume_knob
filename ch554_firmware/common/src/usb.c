@@ -537,7 +537,6 @@ void usb_wait_for_connection()
 
 void usb_send(uint8 endpoint, uint8 len)
 {
-    printf("Send: %d of %d\n", endpoint, len);
     switch(endpoint) {
     case 1:
         UEP1_T_LEN = len;

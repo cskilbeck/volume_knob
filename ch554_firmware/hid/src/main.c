@@ -58,35 +58,58 @@ enum hid_custom_response
 #define BUTTON_QUICK_CLICK_COUNT 3
 
 //////////////////////////////////////////////////////////////////////
-// a queue of key states to send
+// a queue of events
 
+typedef enum event
+{
+    event_clockwise = 1,
+    event_counterclockwise = 2,
+    event_press = 3,
+    event_release = 4,
+
+    event_mask = 0x3f,
+
+    event_keydown = 0x40,
+    event_keyup = 0x80,
+
+} event_t;
+
+//////////////////////////////////////////////////////////////////////
 // must be a power of 2
+
 #define KEY_QUEUE_LEN 16
 
-__idata uint16 queue_buffer[KEY_QUEUE_LEN];
+__idata uint8 queue_buffer[KEY_QUEUE_LEN];
 __idata uint8 queue_head = 0;
 __idata uint8 queue_size = 0;
+
+//////////////////////////////////////////////////////////////////////
 
 inline bool queue_full()
 {
     return queue_size == KEY_QUEUE_LEN;
 }
 
+//////////////////////////////////////////////////////////////////////
+
 inline uint8 queue_space()
 {
     return KEY_QUEUE_LEN - queue_size;
 }
+
+//////////////////////////////////////////////////////////////////////
 
 inline bool queue_empty()
 {
     return queue_size == 0;
 }
 
+//////////////////////////////////////////////////////////////////////
 // check it's got space before calling this
 
-void queue_put(uint16 k)
+void queue_put(event_t e)
 {
-    queue_buffer[(queue_head + queue_size) & (KEY_QUEUE_LEN - 1)] = k;
+    queue_buffer[(queue_head + queue_size) & (KEY_QUEUE_LEN - 1)] = (uint8)e;
     queue_size += 1;
 }
 
@@ -101,37 +124,70 @@ void queue_pop_front()
 
 //////////////////////////////////////////////////////////////////////
 
-uint16 queue_get()
+event_t queue_get()
 {
     uint16 next = queue_buffer[queue_head];
     queue_pop_front();
-    return next;
+    return (event_t)next;
 }
 
 //////////////////////////////////////////////////////////////////////
 
-uint16 queue_peek()
+event_t queue_peek()
 {
-    return queue_buffer[queue_head];
+    return (event_t)queue_buffer[queue_head];
 }
 
 //////////////////////////////////////////////////////////////////////
-// top bit specifies whether it's a media key (1) or normal (0)
 
-bool set_keystate(uint16 key)
+bool process_event(event_t e)
 {
+    uint16 key = 0;
+    uint8 modifiers = 0;
+
+    switch(e & event_mask) {
+
+    case event_clockwise:
+        key = config.key_clockwise;
+        modifiers = config.mod_clockwise;
+        break;
+
+    case event_counterclockwise:
+        key = config.key_counterclockwise;
+        modifiers = config.mod_counterclockwise;
+        break;
+
+    case event_press:
+        key = config.key_press;
+        modifiers = config.mod_press;
+        break;
+
+    case event_release:
+        key = config.key_release;
+        modifiers = config.mod_release;
+        break;
+    }
+
+    uint16 send_key = key & 0x7fff;
+    uint16 send_modifiers = modifiers;
+
+    if((e & event_keyup) != 0) {
+        send_key = 0;
+        send_modifiers = 0;
+    }
+
     if(IS_MEDIA_KEY(key) && usb_is_endpoint_idle(endpoint_2)) {
-        key &= 0x7fff;
         usb_endpoint_2_tx_buffer[0] = 0x02;    // REPORT ID
-        usb_endpoint_2_tx_buffer[1] = key & 0xff;
-        usb_endpoint_2_tx_buffer[2] = key >> 8;
+        usb_endpoint_2_tx_buffer[1] = send_key & 0xff;
+        usb_endpoint_2_tx_buffer[2] = send_key >> 8;
         usb_send(endpoint_2, 3);
         return true;
     }
+
     if(!IS_MEDIA_KEY(key) && usb_is_endpoint_idle(endpoint_1)) {
-        usb_endpoint_1_tx_buffer[0] = 0x00;    // keyboard modifier
+        usb_endpoint_1_tx_buffer[0] = send_modifiers;
         usb_endpoint_1_tx_buffer[1] = 0x00;
-        usb_endpoint_1_tx_buffer[2] = key;    // keyboard key
+        usb_endpoint_1_tx_buffer[2] = send_key;    // keyboard key
         usb_endpoint_1_tx_buffer[3] = 0x00;
         usb_endpoint_1_tx_buffer[4] = 0x00;
         usb_endpoint_1_tx_buffer[5] = 0x00;
@@ -140,6 +196,7 @@ bool set_keystate(uint16 key)
         usb_send(endpoint_1, 8);
         return true;
     }
+
     return false;
 }
 
@@ -293,6 +350,7 @@ void main()
                 button_quick_clicks += 1;
                 if(button_quick_clicks == (BUTTON_QUICK_CLICK_COUNT - 1)) {
                     config.flags ^= cf_reverse_rotation;
+                    printf("Reverse: %d\n", config.flags & cf_reverse_rotation);
                     save_config();
                     pressed = false;
                 }
@@ -305,6 +363,8 @@ void main()
             usb.recv_len[3] = 0;
         }
 
+        bool momentary = (config.flags & cf_press_momentary) != 0;
+
         // queue up some keypresses if something happened
         if(pressed) {
 
@@ -313,30 +373,35 @@ void main()
             }
 
             uint8 space = 1;
-            bool send_release = config.key_release == 0;
-            if(send_release) {
+            if(momentary) {
                 space = 2;
             }
 
             if(queue_space() >= space) {
-                queue_put(config.key_press);
-                if(send_release) {
-                    queue_put(config.key_press & 0x8000);
+                queue_put(event_press | event_keydown);
+                if(!momentary) {
+                    queue_put(event_press | event_keyup);
                 }
             }
         }
 
         if(released) {
+
             if((config.flags & cf_led_flash_on_release) != 0) {
                 led_flash();
             }
 
-            if(config.key_release != 0 && queue_space() >= 1) {
-                queue_put(config.key_release);
+            if(momentary) {
+                if(queue_space() >= 1) {
+                    queue_put(event_press | event_keyup);
+                }
+            } else if(config.key_release && queue_space() >= 2) {
+                queue_put(event_release | event_keydown);
+                queue_put(event_release | event_keyup);
             }
         }
 
-        int8 turn_value = ((config.flags & cf_reverse_rotation) != 0) ? -1 : 1;
+        int8 turn_value = ((config.flags & cf_reverse_rotation) != 0) ? 1 : -1;
 
         if(direction == turn_value) {
 
@@ -345,8 +410,8 @@ void main()
             }
 
             if(queue_space() >= 2) {
-                queue_put(config.key_clockwise);
-                queue_put(config.key_clockwise & 0x8000);
+                queue_put(event_clockwise | event_keydown);
+                queue_put(event_clockwise | event_keyup);
             }
 
         } else if(direction == -turn_value) {
@@ -356,13 +421,13 @@ void main()
             }
 
             if(queue_space() >= 2) {
-                queue_put(config.key_counterclockwise);
-                queue_put(config.key_counterclockwise & 0x8000);
+                queue_put(event_counterclockwise | event_keydown);
+                queue_put(event_counterclockwise | event_keyup);
             }
         }
 
         // send key on/off to usb hid if there are some waiting to be sent
-        if(!queue_empty() && set_keystate(queue_peek())) {
+        if(!queue_empty() && process_event(queue_peek())) {
             queue_pop_front();
         }
         led_update();

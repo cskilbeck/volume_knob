@@ -2,7 +2,7 @@
 
 //////////////////////////////////////////////////////////////////////
 
-#define CONFIG_VERSION 0x80
+#define CONFIG_VERSION 0x81
 
 //////////////////////////////////////////////////////////////////////
 
@@ -19,7 +19,8 @@ typedef enum config_flags
     cf_led_flash_on_ccw = 0x02,
     cf_led_flash_on_press = 0x04,
     cf_led_flash_on_release = 0x08,
-    cf_reverse_rotation = 0x10
+    cf_reverse_rotation = 0x10,
+    cf_press_momentary = 0x20,
 
 } config_flags_t;
 
@@ -29,20 +30,23 @@ struct config
 {
     uint8 version;
 
-    // what keys to send for rotation
+    // what keys to send for rotation / press/release
     uint16 key_clockwise;
     uint16 key_counterclockwise;
-
-    // key to send when pressed
     uint16 key_press;
+    uint16 key_release;
 
     // if key_release != 0 then don't send key up after key_press
     // and send key_release when released
-    uint16 key_release;
+
+    uint8 mod_clockwise;
+    uint8 mod_counterclockwise;
+    uint8 mod_press;
+    uint8 mod_release;
 
     uint16 flags;
 
-    uint8 pad[CONFIG_MAX_LEN - 11];
+    uint8 pad[CONFIG_MAX_LEN - 15];
 };
 
 typedef struct config config_t;

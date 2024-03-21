@@ -1,14 +1,9 @@
 //////////////////////////////////////////////////////////////////////
 
 const key_modifiers = {
-    "Left CTRL": 0x01,
-    "Left SHIFT": 0x02,
-    "Left ALT": 0x04,
-    "Left META": 0x08,
-    "Right CTRL": 0x10,
-    "Right SHIFT": 0x20,
-    "Right ALT": 0x40,
-    "Right META": 0x80
+    "Ctrl": 0x01,
+    "Shift": 0x02,
+    "Alt": 0x04,
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -451,10 +446,59 @@ const consumer_control_keys = {
     0x23C: "App Control: Format",
 };
 
+let platform = navigator.platform.toUpperCase();
+
+let isMac = platform.indexOf('MAC') >= 0;
+let isPC = platform.indexOf('WIN32') >= 0 || platform.indexOf('LINUX') >= 0;
+
+if (isMac) {
+    key_modifiers["Cmd"] = 0x08;
+    console.log("Platform == MAC");
+} else if (isPC) {
+    key_modifiers["Win"] = 0x08;
+    console.log("Platform == Windows");
+} else {
+    // Neither Mac nor PC nor Linux
+    key_modifiers["GUI"] = 0x08;
+    console.log("Platform == OTHER");
+}
+
+//////////////////////////////////////////////////////////////////////
+
+let key_codes = [];
+
+for (const [key, value] of Object.entries(hid_keys)) {
+    key_codes.push({
+        name: value,
+        keycode: key
+    });
+}
+
+key_codes.sort((x, y) => {
+    return x.name.localeCompare(y.name);
+});
+
+//////////////////////////////////////////////////////////////////////
+
+let consumer_codes = [];
+
+for (const [key, value] of Object.entries(consumer_control_keys)) {
+    consumer_codes.push({
+        name: value,
+        keycode: key
+    });
+}
+
+consumer_codes.sort((x, y) => {
+    return x.name.localeCompare(y.name);
+});
+
 //////////////////////////////////////////////////////////////////////
 
 export default {
     key_modifiers,
+    key_codes,
+    consumer_codes,
     hid_keys,
     consumer_control_keys
 }

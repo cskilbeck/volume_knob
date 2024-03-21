@@ -74,6 +74,9 @@ let ui = ref(ui_object);
 
 function shallowEqual(object1, object2) {
 
+    if (object1 == null || object2 == null) {
+        return false;
+    }
     const keys1 = Object.keys(object1);
     const keys2 = Object.keys(object2);
 
@@ -98,10 +101,16 @@ function config_from_ui() {
 
     return {
         config_version: ui.value.config_version,
+
         key_clockwise: ui.value.key_clockwise,
         key_counterclockwise: ui.value.key_counterclockwise,
         key_press: ui.value.key_press,
         key_release: ui.value.key_release,
+
+        mod_clockwise: ui.value.mod_clockwise,
+        mod_counterclockwise: ui.value.mod_counterclockwise,
+        mod_press: ui.value.mod_press,
+        mod_release: ui.value.mod_release,
 
         flags: (ui.value.cf_led_flash_on_cw ? hid.flags.cf_led_flash_on_cw : 0)
             | (ui.value.cf_led_flash_on_ccw ? hid.flags.cf_led_flash_on_ccw : 0)
@@ -144,10 +153,17 @@ function ui_from_config(config) {
 
     return {
         config_version: config.config_version,
+
         key_clockwise: config.key_clockwise,
         key_counterclockwise: config.key_counterclockwise,
         key_press: config.key_press,
         key_release: config.key_release,
+
+        mod_clockwise: config.mod_clockwise,
+        mod_counterclockwise: config.mod_counterclockwise,
+        mod_press: config.mod_press,
+        mod_release: config.mod_release,
+
         cf_led_flash_on_cw: (config.flags & hid.flags.cf_led_flash_on_cw) != 0,
         cf_led_flash_on_ccw: (config.flags & hid.flags.cf_led_flash_on_ccw) != 0,
         cf_led_flash_on_press: (config.flags & hid.flags.cf_led_flash_on_press) != 0,
@@ -218,14 +234,26 @@ function store_config() {
 
 //////////////////////////////////////////////////////////////////////
 
-function copy_config() {
-    navigator.clipboard.writeText(JSON.stringify(config_from_ui(), 4, " "));
+function json_from_config(config) {
+    return JSON.stringify(config, " ", 4);
 }
+
+//////////////////////////////////////////////////////////////////////
+
+function copy_config() {
+    const config = config_from_ui();
+    const json = json_from_config(config);
+    navigator.clipboard.writeText(json);
+}
+
+//////////////////////////////////////////////////////////////////////
 
 function show_paste_dialog() {
     config_paste_textarea_contents.value = "";
     pasteConfigModal.value = true;
 }
+
+//////////////////////////////////////////////////////////////////////
 
 function paste_config(json_text) {
 
@@ -345,7 +373,7 @@ function rotation_matrix(cx, cy, angle) {
                                 <ul class="dropdown-menu">
                                     <li>
                                         <a class="dropdown-item" href="#"
-                                            @click="fileDownload(JSON.stringify(config_from_ui(), 4, ' '), 'tiny_volume_knob_settings.json');">
+                                            @click="fileDownload(json_from_config(config_from_ui()), 'tiny_volume_knob_settings.json');">
                                             Export
                                         </a>
                                     </li>
@@ -376,23 +404,24 @@ function rotation_matrix(cx, cy, angle) {
 
             <div v-if='device.active' class='col-lg-3 mx-3 bg-body border border-secondary rounded'>
                 <div class="row pt-2">
-                    <div class='col mb-1'>
+                    <div class='col'>
                         <strong>Rotation</strong>
                     </div>
                 </div>
-                <div class="row">
+                <div class="row mb-3">
                     <div class='col-lg'>
                         <div class="row">
                             <div class='col'>
-                                <HIDDropDown v-model="ui.key_clockwise">
-                                    CW
+                                <HIDDropDown v-model:keycode="ui.key_clockwise" v-model:mod="ui.mod_clockwise">
+                                    Clockwise
                                 </HIDDropDown>
                             </div>
                         </div>
                         <div class="row">
                             <div class='col'>
-                                <HIDDropDown v-model="ui.key_counterclockwise">
-                                    CCW
+                                <HIDDropDown v-model:keycode="ui.key_counterclockwise"
+                                    v-model:mod="ui.mod_counterclockwise">
+                                    Counter-clockwise
                                 </HIDDropDown>
                             </div>
                         </div>
