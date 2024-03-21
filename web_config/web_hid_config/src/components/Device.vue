@@ -37,7 +37,7 @@ let error_messages = ref([]);
 //////////////////////////////////////////////////////////////////////
 
 function cookie_name() {
-    return `${props.device.productName}_label`;
+    return `${props.device.name}_label`;
 }
 
 let device_label = ref(cookie.get(cookie_name()) || "Unnamed");
