@@ -236,6 +236,14 @@ function json_from_config(config) {
 
 //////////////////////////////////////////////////////////////////////
 
+function reset_to_defaults() {
+
+    props.device.config = hid.default_config;
+    ui.value = ui_from_config(hid.default_config);
+}
+
+//////////////////////////////////////////////////////////////////////
+
 function copy_config() {
     const config = config_from_ui();
     const json = json_from_config(config);
@@ -381,6 +389,14 @@ function rotation_matrix(cx, cy, angle) {
                                     <li>
                                         <a class="dropdown-item" href="#" @click='show_paste_dialog()'>
                                             Paste
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <hr class='m-0' />
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#" @click='reset_to_defaults()'>
+                                            Reset to defaults
                                         </a>
                                     </li>
                                 </ul>

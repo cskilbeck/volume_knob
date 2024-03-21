@@ -60,15 +60,10 @@ let default_config = {
     // key to send when pressed
     key_press: 0xE2, //keys.consumer_control_keys['Mute'],
 
-    // if key_release != 0 then don't send key up after key_press
-    // and send key_release when released
-    key_release: 0,
-
     // modifiers
     mod_clockwise: 0,
     mod_counterclockwise: 0,
     mod_press: 0,
-    mod_release: 0,
 
     // flags
     flags: default_flags
