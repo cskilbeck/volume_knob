@@ -167,26 +167,6 @@ function bytes_from_config(config) {
 }
 
 //////////////////////////////////////////////////////////////////////
-// convert some bytes to a hex string
-
-function bytes_to_hex_string(data, len, separator) {
-    if (separator == undefined) {
-        separator = " ";
-    }
-    let sep = "";
-    let str = "";
-    if (len === undefined) {
-        len = data.length;
-    }
-    let l = Math.min(len, data.length);
-    for (let i = 0; i < l; ++i) {
-        str += sep + data[i].toString(16).toUpperCase().padStart(2, '0');
-        sep = separator;
-    }
-    return str;
-}
-
-//////////////////////////////////////////////////////////////////////
 
 function device_from_index(index) {
     if (index < hid_devices.value.length) {
@@ -243,12 +223,14 @@ async function get_config(index) {
 //////////////////////////////////////////////////////////////////////
 
 async function goto_firmware_update_mode(index) {
+
     await send(index, [hid_custom_command.hcc_goto_bootloader]);
 }
 
 //////////////////////////////////////////////////////////////////////
 
 async function set_config(index) {
+
     let device = device_from_index(index);
     if (device == null) {
         console.log(`set_config: no device at index ${index}`);

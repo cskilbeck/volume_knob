@@ -54,10 +54,6 @@ function save_name() {
 
 let config_changed = ref(false);
 
-// if loading from device, suppress some computed things (MSB/LSB/etc stuff)
-
-let loading_config = false;
-
 //////////////////////////////////////////////////////////////////////
 // this is the config on the device to compare against
 
@@ -199,11 +195,9 @@ function toggle_expand() {
 // hid says a config was loaded from the device - apply it to the ui
 
 props.device.on_config_loaded = () => {
-    loading_config = true;
     stored_config = Object.assign({}, toRaw(props.device.config));
     ui.value = ui_from_config(props.device.config) || hid.default_config;
     nextTick(() => {
-        loading_config = false;
         config_changed.value = false;
     });
 };
@@ -213,7 +207,7 @@ props.device.on_config_loaded = () => {
 // in theory there's a little race in here but in practice not a problem
 
 props.device.on_config_saved = () => {
-    console.log("SAVED!");
+    console.log("Save config");
     stored_config = Object.assign({}, toRaw(props.device.config));
     config_changed.value = false;
 };
@@ -223,7 +217,7 @@ props.device.on_config_saved = () => {
 // update stored_config when we get the ack that it was written
 
 function store_config() {
-    console.log("STORE?");
+    console.log("Store config");
     props.device.config = config_from_ui();
     hid.set_config(props.device.device_index);
 }
@@ -636,7 +630,6 @@ function rotation_matrix(cx, cy, angle) {
     font-size: smaller;
 }
 
-
 [data-bs-theme='light'] .red-text {
     color: #B05800;
     font-weight: 600;
@@ -699,4 +692,4 @@ input.bright-focus-input {
 [data-bs-theme='dark'] .value-bar {
     background-color: var(--bs-primary-border-subtle);
 }
-</style>./HIDDropDown.vue
+</style>
