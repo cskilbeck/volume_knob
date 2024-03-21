@@ -52,10 +52,13 @@ enum hid_custom_response
 //////////////////////////////////////////////////////////////////////
 
 // time between button clicks to be considered quick clicks
-#define BUTTON_QUICK_CLICK_MS 500
+#define BUTTON_QUICK_CLICK_MS 333
 
 // # of quick clicks to reverse direction
-#define BUTTON_QUICK_CLICK_COUNT 3
+#define BUTTON_DOUBLE_CLICK_COUNT 2
+
+// how long to hold it for a long click
+#define BUTTON_LONG_CLICK_MS 1000
 
 //////////////////////////////////////////////////////////////////////
 // a queue of events
@@ -279,7 +282,7 @@ void main()
 
     uint16 press_time = 0;
 
-    // Triple click admin
+    // Double click admin
 
     uint16 button_click_tick_count = 0;
     uint8 button_quick_clicks = 0;
@@ -317,6 +320,9 @@ void main()
 
             if(button_state) {
                 press_time += 1;
+                if(press_time == BUTTON_LONG_CLICK_MS) {
+                    puts("Long click");
+                }
                 if(press_time == BOOTLOADER_BUTTON_DELAY_MS) {
                     goto_bootloader();
                 }
@@ -342,10 +348,8 @@ void main()
         if(pressed) {
             if(button_click_tick_count < BUTTON_QUICK_CLICK_MS) {
                 button_quick_clicks += 1;
-                if(button_quick_clicks == (BUTTON_QUICK_CLICK_COUNT - 1)) {
-                    config.flags ^= cf_reverse_rotation;
-                    printf("Reverse: %d\n", config.flags & cf_reverse_rotation);
-                    save_config();
+                if(button_quick_clicks == (BUTTON_DOUBLE_CLICK_COUNT - 1)) {
+                    puts("Double Click");
                     pressed = false;
                 }
             }
