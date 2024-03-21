@@ -314,46 +314,50 @@ function on_hid_input_report(index, e) {
 
 async function init_device(d) {
 
+    let device = null;
+
     for (let hid_device of hid_devices.value) {
         if (hid_device.name == d.productName) {
             console.log(`Already got ${d.productName}`);
-            return;
+            device = hid_device;
+            break;
         }
     }
 
-    console.log(`New device ${d.productName}`);
+    if (device == null) {
+        console.log(`New device ${d.productName}`);
 
-    let device = {
-        device_index: device_index,
-        firmware_version: 0x00000000,
-        firmware_version_str: "0.0.0.0",
-        hid_device: d,
-        name: d.productName,
-        config: {},
-        on_config_loaded: null,
-        on_config_saved: null
-    };
+        device = {
+            device_index: device_index,
+            firmware_version: 0x00000000,
+            firmware_version_str: "0.0.0.0",
+            hid_device: d,
+            name: d.productName,
+            config: {},
+            on_config_loaded: null,
+            on_config_saved: null
+        };
 
-    Object.assign(device.config, default_config);
+        Object.assign(device.config, default_config);
 
-    Object.defineProperty(device, 'active', {
-        get() {
-            return this.hid_device != null && this.hid_device.opened;
-        }
-    });
+        Object.defineProperty(device, 'active', {
+            get() {
+                return this.hid_device != null && this.hid_device.opened;
+            }
+        });
 
-    console.log(`add device ${device_index}`);
+        console.log(`add device ${device_index}`);
 
-    d.addEventListener("inputreport", (event) => {
-        on_hid_input_report(device.device_index, event);
-    });
+        d.addEventListener("inputreport", (event) => {
+            on_hid_input_report(device.device_index, event);
+        });
 
-    hid_devices.value[device_index] = device;
+        hid_devices.value[device_index] = device;
+        device_index += 1;
+    }
 
     await get_config(device.device_index);
     await get_firmware_version(device.device_index);
-
-    device_index += 1;
 }
 
 //////////////////////////////////////////////////////////////////////
