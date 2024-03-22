@@ -331,13 +331,9 @@ function rotation_matrix(cx, cy, angle) {
             <!-- Name, Serial, Buttons -->
 
             <div class='col-lg-3'>
-                <div class='row mt-1'>
+                <div class='row'>
                     <div class="col-6 text-center">
-                        <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
-                            @click='toggle_connection(device)'>
-                            {{ !device.active ? 'Connect' : 'Disconnect' }}
-                        </button>
-                        <div class="small mt-3" v-if="device.active">
+                        <div class="small" v-if="device.active">
                             Firmware version
                             <div class="text-body-secondary font-monospace">
                                 {{ props.device.firmware_version_str }}

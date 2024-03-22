@@ -65,10 +65,10 @@ function scan_hid() {
       <DeviceList :devices="hid.hid_devices" />
     </div>
 
-    <Modal v-model="closeableModal" maxwidth="30%" closeable header="It's a Configurator for the Tiny USB Midi Knob">
+    <Modal v-model="closeableModal" maxwidth="30%" closeable header="It's a Configurator for the Tiny USB Knob">
       <div class="row">
         <div class="col my-3 text-center">
-          Get your own Tiny USB Midi Knob <a href="https://www.etsy.com/uk/shop/TinyLittleGadgets" target="_blank"
+          Get your own Tiny USB Knob <a href="https://www.etsy.com/uk/shop/TinyLittleGadgets" target="_blank"
             rel="noreferrer noopener">here</a>
         </div>
       </div>

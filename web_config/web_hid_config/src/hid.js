@@ -10,8 +10,6 @@ let scanned = ref({});
 //////////////////////////////////////////////////////////////////////
 // next midi device index
 
-let device_index = 0;
-
 const CONFIG_VERSION = 0x82;
 
 //////////////////////////////////////////////////////////////////////
@@ -299,7 +297,6 @@ async function init_device(d) {
         console.log(`New device ${d.productName}`);
 
         device = {
-            device_index: device_index,
             firmware_version: 0x00000000,
             firmware_version_str: "0.0.0.0",
             hid_device: d,
@@ -317,8 +314,6 @@ async function init_device(d) {
             }
         });
 
-        console.log(`add device ${device_index}`);
-
         d.addEventListener("inputreport", (event) => {
             on_hid_input_report(event);
         });
@@ -335,16 +330,9 @@ async function init_device(d) {
 function on_connect(event) {
 
     let name = event.device.productName;
-    let event_type = event.type;
-    console.log("connect", name, event_type);
-    console.log(hid_devices[name]);
-
-    if (hid_devices.value[event.device.productName] && event.type == 'disconnect') {
-        delete hid_devices.value[event.device.productName];
+    if (hid_devices.value[name] && event.type == 'disconnect') {
+        delete hid_devices.value[name];
     }
-    // if can't find device in the list, return
-    // if event.type == 'disconnect', remove entry from list
-    // if event.type == 'connect', init_device(event.device)
 }
 
 //////////////////////////////////////////////////////////////////////
