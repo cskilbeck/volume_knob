@@ -10,6 +10,7 @@
 #define NORMAL_KEY(x) (x)
 
 #define IS_MEDIA_KEY(x) ((x & 0x8000) != 0)
+#define IS_KEYBOARD_KEY(x) ((x & 0x8000) == 0)
 
 //////////////////////////////////////////////////////////////////////
 

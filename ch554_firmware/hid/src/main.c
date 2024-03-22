@@ -6,20 +6,6 @@
 // TIMER2 = 1KHz tick
 
 //////////////////////////////////////////////////////////////////////
-// Define ROTARY_DIRECTION as CLOCKWISE for one kind of encoders, ANTI_CLOCKWISE for
-// the other ones (some are reversed). This sets the default rotation (after first
-// flash), reverse by triple-clicking the knob
-
-#define CLOCKWISE 2
-#define ANTI_CLOCKWISE 0
-
-#if DEVICE == DEVICE_DEVKIT
-#define ROTARY_DIRECTION (ANTI_CLOCKWISE)
-#else
-#define ROTARY_DIRECTION (CLOCKWISE)
-#endif
-
-//////////////////////////////////////////////////////////////////////
 
 enum hid_custom_command
 {
@@ -51,11 +37,8 @@ enum hid_custom_response
 
 //////////////////////////////////////////////////////////////////////
 
-// time between button clicks to be considered quick clicks
+// time between button clicks to be considered a double click
 #define BUTTON_QUICK_CLICK_MS 333
-
-// # of quick clicks to reverse direction
-#define BUTTON_DOUBLE_CLICK_COUNT 2
 
 // how long to hold it for a long click
 #define BUTTON_LONG_CLICK_MS 1000
@@ -71,8 +54,8 @@ typedef enum event
 
     event_mask = 0x3f,
 
-    event_keydown = 0x40,
-    event_keyup = 0x80,
+    event_keydown = 0,     // key down is on by default
+    event_keyup = 0x80,    // else key up
 
 } event_t;
 
@@ -173,24 +156,24 @@ bool process_event(event_t e)
         send_modifiers = 0;
     }
 
-    if(IS_MEDIA_KEY(key) && usb_is_endpoint_idle(endpoint_2)) {
-        usb_endpoint_2_tx_buffer[0] = 0x02;    // REPORT ID
-        usb_endpoint_2_tx_buffer[1] = send_key & 0xff;
-        usb_endpoint_2_tx_buffer[2] = send_key >> 8;
-        usb_send(endpoint_2, 3);
-        return true;
-    }
-
-    if(!IS_MEDIA_KEY(key) && usb_is_endpoint_idle(endpoint_1)) {
+    if(IS_KEYBOARD_KEY(key) && usb_is_endpoint_idle(endpoint_1)) {
         usb_endpoint_1_tx_buffer[0] = send_modifiers;
         usb_endpoint_1_tx_buffer[1] = 0x00;
-        usb_endpoint_1_tx_buffer[2] = send_key;    // keyboard key
+        usb_endpoint_1_tx_buffer[2] = send_key;
         usb_endpoint_1_tx_buffer[3] = 0x00;
         usb_endpoint_1_tx_buffer[4] = 0x00;
         usb_endpoint_1_tx_buffer[5] = 0x00;
         usb_endpoint_1_tx_buffer[6] = 0x00;
         usb_endpoint_1_tx_buffer[7] = 0x00;
         usb_send(endpoint_1, 8);
+        return true;
+    }
+
+    if(IS_MEDIA_KEY(key) && usb_is_endpoint_idle(endpoint_2)) {
+        usb_endpoint_2_tx_buffer[0] = 0x02;    // REPORT ID
+        usb_endpoint_2_tx_buffer[1] = send_key & 0xff;
+        usb_endpoint_2_tx_buffer[2] = send_key >> 8;
+        usb_send(endpoint_2, 3);
         return true;
     }
 
@@ -288,7 +271,7 @@ void main()
     uint8 button_quick_clicks = 0;
 
     bool button_state = false;
-    uint8 button_ticks = 0;    // for debouncing the button
+    uint8 button_debounce_ticks = 0;    // for debouncing the button
 
     // main loop
 
@@ -301,9 +284,9 @@ void main()
         bool released = false;
         bool new_state = !BTN_BIT;
 
-        if(new_state != button_state && button_ticks > 1) {
+        if(new_state != button_state && button_debounce_ticks > 1) {
 
-            button_ticks = 0;
+            button_debounce_ticks = 0;
             pressed = new_state;
             released = !new_state;
             button_state = new_state;
@@ -314,8 +297,8 @@ void main()
 
             TF2 = 0;
 
-            if(button_ticks <= 2) {
-                button_ticks += 1;
+            if(button_debounce_ticks <= 2) {
+                button_debounce_ticks += 1;
             }
 
             if(button_state) {
@@ -344,24 +327,29 @@ void main()
         // read the rotary encoder (returns -1, 0 or 1)
         int8 direction = encoder_read();
 
-        // check for triple-click
+        // check for double-click
         if(pressed) {
             if(button_click_tick_count < BUTTON_QUICK_CLICK_MS) {
-                button_quick_clicks += 1;
-                if(button_quick_clicks == (BUTTON_DOUBLE_CLICK_COUNT - 1)) {
+                if(button_quick_clicks == 2) {
                     puts("Double Click");
                     pressed = false;
+                    button_quick_clicks = 0;
+                } else {
+                    button_quick_clicks += 1;
                 }
             }
             button_click_tick_count = 0;
         }
 
+        // if something arrived on endpoint 3
         if(usb.recv_len[3] != 0) {
+
+            // handle it
             handle_custom_hid_packet();
             usb.recv_len[3] = 0;
         }
 
-        // queue up some keypresses if something happened
+        // queue up some events if something happened
         if(pressed) {
 
             if((config.flags & cf_led_flash_on_press) != 0) {
