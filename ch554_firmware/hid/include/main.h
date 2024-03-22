@@ -61,7 +61,7 @@
 
 #define SERIAL_LEN 8    // 8 chars for 32 bit hex serial # from chip_id 01234567
 
-#define PRODUCT_NAME "Tiny Volume Knob 00000000"    // last 8 chars filled in with serial #
+#define PRODUCT_NAME "Tiny USB Knob 00000000"    // last 8 chars filled in with serial #
 
 #define FIRMWARE_CURRENT_VERSION 0x01000000lu
 
