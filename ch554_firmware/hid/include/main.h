@@ -39,12 +39,6 @@
 #define BOOT_FLASH_LED_COUNT 20
 #define BOOT_FLASH_LED_SPEED 20
 
-#if defined(DEBUG)
-#define BOOTLOADER_BUTTON_DELAY_MS 30000
-#else
-#define BOOTLOADER_BUTTON_DELAY_MS 30000
-#endif
-
 //////////////////////////////////////////////////////////////////////
 
 // uncomment this line for full speed (12Mb), comment it out for low speed (1.5Mb)

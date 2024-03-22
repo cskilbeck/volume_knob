@@ -247,6 +247,11 @@ void main()
     led_init();
     encoder_init();
 
+    // if button held down when the device is plugged in, go to bootloader
+    if(BTN_BIT == 0) {
+        goto_bootloader();
+    }
+
     // global irq enable
     EA = 1;
 
@@ -305,9 +310,6 @@ void main()
                 press_time += 1;
                 if(press_time == BUTTON_LONG_CLICK_MS) {
                     puts("Long click");
-                }
-                if(press_time == BOOTLOADER_BUTTON_DELAY_MS) {
-                    goto_bootloader();
                 }
             } else {
                 press_time = 0;
