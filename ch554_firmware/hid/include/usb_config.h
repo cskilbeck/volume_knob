@@ -16,7 +16,8 @@
 //     0x0     // 16 bits: media key (8..15)
 // };
 
-// uint8 keyboard_report[8] = {
+// uint8 keyboard_report[9] = {
+//     0x01,    // report ID 1
 //     0x00,    // modifier keys
 //     0x00,    // pad
 //     0x00,    // key 0
@@ -31,31 +32,42 @@
 
 // KEYBOARD DEVICE
 
-__code const uint8 keyboard_rep_desc[] = {
+__code const uint8 hid_rep_desc[] = {
 
-    0x05, 0x01,          // Usage Page: Generic Desktop Controls
-    0x09, 0x06,          // Usage: Keyboard
-    0xA1, 0x01,          // Collection: Application
-    0x05, 0x07,          // Usage Page: Keyboard
-    0x19, 0xE0,          // Usage Minimum: Keyboard LeftControl
-    0x29, 0xE7,          // Usage Maximum: Keyboard Right GUI
-    0x15, 0x00,          // Logical Minimum: 0
-    0x25, 0x01,          // Logical Maximum: 1
-    0x75, 0x01,          // Report Size: 1
-    0x95, 0x08,          // Report Count: 8
-    0x81, 0x02,          // Input: Data (2)
-    0x95, 0x01,          // Report Count: 1
-    0x75, 0x08,          // Report Size: 8
-    0x81, 0x01,          // Input: Constant (1)
-    0x95, 0x03,          // Report Count: 3
-    0x75, 0x01,          // Report Size: 1
-    0x05, 0x08,          // Usage Page: LEDs
-    0x19, 0x01,          // Usage Minimum: Num Lock
-    0x29, 0x03,          // Usage Maximum: Scroll Lock
-    0x91, 0x02,          // Output: Data (2)
-    0x95, 0x05,          // Report Count: 5
-    0x75, 0x01,          // Report Size: 1
-    0x91, 0x01,          // Output: Constant (1)
+    0x05, 0x01,    // Usage Page: Generic Desktop Controls
+    0x09, 0x06,    // Usage: Keyboard
+    0xA1, 0x01,    // Collection: Application
+    0x85, 0x01,    // REPORT_ID (1)
+
+    // modifiers
+    0x05, 0x07,    // Usage Page: Keyboard
+    0x19, 0xE0,    // Usage Minimum: Keyboard LeftControl
+    0x29, 0xE7,    // Usage Maximum: Keyboard Right GUI
+    0x15, 0x00,    // Logical Minimum: 0
+    0x25, 0x01,    // Logical Maximum: 1
+    0x75, 0x01,    // Report Size: 1
+    0x95, 0x08,    // Report Count: 8
+    0x81, 0x02,    // Input: Data (2)
+
+    // reserved
+    0x95, 0x01,    // Report Count: 1
+    0x75, 0x08,    // Report Size: 8
+    0x81, 0x01,    // Input: Constant (1)
+
+    // LEDs
+    0x95, 0x03,    // Report Count: 3
+    0x75, 0x01,    // Report Size: 1
+    0x05, 0x08,    // Usage Page: LEDs
+    0x19, 0x01,    // Usage Minimum: Num Lock
+    0x29, 0x03,    // Usage Maximum: Scroll Lock
+    0x91, 0x02,    // Output: Data (2)
+
+    // padding x 5 bits
+    0x95, 0x05,    // Report Count: 5
+    0x75, 0x01,    // Report Size: 1
+    0x91, 0x01,    // Output: Constant (1)
+
+    // 6 keys
     0x95, 0x06,          // Report Count: 6
     0x75, 0x08,          // Report Size: 8
     0x15, 0x00,          // Logical Minimum: 0
@@ -64,16 +76,13 @@ __code const uint8 keyboard_rep_desc[] = {
     0x19, 0x00,          // Usage Minimum: 0
     0x2A, 0xFF, 0x00,    // Usage Maximum: 255
     0x81, 0x00,          // Input: Data (0)
-    0xC0                 // End collection
-};
 
-// CONSUMER CONTROL DEVICE
+    0xC0,    // End collection
 
-__code const uint8 media_rep_desc[] = {
-
-    0x05, 0x0c,                      // USAGE_PAGE (Consumer Devices)
+    // CONSUMER CONTROL DEVICE
+    0x05, 0x0c,                      // Usage Page (Consumer Devices)
     0x0b, 0x01, 0x00, 0x0c, 0x00,    // USAGE (Consumer Devices:Consumer Control)
-    0xa1, 0x01,                      // COLLECTION (Application)
+    0xa1, 0x01,                      // Collection (Application)
     0x85, 0x02,                      //   REPORT_ID (2)
     0x19, 0x00,                      //   USAGE_MINIMUM (Unassigned)
     0x2a, 0x08, 0x01,                //   USAGE_MAXIMUM (Police Alarm)
@@ -82,7 +91,8 @@ __code const uint8 media_rep_desc[] = {
     0x95, 0x01,                      //   REPORT_COUNT (1)
     0x75, 0x10,                      //   REPORT_SIZE (16)
     0x81, 0x00,                      //   INPUT (Data,Array,Absolute)
-    0xc0                             // END_COLLECTION
+
+    0xc0    // END_COLLECTION
 };
 
 // CUSTOM HID DEVICE
@@ -106,26 +116,36 @@ __code const uint8 custom_rep_desc[] = {
 
 //////////////////////////////////////////////////////////////////////
 
+#define LANGUAGE_DESC 0
+#define MANUFACTURER_STRING_DESC 1
+#define PRODUCT_NAME_STRING_DESC 2
+#define SERIAL_NUMBER_STRING_DESC 3
+#define HID_STRING_DESC 4
+
+#define NUM_STRING_DESCRIPTORS 5
+
+//////////////////////////////////////////////////////////////////////
+
 __code const uint8 device_desc[] = {
 
-    sizeof(device_desc),     // bLength
-    USB_DESCR_TYP_DEVICE,    // bDescriptorType
-    0x10,                    // bcdUSB (1)
-    0x01,                    // bcdUSB (2)
-    0x00,                    // bDeviceClass
-    0x00,                    // bDeviceSubClass
-    0x00,                    // bDeviceProtocol
-    DEFAULT_ENDP0_SIZE,      // bMaxPacketSize0
-    USB_VID & 0xff,          // idVendor (LSB)
-    USB_VID >> 8,            // idVendor (MSB)
-    USB_PID & 0xff,          // idProduct (LSB)
-    USB_PID >> 8,            // idProduct (MSB)
-    0x00,                    // bcdDevice(1)
-    0x01,                    // bcdDevice(2)
-    0x01,                    // iManufacturer
-    0x02,                    // iProduct
-    0x03,                    // iSerialNumber
-    0x01                     // bNumConfigurations
+    sizeof(device_desc),          // bLength
+    USB_DESCR_TYP_DEVICE,         // bDescriptorType
+    0x10,                         // bcdUSB (1)
+    0x01,                         // bcdUSB (2)
+    0x00,                         // bDeviceClass
+    0x00,                         // bDeviceSubClass
+    0x00,                         // bDeviceProtocol
+    DEFAULT_ENDP0_SIZE,           // bMaxPacketSize0
+    USB_VID & 0xff,               // idVendor (LSB)
+    USB_VID >> 8,                 // idVendor (MSB)
+    USB_PID & 0xff,               // idProduct (LSB)
+    USB_PID >> 8,                 // idProduct (MSB)
+    0x00,                         // bcdDevice(1)
+    0x01,                         // bcdDevice(2)
+    MANUFACTURER_STRING_DESC,     // iManufacturer
+    PRODUCT_NAME_STRING_DESC,     // iProduct
+    SERIAL_NUMBER_STRING_DESC,    // iSerialNumber
+    0x01                          // bNumConfigurations
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -137,11 +157,14 @@ __code const uint8 hid_config_desc[] = {
     USB_DESCR_TYP_CONFIG,              // bDescriptorType
     sizeof(hid_config_desc) & 0xff,    // wTotalLength (1)
     sizeof(hid_config_desc) >> 8,      // wTotalLength (2)
-    0x03,                              // bNumInterface
+    0x02,                              // bNumInterface
     0x01,                              // bConfigurationValue
-    0x06,                              // iConfiguration
+    HID_STRING_DESC,                   // iConfiguration
     0x80,                              // bmAttributes: Bus Power/No Remote Wakeup
     0x32,                              // bMaxPower
+
+    //////////////////////////////////////////////////
+    // KEYBOARD / CONSUMER CONTROL HID DEVICE
 
     // Interface
     0x09,                    // bLength
@@ -152,18 +175,18 @@ __code const uint8 hid_config_desc[] = {
     USB_DEV_CLASS_HID,       // bInterfaceClass
     0x01,                    // bInterfaceSubClass
     0x01,                    // bInterfaceProtocol: Keyboard
-    0x04,                    // iInterface
+    HID_STRING_DESC,         // iInterface - HID STRING
 
-    // HID KEYBOARD
-    0x09,                                // bLength
-    USB_DESCR_TYP_HID,                   // bDescriptorType: HID
-    0x11,                                // bcdHID(1)
-    0x01,                                // bcdHID(2)
-    0x00,                                // bCountryCode
-    0x01,                                // bNumDescriptors
-    0x22,                                // bDescriptorType: Report
-    sizeof(keyboard_rep_desc) & 0xff,    // wDescriptorLength (1)
-    sizeof(keyboard_rep_desc) >> 8,      // wDescriptorLength (2)
+    // HID
+    0x09,                           // bLength
+    USB_DESCR_TYP_HID,              // bDescriptorType: HID
+    0x11,                           // bcdHID(1)
+    0x01,                           // bcdHID(2)
+    0x00,                           // bCountryCode
+    0x01,                           // bNumDescriptors
+    0x22,                           // bDescriptorType: Report
+    sizeof(hid_rep_desc) & 0xff,    // wDescriptorLength (1)
+    sizeof(hid_rep_desc) >> 8,      // wDescriptorLength (2)
 
     // Endpoint
     0x07,                      // bLength
@@ -174,49 +197,21 @@ __code const uint8 hid_config_desc[] = {
     USB_PACKET_SIZE >> 8,      // wMaxPacketSize (2)
     0x02,                      // bInterval
 
-    // Interface
-    0x09,                    // bLength
-    USB_DESCR_TYP_INTERF,    // bDescriptorType
-    0x01,                    // bInterfaceNumber
-    0x00,                    // bAlternateSetting
-    0x01,                    // bNumEndpoints
-    USB_DEV_CLASS_HID,       // bInterfaceClass
-    0x01,                    // bInterfaceSubClass
-    0x01,                    // bInterfaceProtocol: Keyboard
-    0x05,                    // iInterface
-
-    // HID MEDIA CONTROL DEVICE
-    0x09,                             // bLength
-    USB_DESCR_TYP_HID,                // bDescriptorType: HID
-    0x11,                             // bcdHID(1)
-    0x01,                             // bcdHID(2)
-    0x00,                             // bCountryCode
-    0x01,                             // bNumDescriptors
-    0x22,                             // bDescriptorType: Report
-    sizeof(media_rep_desc) & 0xff,    // wDescriptorLength (1)
-    sizeof(media_rep_desc) >> 8,      // wDescriptorLength (2)
-
-    // Endpoint
-    0x07,                      // bLength
-    USB_DESCR_TYP_ENDP,        // bDescriptorType: ENDPOINT
-    0x82,                      // bEndpointAddress: IN/Endpoint2
-    USB_ENDP_TYPE_INTER,       // bmAttributes: Interrupt
-    USB_PACKET_SIZE & 0xff,    // wMaxPacketSize (1)
-    USB_PACKET_SIZE >> 8,      // wMaxPacketSize (2)
-    0x02,                      // bInterval
+    //////////////////////////////////////////////////
+    // CUSTOM HID DEVICE
 
     // Interface
-    0x09,                    // bLength
-    USB_DESCR_TYP_INTERF,    // bDescriptorType
-    0x02,                    // bInterfaceNumber
-    0x00,                    // bAlternateSetting
-    0x02,                    // bNumEndpoints
-    USB_DEV_CLASS_HID,       // bInterfaceClass
-    0x00,                    // bInterfaceSubClass: none (no boot)
-    0x00,                    // bInterfaceProtocol: none
-    0x02,                    // iInterface
+    0x09,                        // bLength
+    USB_DESCR_TYP_INTERF,        // bDescriptorType
+    0x01,                        // bInterfaceNumber
+    0x00,                        // bAlternateSetting
+    0x02,                        // bNumEndpoints
+    USB_DEV_CLASS_HID,           // bInterfaceClass
+    0x01,                        // bInterfaceSubClass
+    0x01,                        // bInterfaceProtocol: Keyboard
+    PRODUCT_NAME_STRING_DESC,    // iInterface - PRODUCT STRING
 
-    // HID
+    // CUSTOM HID
     0x09,                              // bLength
     USB_DESCR_TYP_HID,                 // bDescriptorType: HID
     0x11,                              // bcdHID(1)
@@ -247,25 +242,6 @@ __code const uint8 hid_config_desc[] = {
 };
 
 //////////////////////////////////////////////////////////////////////
-// UINT16s in here...
-
-#define LANGUAGE_DESC 0x0409
-#define MANUFACTURER_STRING 'T', 'i', 'n', 'y', ' ', 'L', 'i', 't', 't', 'l', 'e', ' ', 'T', 'h', 'i', 'n', 'g', 's'
-#define KEYBOARD_STRING 'T', 'i', 'n', 'y', ' ', 'U', 'S', 'B', ' ', 'K', 'n', 'o', 'b', ' ', '(', 'K', 'B', 'D', ')'
-#define MEDIA_STRING 'T', 'i', 'n', 'y', ' ', 'U', 'S', 'B', ' ', 'K', 'n', 'o', 'b', ' ', '(', 'C', 'C', ')'
-#define CONFIG_STRING 'C', 'o', 'n', 'f', 'i', 'g'
-#define CUSTOM_STRING 'T', 'i', 'n', 'y', ' ', 'U', 'S', 'B', ' ', 'K', 'n', 'o', 'b'
-
-#define STR_HDR(x) (sizeof(x) | (USB_DESCR_TYP_STRING << 8))
-
-__code const uint16 language_desc[] = { STR_HDR(language_desc), LANGUAGE_DESC };
-__code const uint16 manufacturer_string[] = { STR_HDR(manufacturer_string), MANUFACTURER_STRING };
-__code const uint16 keyboard_string[] = { STR_HDR(keyboard_string), KEYBOARD_STRING };
-__code const uint16 media_string[] = { STR_HDR(media_string), MEDIA_STRING };
-__code const uint16 config_string[] = { STR_HDR(config_string), CONFIG_STRING };
-__code const uint16 custom_string[] = { STR_HDR(custom_string), CUSTOM_STRING };
-
-//////////////////////////////////////////////////////////////////////
 
 __code const usb_descriptor_t config_descs[] = {
     DESCRIPTOR(hid_config_desc)    // USB config
@@ -274,22 +250,31 @@ __code const usb_descriptor_t config_descs[] = {
 //////////////////////////////////////////////////////////////////////
 
 __code const usb_descriptor_t report_descs[] = {
-    DESCRIPTOR(keyboard_rep_desc),    // keyboard HID report
-    DESCRIPTOR(media_rep_desc),       // media key HID report
-    DESCRIPTOR(custom_rep_desc)       // custom report
+    DESCRIPTOR(hid_rep_desc),      // main HID report
+    DESCRIPTOR(custom_rep_desc)    // custom HID report
 };
 
 //////////////////////////////////////////////////////////////////////
+// UINT16s in here...
 
-__code const usb_descriptor_t string_descs[] = {
-    DESCRIPTOR(language_desc),           // 0
-    DESCRIPTOR(manufacturer_string),     // 1
-    DESCRIPTOR(product_name_string),     // 2 - dynamic in xdata
-    DESCRIPTOR(serial_number_string),    // 3 - dynamic in xdata
-    DESCRIPTOR(keyboard_string),         // 4
-    DESCRIPTOR(media_string),            // 5
-    DESCRIPTOR(config_string),           // 6
-    DESCRIPTOR(custom_string)            // 7
+#define LANGUAGE_DESC 0x0409
+#define MANUFACTURER_STRING 'T', 'i', 'n', 'y', ' ', 'L', 'i', 't', 't', 'l', 'e', ' ', 'T', 'h', 'i', 'n', 'g', 's'
+#define HID_STRING 'T', 'i', 'n', 'y', ' ', 'U', 'S', 'B', ' ', 'K', 'n', 'o', 'b'
+
+#define STR_HDR(x) (sizeof(x) | (USB_DESCR_TYP_STRING << 8))
+
+__code const uint16 language_desc[] = { STR_HDR(language_desc), LANGUAGE_DESC };
+__code const uint16 manufacturer_string[] = { STR_HDR(manufacturer_string), MANUFACTURER_STRING };
+__code const uint16 hid_string[] = { STR_HDR(hid_string), HID_STRING };
+
+//////////////////////////////////////////////////////////////////////
+
+__code const usb_descriptor_t string_descs[NUM_STRING_DESCRIPTORS] = {
+    DESCRIPTOR(language_desc),           // #define LANGUAGE_DESC               0
+    DESCRIPTOR(manufacturer_string),     // #define MANUFACTURER_STRING_DESC    1
+    DESCRIPTOR(product_name_string),     // #define PRODUCT_NAME_STRING_DESC    2 (dynamic in xdata)
+    DESCRIPTOR(serial_number_string),    // #define SERIAL_NUMBER_STRING_DESC   3 (dynamic in xdata)
+    DESCRIPTOR(hid_string)               // #define HID_STRING_DESC             4
 };
 
 //////////////////////////////////////////////////////////////////////

@@ -234,7 +234,7 @@ async function set_config(device) {
     for (let i = 0; i < cur_config.length; ++i) {
         msg[i + 1] = cur_config[i];
     }
-    await send(index, msg);
+    await send(device, msg);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -275,7 +275,7 @@ function on_hid_input_report(e) {
                 break;
         }
     } else {
-        console.log(`No device at index ${index}`);
+        console.log(`Unknown device ${e.device.productName}`);
     }
 }
 
@@ -283,17 +283,10 @@ function on_hid_input_report(e) {
 
 async function init_device(d) {
 
-    let device = null;
+    let device = hid_devices.value[d.productName];
 
-    for (let h in hid_devices.value) {
-        if (h == d.productName) {
-            console.log(`Already got ${d.productName}`);
-            device = hid_devices.value[h];
-            break;
-        }
-    }
+    if (!device) {
 
-    if (device == null) {
         console.log(`New device ${d.productName}`);
 
         device = {
@@ -314,9 +307,7 @@ async function init_device(d) {
             }
         });
 
-        d.addEventListener("inputreport", (event) => {
-            on_hid_input_report(event);
-        });
+        d.addEventListener("inputreport", on_hid_input_report);
 
         hid_devices.value[d.productName] = device;
     }
@@ -337,19 +328,10 @@ function on_connect(event) {
 
 //////////////////////////////////////////////////////////////////////
 
-function on_disconnect(event) {
-    console.log("disconnect", event);
-}
-
-//////////////////////////////////////////////////////////////////////
-
 function init_devices() {
 
     navigator.hid.removeEventListener("connect", on_connect);
-    navigator.hid.removeEventListener("disconnect", on_connect);
-
     navigator.hid.addEventListener("connect", on_connect);
-    navigator.hid.addEventListener("disconnect", on_connect);
 
     navigator.hid.requestDevice({
         filters: [{
@@ -364,7 +346,6 @@ function init_devices() {
             scanned.value.done = true;
 
             for (let d of devices) {
-                console.log("FOUND", d.productName, d.opened);
                 if (d.opened) {
                     console.log(`${d.productName} already open...`);
                     init_device(d);

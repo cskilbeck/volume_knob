@@ -156,25 +156,29 @@ bool process_event(event_t e)
         send_modifiers = 0;
     }
 
-    if(IS_KEYBOARD_KEY(key) && usb_is_endpoint_idle(endpoint_1)) {
-        usb_endpoint_1_tx_buffer[0] = send_modifiers;
-        usb_endpoint_1_tx_buffer[1] = 0x00;
-        usb_endpoint_1_tx_buffer[2] = send_key;
-        usb_endpoint_1_tx_buffer[3] = 0x00;
-        usb_endpoint_1_tx_buffer[4] = 0x00;
-        usb_endpoint_1_tx_buffer[5] = 0x00;
-        usb_endpoint_1_tx_buffer[6] = 0x00;
-        usb_endpoint_1_tx_buffer[7] = 0x00;
-        usb_send(endpoint_1, 8);
-        return true;
-    }
+    if(usb_is_endpoint_idle(endpoint_1)) {
 
-    if(IS_MEDIA_KEY(key) && usb_is_endpoint_idle(endpoint_2)) {
-        usb_endpoint_2_tx_buffer[0] = 0x02;    // REPORT ID
-        usb_endpoint_2_tx_buffer[1] = send_key & 0xff;
-        usb_endpoint_2_tx_buffer[2] = send_key >> 8;
-        usb_send(endpoint_2, 3);
-        return true;
+        if(IS_KEYBOARD_KEY(key)) {
+            usb_endpoint_1_tx_buffer[0] = 0x01;    // REPORT ID
+            usb_endpoint_1_tx_buffer[1] = send_modifiers;
+            usb_endpoint_1_tx_buffer[2] = 0x00;
+            usb_endpoint_1_tx_buffer[3] = send_key;
+            usb_endpoint_1_tx_buffer[4] = 0x00;
+            usb_endpoint_1_tx_buffer[5] = 0x00;
+            usb_endpoint_1_tx_buffer[6] = 0x00;
+            usb_endpoint_1_tx_buffer[7] = 0x00;
+            usb_endpoint_1_tx_buffer[8] = 0x00;
+            usb_send(endpoint_1, 9);
+            return true;
+        }
+
+        if(IS_MEDIA_KEY(key)) {
+            usb_endpoint_1_tx_buffer[0] = 0x02;    // REPORT ID
+            usb_endpoint_1_tx_buffer[1] = send_key & 0xff;
+            usb_endpoint_1_tx_buffer[2] = send_key >> 8;
+            usb_send(endpoint_1, 3);
+            return true;
+        }
     }
 
     return false;
@@ -185,7 +189,7 @@ bool process_event(event_t e)
 
 void handle_custom_hid_packet()
 {
-    printf("Got HID cmd: %d\n", usb_endpoint_3_rx_buffer[0]);
+    printf("Custom HID: %d\n", usb_endpoint_3_rx_buffer[0]);
 
     switch(usb_endpoint_3_rx_buffer[0]) {
 
@@ -199,8 +203,11 @@ void handle_custom_hid_packet()
 
     case hcc_set_config:
         memcpy(&config, usb_endpoint_3_rx_buffer + 1, sizeof(config));
-        save_config();
         usb_endpoint_3_tx_buffer[0] = hcc_set_config_ack;
+        usb_endpoint_3_tx_buffer[1] = 0;
+        if(save_config()) {
+            usb_endpoint_3_tx_buffer[1] = 1;
+        }
         usb_send(endpoint_3, 32);
         break;
 
@@ -212,20 +219,14 @@ void handle_custom_hid_packet()
             usb_endpoint_3_tx_buffer[3] = (uint8)(FIRMWARE_VERSION >> 16);
             usb_endpoint_3_tx_buffer[4] = (uint8)(FIRMWARE_VERSION >> 24);
             usb_send(endpoint_3, 32);
-        } else {
-            puts("3 busy!");
         }
         break;
 
     case hcc_flash_led:
         led_flash();
-        puts("flashed");
         if(usb_is_endpoint_idle(endpoint_3)) {
-            puts("replied");
             usb_endpoint_3_tx_buffer[0] = hcc_led_flashed;
             usb_send(endpoint_3, 32);
-        } else {
-            printf("%d", usb.idle);
         }
         break;
 
