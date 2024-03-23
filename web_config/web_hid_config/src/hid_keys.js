@@ -470,38 +470,50 @@ if (isMac) {
 
 let key_codes = [];
 
+let key_names = {};
+let consumer_names = {};
+
 for (const [key, value] of Object.entries(hid_keys)) {
     key_codes.push({
         name: value,
-        keycode: key
+        keycode: key,
+        is_consumer_key: false
     });
+    key_names[value] = key;
+}
+
+for (const [key, value] of Object.entries(consumer_control_keys)) {
+    key_codes.push({
+        name: value,
+        keycode: key,
+        is_consumer_key: true
+    });
+    consumer_names[value] = key;
 }
 
 key_codes.sort((x, y) => {
-    return x.name.localeCompare(y.name);
-});
 
-//////////////////////////////////////////////////////////////////////
-
-let consumer_codes = [];
-
-for (const [key, value] of Object.entries(consumer_control_keys)) {
-    consumer_codes.push({
-        name: value,
-        keycode: key
-    });
-}
-
-consumer_codes.sort((x, y) => {
+    if (x.is_consumer_key && !y.is_consumer_key) {
+        return 1;
+    }
+    if (!x.is_consumer_key && y.is_consumer_key) {
+        return -1;
+    }
     return x.name.localeCompare(y.name);
 });
 
 //////////////////////////////////////////////////////////////////////
 
 export default {
+
     key_modifiers,
+
     key_codes,
-    consumer_codes,
+    key_names,
+
+    consumer_names,
+
     hid_keys,
+
     consumer_control_keys
 }

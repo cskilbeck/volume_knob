@@ -4,7 +4,7 @@
 
 //////////////////////////////////////////////////////////////////////
 
-import { computed, ref, watch, watchEffect } from 'vue';
+import { computed, onMounted, ref, watch, watchEffect } from 'vue';
 import keys from '../hid_keys.js';
 
 //////////////////////////////////////////////////////////////////////
@@ -99,6 +99,42 @@ function update_modifiers(checked, value) {
 
 //////////////////////////////////////////////////////////////////////
 
+let matching_keys = ref([]);
+let search_text = ref("");
+
+function do_search() {
+
+    matching_keys.value = [];
+    if (search_text.value != "") {
+        const needle = search_text.value.toUpperCase();
+        for (const key of keys.key_codes) {
+            if (key.name.toUpperCase().includes(needle)) {
+                matching_keys.value.push(key);
+            }
+        }
+    }
+    if (matching_keys.value.length == 0) {
+        Object.assign(matching_keys.value, keys.key_codes);
+    }
+}
+
+watch(search_text, (n) => {
+    search_text.value = n;
+    do_search();
+});
+
+//////////////////////////////////////////////////////////////////////
+
+function on_select_key(key) {
+    current_keycode.value = (current_keycode.value & 0xffff0000) | key.keycode | (key.is_consumer_key ? 0x8000 : 0);
+}
+
+onMounted(() => { search_text.value = ""; });
+
+Object.assign(matching_keys.value, keys.key_codes);
+
+//////////////////////////////////////////////////////////////////////
+
 </script>
 
 <template>
@@ -119,11 +155,13 @@ function update_modifiers(checked, value) {
                     keys.consumer_control_keys[current_keycode & 0x7fff] }} </span>
         </button>
 
-        <ul class="dropdown-menu border-secondary-subtle rounded-0" style="width:400px">
+        <ul class="dropdown-menu border-secondary-subtle rounded-0 #searchable-list" style="width:400px">
 
-            <li v-for="key in keys.key_codes" class="w-100">
-                <a class="dropdown-item small-text" href="#"
-                    @click="current_keycode = (current_keycode & 0xffff0000) | key.keycode | 0">
+            <input type="text" v-model="search_text" class="form-control border-0 border-bottom rounded-0 my-0 pt-0 pb-1
+            shadow-none mb-0">
+
+            <li v-for="key of matching_keys" class="w-100">
+                <a class="dropdown-item small-text" href="#" @click="on_select_key(key)">
                     <div class="d-flex flex-row">
                         <div class="w-75 me-0">
                             {{ key.name }}
@@ -132,23 +170,7 @@ function update_modifiers(checked, value) {
                             {{ key.keycode.toString(16).toUpperCase().padStart(4, '0') }}
                         </div>
                         <span class="w-25 rounded mx-0 px-0 bg-secondary-subtle text-center">
-                            Keyboard
-                        </span>
-                    </div>
-                </a>
-            </li>
-            <li v-for="key in keys.consumer_codes" class="w-100">
-                <a class="dropdown-item small-text" href="#"
-                    @click="current_keycode = (current_keycode & 0xffff0000) | key.keycode | 0x8000">
-                    <div class="d-flex flex-row">
-                        <div class="w-75 me-0">
-                            {{ key.name }}
-                        </div>
-                        <div class="me-2">
-                            {{ key.keycode.toString(16).toUpperCase().padStart(4, '0') }}
-                        </div>
-                        <span class="w-25 rounded mx-0 px-0 bg-secondary-subtle text-center">
-                            CC Key
+                            {{ key.is_consumer_key ? "CC" : "Keyboard" }}
                         </span>
                     </div>
                 </a>
