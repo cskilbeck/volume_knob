@@ -7,36 +7,6 @@
 
 //////////////////////////////////////////////////////////////////////
 
-enum hid_custom_command
-{
-    // send the config to the web ui
-    hcc_get_config = 1,
-
-    // send the firmware version to the web ui
-    hcc_get_firmware_version = 2,
-
-    // flash the led please
-    hcc_flash_led = 3,
-
-    // here's a new config
-    hcc_set_config = 4,
-
-    // reboot into firmware flashing mode
-    hcc_goto_bootloader = 5
-};
-
-//////////////////////////////////////////////////////////////////////
-
-enum hid_custom_response
-{
-    hcc_here_is_config = 1,
-    hcc_here_is_firmware_version = 2,
-    hcc_led_flashed = 3,
-    hcc_set_config_ack = 4
-};
-
-//////////////////////////////////////////////////////////////////////
-
 // time between button clicks to be considered a double click
 #define BUTTON_QUICK_CLICK_MS 333
 
@@ -125,10 +95,14 @@ event_t queue_peek()
 
 //////////////////////////////////////////////////////////////////////
 
-bool process_event(event_t e)
+bool hid_process_event(event_t e)
 {
-    uint16 key = 0;
+    if(!usb_is_endpoint_idle(endpoint_1)) {
+        return false;
+    }
+
     uint8 modifiers = 0;
+    uint16 key = 0;
 
     switch(e & event_mask) {
 
@@ -156,32 +130,29 @@ bool process_event(event_t e)
         send_modifiers = 0;
     }
 
-    if(usb_is_endpoint_idle(endpoint_1)) {
+    if(IS_MEDIA_KEY(key)) {
 
-        if(IS_KEYBOARD_KEY(key)) {
-            usb_endpoint_1_tx_buffer[0] = 0x01;    // REPORT ID
-            usb_endpoint_1_tx_buffer[1] = send_modifiers;
-            usb_endpoint_1_tx_buffer[2] = 0x00;
-            usb_endpoint_1_tx_buffer[3] = send_key;
-            usb_endpoint_1_tx_buffer[4] = 0x00;
-            usb_endpoint_1_tx_buffer[5] = 0x00;
-            usb_endpoint_1_tx_buffer[6] = 0x00;
-            usb_endpoint_1_tx_buffer[7] = 0x00;
-            usb_endpoint_1_tx_buffer[8] = 0x00;
-            usb_send(endpoint_1, 9);
-            return true;
-        }
+        consumer_control_hid_report *cc = (consumer_control_hid_report *)usb_endpoint_1_tx_buffer;
+        cc->report_id = 0x02;
+        cc->keycode = send_key;
+        usb_send(endpoint_1, 3);
 
-        if(IS_MEDIA_KEY(key)) {
-            usb_endpoint_1_tx_buffer[0] = 0x02;    // REPORT ID
-            usb_endpoint_1_tx_buffer[1] = send_key & 0xff;
-            usb_endpoint_1_tx_buffer[2] = send_key >> 8;
-            usb_send(endpoint_1, 3);
-            return true;
-        }
+    } else {
+
+        keyboard_hid_report *k = ((keyboard_hid_report *)usb_endpoint_1_tx_buffer);
+        k->report_id = 0x01;
+        k->modifiers = send_modifiers;
+        k->pad = 0;
+        k->key[0] = send_key;
+        k->key[1] = 0;
+        k->key[2] = 0;
+        k->key[3] = 0;
+        k->key[4] = 0;
+        k->key[5] = 0;
+        usb_send(endpoint_1, 9);
     }
 
-    return false;
+    return true;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -401,7 +372,7 @@ void main()
         }
 
         // send key on/off to usb hid if there are some waiting to be sent
-        if(!queue_empty() && process_event(queue_peek())) {
+        if(!queue_empty() && hid_process_event(queue_peek())) {
             queue_pop_front();
         }
         led_update();

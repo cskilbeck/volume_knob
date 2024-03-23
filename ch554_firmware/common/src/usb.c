@@ -72,6 +72,15 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                             }
                         } break;
 
+                        case USB_DESCR_TYP_STRING: {
+                            len = 0xff;
+                            uint8 desc = usb_setup->wValueL;
+                            if(desc < NUM_STRING_DESCS) {
+                                usb.current_descriptor = string_descs[desc].p;
+                                len = string_descs[desc].len;
+                            }
+                        } break;
+
                         case USB_DESCR_TYP_REPORT: {
                             len = 0xff;
 #if defined(NUM_REPORT_DESCS)
@@ -81,15 +90,6 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                                 len = report_descs[desc].len;
                             }
 #endif
-                        } break;
-
-                        case USB_DESCR_TYP_STRING: {
-                            len = 0xff;
-                            uint8 desc = usb_setup->wValueL;
-                            if(desc < NUM_STRING_DESCS) {
-                                usb.current_descriptor = string_descs[desc].p;
-                                len = string_descs[desc].len;
-                            }
                         } break;
 
                         default:

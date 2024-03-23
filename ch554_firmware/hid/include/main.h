@@ -95,3 +95,4 @@
 
 #include "config.h"
 #include "hid_keys.h"
+#include "hid.h"
