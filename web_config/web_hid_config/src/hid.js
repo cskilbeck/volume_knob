@@ -318,7 +318,7 @@ async function init_device(d) {
 
 //////////////////////////////////////////////////////////////////////
 
-function on_connect(event) {
+function on_connection_event(event) {
 
     let name = event.device.productName;
     if (hid_devices.value[name] && event.type == 'disconnect') {
@@ -330,8 +330,11 @@ function on_connect(event) {
 
 function init_devices() {
 
-    navigator.hid.removeEventListener("connect", on_connect);
-    navigator.hid.addEventListener("connect", on_connect);
+    navigator.hid.removeEventListener("connect", on_connection_event);
+    navigator.hid.removeEventListener("disconnect", on_connection_event);
+
+    navigator.hid.addEventListener("connect", on_connection_event);
+    navigator.hid.addEventListener("disconnect", on_connection_event);
 
     navigator.hid.requestDevice({
         filters: [{
