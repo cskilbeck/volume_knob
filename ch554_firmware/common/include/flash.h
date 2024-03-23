@@ -28,7 +28,7 @@
 
 typedef struct save_buffer
 {
-    uint8 data[CONFIG_MAX_LEN];
+    uint8 bytes[CONFIG_MAX_LEN];
     uint32 index;
     uint16 crc;
 } save_buffer_t;

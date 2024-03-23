@@ -21,7 +21,7 @@ void goto_bootloader()
 //////////////////////////////////////////////////////////////////////
 // read bytes from the data flash area
 
-void read_flash_data(uint8 flash_addr, uint8 len, uint8 *data)
+void read_flash_data(uint8 flash_addr, uint8 len, uint8 *dst_data)
 {
     flash_addr <<= 1;
 
@@ -36,7 +36,7 @@ void read_flash_data(uint8 flash_addr, uint8 len, uint8 *data)
             break;
         }
 
-        *data++ = ROM_DATA_L;
+        *dst_data++ = ROM_DATA_L;
 
         flash_addr += 2;
     }
@@ -45,7 +45,7 @@ void read_flash_data(uint8 flash_addr, uint8 len, uint8 *data)
 //////////////////////////////////////////////////////////////////////
 // write bytes to the data flash area
 
-void write_flash_data(uint8 flash_addr, uint8 len, uint8 *data)
+void write_flash_data(uint8 flash_addr, uint8 len, uint8 *src_data)
 {
     flash_addr <<= 1;
 
@@ -59,7 +59,7 @@ void write_flash_data(uint8 flash_addr, uint8 len, uint8 *data)
         ROM_ADDR_L = flash_addr;
         ROM_ADDR_H = DATA_FLASH_ADDR >> 8;
 
-        ROM_DATA_L = *data++;
+        ROM_DATA_L = *src_data++;
 
         ROM_CTRL = ROM_CMD_WRITE;
 

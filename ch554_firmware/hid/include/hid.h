@@ -1,6 +1,12 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////
+
+#define KEY_MEDIA_MUTE 0xe2
+#define KEY_MEDIA_VOLUMEUP 0xe9
+#define KEY_MEDIA_VOLUMEDOWN 0xea
+
+//////////////////////////////////////////////////////////////////////
 // See usb_config.h
 // these structs must match the hid report descriptor layouts exactly
 

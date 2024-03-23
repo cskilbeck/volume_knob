@@ -12,11 +12,12 @@
 
 #if !defined(DEVICE)
 #error DEVICE is not defined?
+#endif
 
-// uncomment one of these for VSCode section dimming thing
-#define DEVICE DEVICE_DEVKIT
-// #define DEVICE DEVICE_DIRECT
-// #define DEVICE DEVICE_ORIGINAL
+//////////////////////////////////////////////////////////////////////
+
+#if !defined(FREQ_SYS)
+#define FREQ_SYS 24000000
 #endif
 
 //////////////////////////////////////////////////////////////////////
@@ -66,6 +67,13 @@
 #include <stdint.h>
 #include <string.h>
 
+#define bool _Bool
+#define true 1
+#define false 0
+
+#include <lint.h>
+#include <compiler.h>
+
 //////////////////////////////////////////////////////////////////////
 
 #if defined(DEBUG)
@@ -85,14 +93,13 @@
 #include "types.h"
 #include "util.h"
 #include "xdata_common.h"
-#include "gpio.h"
+#include "gpio_drv.h"
 #include "debug.h"
 #include "tick.h"
-#include "usb.h"
+#include "usb_drv.h"
 #include "led.h"
 #include "encoder.h"
 #include "flash.h"
 
 #include "config.h"
-#include "hid_keys.h"
 #include "hid.h"

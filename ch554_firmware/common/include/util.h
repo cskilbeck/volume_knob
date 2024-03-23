@@ -24,8 +24,8 @@ void goto_bootloader();
 
 //////////////////////////////////////////////////////////////////////
 
-void write_flash_data(uint8 flash_addr, uint8 len, uint8 *data);
-void read_flash_data(uint8 flash_addr, uint8 len, uint8 *data);
+void write_flash_data(uint8 flash_addr, uint8 len, uint8 *src_data);
+void read_flash_data(uint8 flash_addr, uint8 len, uint8 *dst_data);
 
 //////////////////////////////////////////////////////////////////////
 

@@ -7,12 +7,12 @@ static uint8 current_save_offset = 0;
 
 //////////////////////////////////////////////////////////////////////
 
-static uint16 crc16(uint8 const *data, uint8 length)
+static uint16 crc16(uint8 const *src_data, uint8 length)
 {
     uint16 crc = 0xffff;
 
     while(length != 0) {
-        uint16 x = (uint16)((uint8)(crc >> 8) ^ *data++);
+        uint16 x = (uint16)((uint8)(crc >> 8) ^ *src_data++);
         x ^= x >> 4;
         crc = (crc << 8) ^ (x << 12) ^ (x << 5) ^ x;
         length -= 1;
@@ -24,7 +24,7 @@ static uint16 crc16(uint8 const *data, uint8 length)
 
 static uint16 save_buffer_get_crc(save_buffer_t const *buffer)
 {
-    return crc16(buffer->data, sizeof(buffer->data) + sizeof(buffer->index));
+    return crc16(buffer->bytes, sizeof(buffer->bytes) + sizeof(buffer->index));
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -38,7 +38,7 @@ static void save_buffer_set_crc(save_buffer_t *buffer)
 
 static bool save_buffer_check_crc(save_buffer_t const *buffer)
 {
-    if(save_buffer.data[0] != CONFIG_VERSION) {
+    if(save_buffer.bytes[0] != CONFIG_VERSION) {
         return false;
     }
     uint16 check = save_buffer_get_crc(buffer);
@@ -82,7 +82,7 @@ bool flash_load(void __xdata *config, size_t config_size)
             // prepare for next save
             current_save_index = highest_index;
             current_save_offset = offset_found;
-            memcpy(config, save_buffer.data, config_size);
+            memcpy(config, save_buffer.bytes, config_size);
             return true;
         }
     }
@@ -96,7 +96,7 @@ bool flash_load(void __xdata *config, size_t config_size)
 
 bool flash_save(void __xdata *config, size_t config_size)
 {
-    memcpy(&save_buffer.data, config, config_size);
+    memcpy(&save_buffer.bytes, config, config_size);
     current_save_offset += FLASH_SLOT_SIZE;
     if(current_save_offset >= FLASH_SIZE) {
         current_save_offset = 0;

@@ -10,7 +10,11 @@
 	"settings": {
 		"files.associations": {
 			"*.cst": "sdc",
-			"stdbool.h": "c"
+			"stdbool.h": "c",
+			"usb_config.h": "c",
+			"lint.h": "c",
+			"compiler.h": "c",
+			"stdint.h": "c"
 		},
 		"explorer.excludeGitIgnore": true
 	}
