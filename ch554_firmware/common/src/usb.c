@@ -21,6 +21,16 @@ typedef struct usb_descriptor
 
 #include "usb_config.h"
 
+// #define USB_LOGGING
+
+#if defined(USB_LOGGING)
+#define usb_printf printf
+#define usb_puts puts
+#else
+#define usb_printf(...) NOP_MACRO
+#define usb_puts(...) NOP_MACRO
+#endif
+
 //////////////////////////////////////////////////////////////////////
 
 void usb_isr(void) __interrupt(INT_NO_USB)
@@ -58,13 +68,15 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                         switch(usb_setup->wValueH) {
 
                         case USB_DESCR_TYP_DEVICE:
+                            usb_puts("USB:GetDevice");
                             usb.current_descriptor = device_desc;
                             len = sizeof(device_desc);
                             break;
 
                         case USB_DESCR_TYP_CONFIG: {
-                            len = 0xff;
                             uint8 desc = usb_setup->wValueL;
+                            usb_printf("USB:GetConfig %d\n", desc);
+                            len = 0xff;
                             if(desc < NUM_CONFIG_DESCS) {
                                 usb.current_config_desc = config_descs[desc].p;
                                 usb.current_descriptor = usb.current_config_desc;
@@ -75,6 +87,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                         case USB_DESCR_TYP_STRING: {
                             len = 0xff;
                             uint8 desc = usb_setup->wValueL;
+                            usb_printf("USB:GetString %d\n", desc);
                             if(desc < NUM_STRING_DESCS) {
                                 usb.current_descriptor = string_descs[desc].p;
                                 len = string_descs[desc].len;
@@ -85,6 +98,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                             len = 0xff;
 #if defined(NUM_REPORT_DESCS)
                             uint8 desc = usb_setup->wIndexL;    // !! Index!? I guess...
+                            usb_printf("USB:GetReport %d\n", desc);
                             if(desc < NUM_REPORT_DESCS) {
                                 usb.current_descriptor = report_descs[desc].p;
                                 len = report_descs[desc].len;
@@ -107,29 +121,30 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                         memcpy(usb_endpoint_0_buffer, usb.current_descriptor, len);
                         usb.setup_len -= len;
                         usb.current_descriptor += len;
+                        usb_printf("Start send %d\n", len);
 
                         // remainder will get sent in subsequent packets
                         break;
 
                     case USB_SET_ADDRESS:
-                        puts("SetAddr");
+                        usb_puts("SetAddr");
                         usb.setup_len = usb_setup->wValueL;
                         break;
 
                     case USB_GET_CONFIGURATION:
-                        puts("GetConfig");
+                        usb_puts("GetConfig");
                         usb_endpoint_0_buffer[0] = usb.config;
                         usb.setup_len = MIN(usb.setup_len, 1);
                         break;
 
                     case USB_SET_CONFIGURATION:
-                        puts("SetConfig");
+                        usb_puts("SetConfig");
                         usb.config = usb_setup->wValueL;
                         usb.active = true;
                         break;
 
                     case USB_GET_INTERFACE:
-                        puts("GetInterface...?");
+                        usb_puts("GetInterface...?");
                         break;
 
                     case USB_CLEAR_FEATURE:
@@ -140,9 +155,9 @@ void usb_isr(void) __interrupt(INT_NO_USB)
 
                             if(U16(usb_setup->wValueL) == 0x01) {
                                 if((usb.current_config_desc[7] & 0x20) != 0) {
-                                    puts("Wake");
+                                    usb_puts("Wake");
                                 } else {
-                                    puts("Wake not supported");
+                                    usb_puts("Wake not supported");
                                     len = 0xFF;    // operation failed
                                 }
                             } else {
@@ -252,15 +267,26 @@ void usb_isr(void) __interrupt(INT_NO_USB)
 
                     switch(usb.setup_request) {
 
+                    case HID_SET_REPORT:
+                        usb_printf("Set report\n");
+                        len = 0;
+                        break;
+
+                    case HID_SET_IDLE:
+                        usb_printf("Set Idle\n");
+                        len = 0;
+                        break;
+
                     case HID_GET_REPORT:
                     case HID_GET_IDLE:
                     case HID_GET_PROTOCOL:
-                    case HID_SET_REPORT:
-                    case HID_SET_IDLE:
                     case HID_SET_PROTOCOL:
+                        usb_printf("OK Setup req: %d\n", usb.setup_request);
                         len = 0;
                         break;
+
                     default:
+                        usb_printf("NOT OK Setup req: %d\n", usb.setup_request);
                         len = 0xff;
                         break;
                     }
@@ -268,15 +294,17 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                 }
             }
 
-            // if len == 0xff, some error has occurred, set the data toggles to 1 and indicate stall
-            if(len == 0xff) {
+
+            if(len == 0xff) {    // if len == 0xff, some error has occurred
+
+                usb_puts("Err - stalling");
                 usb.setup_request = 0xff;
-                UEP0_CTRL = bUEP_R_TOG | bUEP_T_TOG | UEP_R_RES_STALL | UEP_T_RES_STALL;
-            }
-            // if len <= 8, some valid data is sitting in EP0Buffer (or 0 bytes, that's ok), so send it, ack and toggle
-            else if(len <= DEFAULT_ENDP0_SIZE) {
-                UEP0_T_LEN = len;
-                UEP0_CTRL = bUEP_R_TOG | bUEP_T_TOG | UEP_R_RES_ACK | UEP_T_RES_ACK;
+                UEP0_CTRL = bUEP_R_TOG | bUEP_T_TOG | UEP_R_RES_STALL | UEP_T_RES_STALL;    // set the data toggles to 1 and indicate stall
+
+            } else if(len <= DEFAULT_ENDP0_SIZE) {    // if len <= 8, some valid data is sitting in EP0Buffer (or 0 bytes, that's ok)
+
+                UEP0_T_LEN = len;                                                       // send if there is any
+                UEP0_CTRL = bUEP_R_TOG | bUEP_T_TOG | UEP_R_RES_ACK | UEP_T_RES_ACK;    // ack and toggle
             }
             break;
 
@@ -289,6 +317,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
             // continue to send existing stuff(based on usb.setup_request)
             case USB_GET_DESCRIPTOR:
                 len = MIN(usb.setup_len, 8);
+                usb_printf(" more send %d\n", len);
                 memcpy(usb_endpoint_0_buffer, usb.current_descriptor, len);
                 usb.setup_len -= len;
                 usb.current_descriptor += len;
@@ -369,9 +398,9 @@ void usb_isr(void) __interrupt(INT_NO_USB)
 
     // bus reset
     if(UIF_BUS_RST) {
-        puts("USB Reset");
+        usb_puts("USB Reset");
         UEP0_CTRL = UEP_R_RES_ACK | UEP_T_RES_NAK;
-        UEP1_CTRL = bUEP_AUTO_TOG | UEP_T_RES_NAK;
+        UEP1_CTRL = bUEP_AUTO_TOG | UEP_T_RES_NAK | UEP_R_RES_ACK;
         UEP2_CTRL = bUEP_AUTO_TOG | UEP_T_RES_NAK | UEP_R_RES_ACK;
         UEP3_CTRL = bUEP_AUTO_TOG | UEP_T_RES_ACK | UEP_R_RES_ACK;
         USB_DEV_AD = 0x00;
@@ -387,7 +416,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
         UIF_SUSPEND = 0;
         // Hang up
         if(USB_MIS_ST & bUMS_SUSPEND) {
-            puts("USB Suspend");
+            usb_puts("USB Suspend");
             while(XBUS_AUX & bUART0_TX) {    // Wait for msg to send
             }
             SAFE_MOD = 0x55;
