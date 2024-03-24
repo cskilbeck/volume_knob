@@ -4,12 +4,10 @@
 
 import { toRaw, watch, ref, nextTick } from 'vue';
 
-import Toggle from './Toggle.vue'
 import Modal from './Modal.vue'
 import HIDDropDown from './HIDDropDown.vue';
 
 import hid from '../hid.js'
-import cookie from '../cookie.js'
 
 import fileDownload from 'js-file-download';
 
@@ -40,13 +38,13 @@ function cookie_name() {
     return `${props.device.name}_label`;
 }
 
-let device_label = ref(cookie.get(cookie_name()) || "Unnamed");
+let device_label = ref(localStorage.getItem(cookie_name()) || "Unnamed");
 
 function save_name() {
     if (device_label.value.length == 0) {
         device_label.value = "Unnamed";
     }
-    cookie.set(cookie_name(), device_label.value, 400);
+    localStorage.setItem(cookie_name(), device_label.value, 400);
 }
 
 //////////////////////////////////////////////////////////////////////
