@@ -48,3 +48,7 @@ xcuserdata/
 
 *.xcscmblueprint
 *.xccheckout
+
+orders.xlsx
+orders.txt
+
