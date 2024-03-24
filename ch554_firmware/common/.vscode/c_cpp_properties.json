@@ -3,10 +3,10 @@
         {
             "name": "Win32",
             "includePath": [
+                "${workspaceFolder}/include",
+                "${workspaceFolder}/../**",
                 "C:\\Program Files\\SDCC\\include",
-                "C:\\Program Files\\SDCC\\include\\mcs51",
-                "${workspaceFolder}/**",
-                "${workspaceFolder}/../**"
+                "C:\\Program Files\\SDCC\\include\\mcs51"
             ],
             "defines": [
                 "DEVICE=DEVICE_DEVKIT"

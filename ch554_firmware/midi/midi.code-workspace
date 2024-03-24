@@ -10,6 +10,13 @@
 	"settings": {
 		"explorer.excludeGitIgnore": true,
 		"search.useIgnoreFiles": true,
-		"search.useParentIgnoreFiles": true
+		"search.useParentIgnoreFiles": true,
+		"files.associations": {
+			"*.cst": "sdc",
+			"lint.h": "c",
+			"ch554.h": "c",
+			"compiler.h": "c",
+			"stdint.h": "c"
+		}
 	}
 }

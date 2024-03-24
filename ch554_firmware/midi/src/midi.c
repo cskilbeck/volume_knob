@@ -97,14 +97,14 @@ static inline void queue_get_at(uint8 *dst)
 
 //////////////////////////////////////////////////////////////////////
 
-void *init_sysex_response(uint8 code)
+void *init_sysex_response(uint8 sysex_code)
 {
     sysex_hdr_t *p = (sysex_hdr_t *)midi_send_buffer;
     p->sysex_start = 0xF0;
     p->sysex_realtime = 0x7E;
     p->sysex_device_index = device_id;
     p->sysex_type = 0x07;    // machine control response
-    p->sysex_code = code;
+    p->sysex_code = sysex_code;
     return (void *)(midi_send_buffer + sizeof(sysex_hdr_t));
 }
 
@@ -158,7 +158,7 @@ bool midi_send_update()
 
 //////////////////////////////////////////////////////////////////////
 
-static bool midi_send(uint8 *data, uint8 length)
+static bool midi_send(uint8 *midi_data, uint8 length)
 {
     if(midi_send_remain != 0) {
         return false;
@@ -167,7 +167,7 @@ static bool midi_send(uint8 *data, uint8 length)
         return false;
     }
     midi_send_remain = length;
-    midi_send_ptr = data;
+    midi_send_ptr = midi_data;
     return true;
 }
 

@@ -72,6 +72,12 @@
 #include <stdint.h>
 #include <string.h>
 
+#define bool _Bool
+#define true 1
+#define false 0
+
+#include "lint.h"
+
 //////////////////////////////////////////////////////////////////////
 
 #if defined(DEBUG)
