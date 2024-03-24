@@ -91,26 +91,45 @@ __code uint8 const midi_config_desc[] = {
     0x01,                     // Class interface: Header
     0x00,                     // Midi Streaming v1.0 LSB
     0x01,                     // Midi Streaming v1.0 MSB
-    22,                       // wTotalLength LSB
+    0x25,                     // wTotalLength LSB
     0x00,                     // wTotalLength MSB
 
     // IN-JACK
     0x06,                     // bLength
     USB_DESCR_TYP_CS_INTF,    // CS_INTERFACE
     0x02,                     // MIDI_IN_JACK
-    0x01,                     // embedded
-    0x01,                     // jack ID
+    0x01,                     // EMBEDDED
+    0x01,                     // JACK ID
+    0x00,                     // iJack
+
+    // IN-JACK
+    0x06,                     // bLength
+    USB_DESCR_TYP_CS_INTF,    // CS_INTERFACE
+    0x02,                     // MIDI_IN_JACK
+    0x02,                     // EXTERNAL
+    0x02,                     // JACK ID
     0x00,                     // iJack
 
     // OUT-JACK
     0x09,                     // bLength
     USB_DESCR_TYP_CS_INTF,    // CS_INTERFACE
     0x03,                     // MIDI_OUT_JACK
-    0x01,                     // embedded
-    0x02,                     // jack ID
-    0x00,                     // input pins
-    0x00,                     // source ID
-    0x00,                     // source pin
+    0x01,                     // EMBEDDED
+    0x03,                     // JACK ID
+    0x01,                     // input pins
+    0x02,                     // source ID
+    0x01,                     // source pin
+    0x00,                     // iJack
+
+    // OUT-JACK
+    0x09,                     // bLength
+    USB_DESCR_TYP_CS_INTF,    // CS_INTERFACE
+    0x03,                     // MIDI_OUT_JACK
+    0x02,                     // EXTERNAL
+    0x04,                     // jack ID
+    0x01,                     // input pins
+    0x01,                     // source ID
+    0x01,                     // source pin
     0x00,                     // iJack
 
     //////////
@@ -142,7 +161,7 @@ __code uint8 const midi_config_desc[] = {
     USB_DESCR_TYP_CS_ENDP,    // class specific endpoint
     0x01,                     // subtype 1
     0x01,                     // bNumberOfJacks
-    0x02                      // Jack ID 2
+    0x03                      // Jack ID 3
 
 };
 
