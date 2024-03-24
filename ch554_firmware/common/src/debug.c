@@ -51,7 +51,7 @@ void clk_init()
 
 //////////////////////////////////////////////////////////////////////
 
-void delay_uS(uint16_t n)
+void delay_uS(uint16 n)
 {
 #ifdef FREQ_SYS
 #if FREQ_SYS <= 6000000
@@ -104,7 +104,7 @@ void delay_uS(uint16_t n)
 
 //////////////////////////////////////////////////////////////////////
 
-void delay_mS(uint16_t n)
+void delay_mS(uint16 n)
 {
     while(n) {
         delay_uS(1000);
@@ -114,7 +114,7 @@ void delay_mS(uint16_t n)
 
 //////////////////////////////////////////////////////////////////////
 
-void watchdog_mode_select(uint8_t mode)
+void watchdog_mode_select(uint8 mode)
 {
     SAFE_MOD = 0x55;
     SAFE_MOD = 0xaa;
@@ -128,9 +128,9 @@ void watchdog_mode_select(uint8_t mode)
 
 //////////////////////////////////////////////////////////////////////
 
-void watchdog_feed(uint8_t tim)
+void watchdog_feed(uint8 count)
 {
-    WDOG_COUNT = tim;
+    WDOG_COUNT = count;
 }
 
 //////////////////////////////////////////////////////////////////////

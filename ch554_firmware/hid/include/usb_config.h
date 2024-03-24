@@ -1,5 +1,7 @@
 #pragma once
 
+#include "vs_lint.h"
+
 //////////////////////////////////////////////////////////////////////
 // USB config
 
@@ -116,7 +118,7 @@ __code const uint8 device_desc[] = {
     0x00,                            // bDeviceClass
     0x00,                            // bDeviceSubClass
     0x00,                            // bDeviceProtocol
-    DEFAULT_ENDP0_SIZE,              // bMaxPacketSize0
+    ENDPOINT_0_SIZE,                 // bMaxPacketSize0
     USB_VID & 0xff,                  // idVendor (LSB)
     USB_VID >> 8,                    // idVendor (MSB)
     USB_PID & 0xff,                  // idProduct (LSB)
@@ -137,40 +139,40 @@ __code const uint8 device_desc[] = {
 __code const uint8 config_desc[] = {
 
     // Config
-    0x09,                          // bLength
-    USB_DESCR_TYP_CONFIG,          // bDescriptorType
-    sizeof(config_desc) & 0xff,    // wTotalLength (1)
-    sizeof(config_desc) >> 8,      // wTotalLength (2)
-    NUM_INTERFACES,                // bNumInterface
-    0x01,                          // bConfigurationValue
-    CONFIG_STRING_DESC_ID,         // iConfiguration
-    0x80,                          // bmAttributes: Bus Powered/No Remote Wakeup
-    50,                            // bMaxPower 50 x 2 = 100mA
+    0x09,                       // bLength
+    USB_DESCR_TYP_CONFIG,       // bDescriptorType
+    SIZEOF_LSB(config_desc),    // wTotalLength (1)
+    SIZEOF_MSB(config_desc),    // wTotalLength (2)
+    NUM_INTERFACES,             // bNumInterface
+    0x01,                       // bConfigurationValue
+    CONFIG_STRING_DESC_ID,      // iConfiguration
+    0x80,                       // bmAttributes: Bus Powered/No Remote Wakeup
+    50,                         // bMaxPower 50 x 2 = 100mA
 
     //////////////////////////////////////////////////
     // INTERFACE 0: KEYBOARD / CONSUMER CONTROL HID DEVICE
 
     // Interface
-    0x09,                    // bLength
-    USB_DESCR_TYP_INTERF,    // bDescriptorType
-    0x00,                    // bInterfaceNumber
-    0x00,                    // bAlternateSetting
-    0x01,                    // bNumEndpoints
-    USB_DEV_CLASS_HID,       // bInterfaceClass
-    0x01,                    // bInterfaceSubClass
-    0x01,                    // bInterfaceProtocol: Keyboard
-    CONFIG_STRING_DESC_ID,      // iInterface - HID STRING
+    0x09,                     // bLength
+    USB_DESCR_TYP_INTERF,     // bDescriptorType
+    0x00,                     // bInterfaceNumber
+    0x00,                     // bAlternateSetting
+    0x01,                     // bNumEndpoints
+    USB_DEV_CLASS_HID,        // bInterfaceClass
+    0x01,                     // bInterfaceSubClass
+    0x01,                     // bInterfaceProtocol: Keyboard
+    CONFIG_STRING_DESC_ID,    // iInterface - HID STRING
 
     // HID
-    0x09,                           // bLength
-    USB_DESCR_TYP_HID,              // bDescriptorType: HID
-    0x11,                           // bcdHID(1)
-    0x01,                           // bcdHID(2)
-    0x00,                           // bCountryCode
-    0x01,                           // bNumDescriptors
-    0x22,                           // bDescriptorType: Report
-    sizeof(hid_rep_desc) & 0xff,    // wDescriptorLength (1)
-    sizeof(hid_rep_desc) >> 8,      // wDescriptorLength (2)
+    0x09,                        // bLength
+    USB_DESCR_TYP_HID,           // bDescriptorType: HID
+    0x11,                        // bcdHID(1)
+    0x01,                        // bcdHID(2)
+    0x00,                        // bCountryCode
+    0x01,                        // bNumDescriptors
+    0x22,                        // bDescriptorType: Report
+    SIZEOF_LSB(hid_rep_desc),    // wDescriptorLength (1)
+    SIZEOF_MSB(hid_rep_desc),    // wDescriptorLength (2)
 
     // Endpoint
     0x07,                      // bLength
@@ -185,26 +187,26 @@ __code const uint8 config_desc[] = {
     // INTERFACE 1: CUSTOM HID DEVICE
 
     // Interface
-    0x09,                        // bLength
-    USB_DESCR_TYP_INTERF,        // bDescriptorType
-    0x01,                        // bInterfaceNumber
-    0x00,                        // bAlternateSetting
-    0x02,                        // bNumEndpoints
-    USB_DEV_CLASS_HID,           // bInterfaceClass
-    0x01,                        // bInterfaceSubClass
-    0x01,                        // bInterfaceProtocol: Keyboard
+    0x09,                           // bLength
+    USB_DESCR_TYP_INTERF,           // bDescriptorType
+    0x01,                           // bInterfaceNumber
+    0x00,                           // bAlternateSetting
+    0x02,                           // bNumEndpoints
+    USB_DEV_CLASS_HID,              // bInterfaceClass
+    0x01,                           // bInterfaceSubClass
+    0x01,                           // bInterfaceProtocol: Keyboard
     PRODUCT_NAME_STRING_DESC_ID,    // iInterface - PRODUCT STRING
 
     // CUSTOM HID
-    0x09,                              // bLength
-    USB_DESCR_TYP_HID,                 // bDescriptorType: HID
-    0x11,                              // bcdHID(1)
-    0x01,                              // bcdHID(2)
-    0x00,                              // bCountryCode
-    0x01,                              // bNumDescriptors
-    0x22,                              // bDescriptorType: Report
-    sizeof(custom_rep_desc) & 0xff,    // wDescriptorLength (1)
-    sizeof(custom_rep_desc) >> 8,      // wDescriptorLength (2)
+    0x09,                           // bLength
+    USB_DESCR_TYP_HID,              // bDescriptorType: HID
+    0x11,                           // bcdHID(1)
+    0x01,                           // bcdHID(2)
+    0x00,                           // bCountryCode
+    0x01,                           // bNumDescriptors
+    0x22,                           // bDescriptorType: Report
+    SIZEOF_LSB(custom_rep_desc),    // wDescriptorLength (1)
+    SIZEOF_MSB(custom_rep_desc),    // wDescriptorLength (2)
 
     // Endpoint
     0x07,                         // bLength
@@ -223,101 +225,9 @@ __code const uint8 config_desc[] = {
     CUSTOM_PACKET_SIZE & 0xff,    // wMaxPacketSize (1)
     CUSTOM_PACKET_SIZE >> 8,      // wMaxPacketSize (2)
     0x02,                         // bInterval
-
-    // //////////////////////////////////////////////////
-    // // INTERFACE 2: USB Audio Class
-
-    // 0x09,                    // bLength
-    // USB_DESCR_TYP_INTERF,    // bDescriptorType
-    // 0x02,                    // bInterfaceNumber
-    // 0x00,                    // bAlternateSetting
-    // 0x00,                    // bNumEndpoints
-    // USB_DEV_CLASS_AUDIO,     // bInterfaceClass
-    // 0x01,                    // bInterfaceSubClass (Audio Device)
-    // 0x00,                    // bInterfaceProtocol
-    // 0x00,                    // iInterface string descriptor index
-
-    // // Interface 2 function descriptor
-    // 0x09,                     // bLength
-    // USB_DESCR_TYP_CS_INTF,    // Class interface
-    // 0x01,                     // Class interface: Header
-    // 0x00,                     // Audio Device Class 1.0 LSB
-    // 0x01,                     // Audio Device Class 1.0 MSB
-    // 0x09,                     // wTotalLength LSB
-    // 0x00,                     // wTotalLength MSB
-    // 0x01,                     // bInCollection 1
-    // 0x03,                     // bInterfaceNumber 1
-
-    // //////////////////////////////////////////////////
-    // // INTERFACE 3: MIDI Streaming Interface
-
-    // 0x09,                    // bLength
-    // USB_DESCR_TYP_INTERF,    // bDescriptorType
-    // 0x03,                    // bInterfaceNumber
-    // 0x00,                    // bAlternateSetting
-    // 0x02,                    // bNumEndpoints
-    // USB_DEV_CLASS_AUDIO,     // bInterfaceClass
-    // 0x03,                    // bInterfaceSubClass: MIDI Streaming
-    // 0x00,                    // bInterfaceProtocol
-    // 0x00,                    // iInterface string descriptor index
-
-    // // Interface 3 function descriptor
-    // 0x07,                     // bLength
-    // USB_DESCR_TYP_CS_INTF,    // Class interface
-    // 0x01,                     // Class interface: Header
-    // 0x00,                     // Midi Streaming v1.0 LSB
-    // 0x01,                     // Midi Streaming v1.0 MSB
-    // 0x25,                     // wTotalLength LSB
-    // 0x00,                     // wTotalLength MSB
-
-    // // IN-JACK
-    // 0x06,                     // bLength
-    // USB_DESCR_TYP_CS_INTF,    // class interface
-    // 0x02,                     // MIDI-IN-JACK
-    // 0x01,                     // jack-type embedded
-    // 0x01,                     // bJackID
-    // 0x00,                     // iJack
-
-    // 0x06,                     // bLength
-    // USB_DESCR_TYP_CS_INTF,    // class interface
-    // 0x02,                     // MIDI-IN-JACK
-    // 0x02,                     // jack-type external
-    // 0x02,                     // bJackID
-    // 0x00,                     // iJack
-
-    // // OUT-JACK
-    // 0x09,                     // bLength
-    // USB_DESCR_TYP_CS_INTF,    // class interface
-    // 0x03,                     // MIDI-OUT-JACK
-    // 0x01,                     // jack-type embedded
-    // 0x03,                     // bJackID
-    // 0x01,                     // bNumInputPins
-    // 0x02,                     // bSourceID
-    // 0x01,                     // bSourcePin
-    // 0x00,                     // iJack (string)
-
-    // 0x09,                     // bLength
-    // USB_DESCR_TYP_CS_INTF,    // class interface
-    // 0x03,                     // MIDI-OUT-JACK
-    // 0x02,                     // jack-type external
-    // 0x04,                     //
-    // 0x01,                     //
-    // 0x01,                     //
-    // 0x01,                     //
-    // 0x00,                     //
-
-    // //////////
-
-    // // then 2 endpoints
-    // 0x07, 0x05, 0x02, 0x02, 0x40, 0x00, 0x00,    // EMB MIDI JACK = 1, OUT
-    // 0x05, 0x25, 0x01, 0x01, 0x01,                // Associated JACKID=1, OUT
-
-    // 0x07, 0x05, 0x82, 0x02, 0x40, 0x00, 0x00,    // EMB MIDI JACK = 1, OUT
-    // 0x05, 0x25, 0x01, 0x01, 0x03                 // Associated JACKID=3, IN
-
 };
 
-_Static_assert(sizeof(config_desc) < 256);
+STATIC_ASSERT(sizeof(config_desc) < 256);
 
 //////////////////////////////////////////////////////////////////////
 // Configuration descriptors
@@ -341,7 +251,7 @@ __code const usb_descriptor_t report_descs[] = {
 #define MANUFACTURER_STRING 'T', 'i', 'n', 'y', ' ', 'L', 'i', 't', 't', 'l', 'e', ' ', 'T', 'h', 'i', 'n', 'g', 's'
 #define CONFIG_STRING 'T', 'i', 'n', 'y', ' ', 'U', 'S', 'B', ' ', 'K', 'n', 'o', 'b'
 
-#define STR_HDR(x) (sizeof(x) | (USB_DESCR_TYP_STRING << 8))
+#define STR_HDR(x) (SIZEOF_LSB(x) | (USB_DESCR_TYP_STRING << 8))
 
 __code const uint16 language_desc[] = { STR_HDR(language_desc), LANGUAGE_DESC_STRING };
 __code const uint16 manufacturer_string[] = { STR_HDR(manufacturer_string), MANUFACTURER_STRING };

@@ -1,5 +1,9 @@
 #pragma once
 
+#if defined(VSCODE)
+#include "main.h"
+#endif
+
 //////////////////////////////////////////////////////////////////////
 // VID = 16D0, PID = 1317
 
@@ -17,7 +21,7 @@ __code uint8 const device_desc[] = {
     0x00,                    // device class
     0x00,                    // device subclass
     0x00,                    // device protocol
-    DEFAULT_ENDP0_SIZE,      // Define it in interface level
+    ENDPOINT_0_SIZE,         // Define it in interface level
     USB_VID & 0xff,          // USB_VID (low)
     USB_VID >> 8,            // USB_VID (high)
     USB_PID & 0xff,          // USB_PID (low)
@@ -33,18 +37,20 @@ __code uint8 const device_desc[] = {
 //////////////////////////////////////////////////////////////////////
 // Config descriptor
 
+#define NUM_INTERFACES 2
+
 __code uint8 const midi_config_desc[] = {
 
     // Configuration descriptor (two interfaces)
-    0x09,                               // length
-    USB_DESCR_TYP_CONFIG,               // bDescriptorType
-    sizeof(midi_config_desc) & 0xff,    // wTotalLength LSB
-    sizeof(midi_config_desc) >> 8,      // wTotalLength MSB
-    0x02,                               // bNumInterface
-    0x01,                               // bConfigurationValue
-    0x00,                               // iConfiguration string descriptor index
-    0x80,                               // bmAttributes Bus Powered, No remote wake
-    50,                                 // bMaxPower, 50 x 2 = 100 mA
+    0x09,                            // length
+    USB_DESCR_TYP_CONFIG,            // bDescriptorType
+    SIZEOF_LSB(midi_config_desc),    // wTotalLength LSB
+    SIZEOF_MSB(midi_config_desc),    // wTotalLength MSB
+    NUM_INTERFACES,                  // bNumInterface
+    0x01,                            // bConfigurationValue
+    0x00,                            // iConfiguration string descriptor index
+    0x80,                            // bmAttributes Bus Powered, No remote wake
+    50,                              // bMaxPower, 50 x 2 = 100 mA
 
     // Interface 0 USB Audio Class
     0x09,                    // bLength
@@ -148,7 +154,7 @@ __code uint8 const midi_config_desc[] = {
 #define AUDIO_STRING 'A', 'u', 'd', 'i', 'o'
 #define JACK_STRING 'J', 'a', 'c', 'k'
 
-#define STR_HDR(x) (sizeof(x) | (USB_DESCR_TYP_STRING << 8))
+#define STR_HDR(x) (SIZEOF_LSB(x) | (USB_DESCR_TYP_STRING << 8))
 
 __code const uint16 language_desc[] = { STR_HDR(language_desc), LANGUAGE_DESC };
 __code const uint16 manufacturer_string[] = { STR_HDR(manufacturer_string), MANUFACTURER_STRING };

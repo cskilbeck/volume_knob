@@ -53,7 +53,7 @@ typedef struct config config_t;
 
 #define CONFIG_SIZE (sizeof(config_t))
 
-_Static_assert(CONFIG_SIZE == CONFIG_MAX_LEN);
+STATIC_ASSERT(CONFIG_SIZE == CONFIG_MAX_LEN);
 
 //////////////////////////////////////////////////////////////////////
 

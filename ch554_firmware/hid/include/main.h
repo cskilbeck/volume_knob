@@ -71,7 +71,7 @@
 #define true 1
 #define false 0
 
-#include <lint.h>
+#include "vs_lint.h"
 #include <compiler.h>
 
 //////////////////////////////////////////////////////////////////////

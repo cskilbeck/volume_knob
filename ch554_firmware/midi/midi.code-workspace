@@ -16,7 +16,9 @@
 			"lint.h": "c",
 			"ch554.h": "c",
 			"compiler.h": "c",
-			"stdint.h": "c"
+			"stdint.h": "c",
+			"vs_lint.h": "c",
+			"usb_config.h": "c"
 		}
 	}
 }

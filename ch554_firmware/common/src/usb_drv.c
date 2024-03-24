@@ -2,26 +2,11 @@
 
 //////////////////////////////////////////////////////////////////////
 
-typedef struct usb_descriptor
-{
-    uint8 const *p;
-    uint8 len;
-} usb_descriptor_t;
-
-//////////////////////////////////////////////////////////////////////
-
-#define DESCRIPTOR(x) \
-    {                 \
-        x, sizeof(x)  \
-    }
-
-//////////////////////////////////////////////////////////////////////
-
 #define usb_setup ((USB_SETUP_REQ *)usb_endpoint_0_buffer)
 
 #include "usb_config.h"
 
-// #define USB_LOGGING
+#define USB_LOGGING
 
 #if defined(USB_LOGGING)
 #define usb_printf printf
@@ -117,7 +102,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                         }
 
                         // send at most ? bytes per request (coalesced on host)
-                        len = MIN(usb.setup_len, DEFAULT_ENDP0_SIZE);
+                        len = MIN(usb.setup_len, ENDPOINT_0_SIZE);
                         memcpy(usb_endpoint_0_buffer, usb.current_descriptor, len);
                         usb.setup_len -= len;
                         usb.current_descriptor += len;
@@ -141,6 +126,10 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                         usb_puts("SetConfig");
                         usb.config = usb_setup->wValueL;
                         usb.active = true;
+                        break;
+
+                    case USB_SET_INTERFACE:
+                        usb_puts("SetInterface...?");
                         break;
 
                     case USB_GET_INTERFACE:
@@ -301,7 +290,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                 usb.setup_request = 0xff;
                 UEP0_CTRL = bUEP_R_TOG | bUEP_T_TOG | UEP_R_RES_STALL | UEP_T_RES_STALL;    // set the data toggles to 1 and indicate stall
 
-            } else if(len <= DEFAULT_ENDP0_SIZE) {    // if len <= 8, some valid data is sitting in EP0Buffer (or 0 bytes, that's ok)
+            } else if(len <= ENDPOINT_0_SIZE) {    // if len <= 8, some valid data is sitting in EP0Buffer (or 0 bytes, that's ok)
 
                 UEP0_T_LEN = len;                                                       // send if there is any
                 UEP0_CTRL = bUEP_R_TOG | bUEP_T_TOG | UEP_R_RES_ACK | UEP_T_RES_ACK;    // ack and toggle
@@ -316,11 +305,13 @@ void usb_isr(void) __interrupt(INT_NO_USB)
 
             // continue to send existing stuff(based on usb.setup_request)
             case USB_GET_DESCRIPTOR:
-                len = MIN(usb.setup_len, 8);
-                usb_printf(" more send %d\n", len);
-                memcpy(usb_endpoint_0_buffer, usb.current_descriptor, len);
-                usb.setup_len -= len;
-                usb.current_descriptor += len;
+                len = MIN(usb.setup_len, ENDPOINT_0_SIZE);
+                if(len != 0) {
+                    usb_printf(" more send %d\n", len);
+                    memcpy(usb_endpoint_0_buffer, usb.current_descriptor, len);
+                    usb.setup_len -= len;
+                    usb.current_descriptor += len;
+                }
                 UEP0_T_LEN = len;
                 UEP0_CTRL ^= bUEP_T_TOG;    // ep0 manual toggle
                 break;

@@ -7,8 +7,8 @@ void clk_init();    // CH554 clock selection and configuration
 void delay_uS(uint16 N);    // Delay in uS
 void delay_mS(uint16 N);    // Delay in mS
 
-void watchdog_mode_select(uint8 Mode);    // watchdog settings
-void watchdog_feed(uint8 TIM);            // feed the watchdog
+void watchdog_mode_select(uint8 mode);    // watchdog settings
+void watchdog_feed(uint8 count);          // feed the watchdog
 
 #if defined(DEBUG)
 

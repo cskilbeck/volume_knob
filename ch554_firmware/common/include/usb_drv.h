@@ -34,6 +34,21 @@ typedef enum usb_endpoint
 
 //////////////////////////////////////////////////////////////////////
 
+typedef struct usb_descriptor
+{
+    uint8 const *p;
+    uint8 len;
+} usb_descriptor_t;
+
+//////////////////////////////////////////////////////////////////////
+
+#define DESCRIPTOR(x)    \
+    {                    \
+        x, SIZEOF_LSB(x) \
+    }
+
+//////////////////////////////////////////////////////////////////////
+
 void usb_isr(void) __interrupt(INT_NO_USB);
 
 void usb_init_strings();

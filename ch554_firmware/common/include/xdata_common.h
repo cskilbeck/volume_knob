@@ -6,8 +6,10 @@
 #define XDATA extern __xdata
 #endif
 
+#define ENDPOINT_0_SIZE 64
+
 // System config channel
-XDATA uint8 usb_endpoint_0_buffer[DEFAULT_ENDP0_SIZE];
+XDATA uint8 usb_endpoint_0_buffer[ENDPOINT_0_SIZE];
 
 // User endpoint buffers
 XDATA uint8 usb_endpoint_1_rx_buffer[USB_PACKET_SIZE];

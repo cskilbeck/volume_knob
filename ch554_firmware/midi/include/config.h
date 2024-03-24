@@ -55,7 +55,7 @@ typedef enum config_flags
 //////////////////////////////////////////////////////////////////////
 // sizeof config_t must be CONFIG_MAX_LEN
 
-typedef struct config
+struct config
 {
     uint8 config_version;           // Config struct version - must be 1st byte!
     uint8 rot_control_msb;          // CC index MSB for knob
@@ -76,10 +76,13 @@ typedef struct config
     uint16 flags;                   // Flags, see enum above
 
     uint8 pad[CONFIG_MAX_LEN - 22];
+};
 
-} config_t;
+typedef struct config config_t;
 
-_Static_assert(sizeof(config_t) == CONFIG_MAX_LEN);
+#define CONFIG_SIZE (sizeof(config_t))
+
+STATIC_ASSERT(CONFIG_SIZE == CONFIG_MAX_LEN);
 
 extern __code const config_t default_config;
 
