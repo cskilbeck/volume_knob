@@ -2,7 +2,7 @@
 
 <script setup>
 
-import { ref, watch, watchEffect } from 'vue';
+import { ref, onMounted, watch, watchEffect } from 'vue';
 import CC from '../CC.js';
 
 const props = defineProps({
@@ -48,7 +48,7 @@ function do_search() {
     }
 }
 
-//onMounted(() => { search_text.value = ""; });
+onMounted(() => { search_text.value = ""; });
 
 Object.assign(matching_cc.value, CC.CCs);
 

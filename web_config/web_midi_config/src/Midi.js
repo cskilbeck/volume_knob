@@ -593,15 +593,13 @@ function on_midi_message(event) {
 
 //////////////////////////////////////////////////////////////////////
 
-function on_midi_startup(midi_obj) {
+function on_state_change(event) {
 
-    midi = midi_obj;
+    console.log(`statechange: ${event.port.name} (${event.port.id}): ${event.port.state}`);
 
-    midi.addEventListener('statechange', function (event) {
+    switch (event.port.state) {
 
-        console.log(`statechange: ${event.port.name} (${event.port.id}): ${event.port.state}`);
-
-        if (event.port.state == 'disconnected') {
+        case 'disconnected':
             for (let device of midi_devices.value) {
                 if (device.input && device.input.id == event.port.id) {
                     device.input = null;
@@ -609,11 +607,36 @@ function on_midi_startup(midi_obj) {
                     device.output = null;
                 }
             }
-        } else if (event.port.state == 'connected') {
+            break;
+
+        case 'connected':
             for (let device of midi_devices.value) {
+                if (event.port.name == device.name) {
+                    switch (event.port.type) {
+                        case 'input':
+                            device.input = event.port;
+                            break;
+                        case 'output':
+                            device.output = event.port;
+                            break;
+                    }
+                    if (device.input && device.output) {
+                        console.log(`Reconnect ${device.name}`);
+                    }
+                }
             }
-        }
-    });
+            break;
+    }
+}
+
+//////////////////////////////////////////////////////////////////////
+
+function on_midi_startup(midi_obj) {
+
+    midi = midi_obj;
+
+    midi.removeEventListener('statechange', on_state_change);
+    midi.addEventListener('statechange', on_state_change);
 }
 
 //////////////////////////////////////////////////////////////////////
