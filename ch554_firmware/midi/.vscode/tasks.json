@@ -93,7 +93,7 @@
             ],
             "group": {
                 "kind": "build",
-                "isDefault": false
+                "isDefault": true
             },
             "runOptions": {
                 "instanceLimit": 999

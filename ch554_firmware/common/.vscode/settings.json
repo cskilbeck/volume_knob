@@ -1,4 +1,5 @@
 {
-    "C_Cpp.errorSquiggles": "enabled",
-    "explorer.excludeGitIgnore": true
+    "C_Cpp.errorSquiggles": "disabled",
+    "explorer.excludeGitIgnore": true,
+    "cmake.configureOnOpen": false
 }

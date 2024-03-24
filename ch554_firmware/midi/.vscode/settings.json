@@ -7,5 +7,6 @@
     "search.useIgnoreFiles": true,
     "files.exclude": {
         "*.code-workspace": true
-    }
+    },
+    "cmake.configureOnOpen": false
 }

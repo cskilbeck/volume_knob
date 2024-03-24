@@ -33,7 +33,7 @@ typedef struct save_buffer
     uint16 crc;
 } save_buffer_t;
 
-_Static_assert(sizeof(save_buffer_t) == 32);
+_Static_assert(sizeof(save_buffer_t) == FLASH_SLOT_SIZE, "bad save_buffer size");
 
 bool flash_load(void __xdata *config, size_t config_size);
 bool flash_save(void __xdata *config, size_t config_size);

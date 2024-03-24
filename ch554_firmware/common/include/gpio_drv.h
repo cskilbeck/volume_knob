@@ -77,4 +77,4 @@ typedef enum gpio_state
     gpio_input_pullup = 3
 } gpio_state_t;
 
-void gpio_init(uint8 port, uint8 bit, gpio_state_t state);
+void gpio_init(uint8 port, uint8 bitpos, gpio_state_t state);
