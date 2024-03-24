@@ -6,7 +6,9 @@
 
 #include "usb_config.h"
 
+#if defined(DEBUG)
 #define USB_LOGGING
+#endif
 
 #if defined(USB_LOGGING)
 #define usb_printf printf
