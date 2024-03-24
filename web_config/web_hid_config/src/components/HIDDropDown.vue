@@ -118,6 +118,8 @@ function do_search() {
     }
 }
 
+//////////////////////////////////////////////////////////////////////
+
 watch(search_text, (n) => {
     search_text.value = n;
     do_search();
@@ -128,6 +130,8 @@ watch(search_text, (n) => {
 function on_select_key(key) {
     current_keycode.value = (current_keycode.value & 0xffff0000) | key.keycode | (key.is_consumer_key ? 0x8000 : 0);
 }
+
+//////////////////////////////////////////////////////////////////////
 
 onMounted(() => { search_text.value = ""; });
 
@@ -145,42 +149,49 @@ Object.assign(matching_keys.value, keys.key_codes);
         <div class="col-4">
         </div>
     </div>
-    <div class="input-group limit-height">
+    <div class="input-group">
 
-        <button class="btn  btn-sm tertiary-bg small-text border form-select ps-2 pe-0 text-start form-control"
-            type="button" data-bs-toggle="dropdown">
+        <button class="btn btn-sm tertiary-bg small-text form-select text-start form-control border" type="button"
+            data-bs-toggle="dropdown">
             <span class="d-inline-block">
                 {{ ((current_keycode & 0x8000) == 0) ?
                     keys.hid_keys[current_keycode & 0x7fff] :
                     keys.consumer_control_keys[current_keycode & 0x7fff] }} </span>
         </button>
 
-        <ul class="dropdown-menu border-secondary-subtle rounded-0 #searchable-list" style="width:400px">
+        <ul class="dropdown-menu rounded-0 py-0" style="width:25rem">
 
-            <input type="text" v-model="search_text" class="form-control border-0 border-bottom rounded-0 my-0 pt-0 pb-1
-            shadow-none mb-0">
+            <div class="input-group border-bottom">
+                <input type="text" v-model="search_text" class="form-control border-0 rounded-0 my-0 pt-1
+            shadow-none small-text">
+                <button type="button" class="btn bg-transparent py-0 float-end small-text">
+                    <i class="btn btn-sm btn-close" @click="search_text = ''; $event.stopPropagation();"></i>
+                </button>
+            </div>
 
-            <li v-for="key of matching_keys" class="w-100">
-                <a class="dropdown-item small-text" href="#" @click="on_select_key(key)">
-                    <div class="d-flex flex-row">
-                        <div class="w-75 me-0">
-                            {{ key.name }}
+            <div class="limit-height">
+                <li v-for="key of matching_keys" class="w-100">
+                    <a class="dropdown-item small-text" href="#" @click="on_select_key(key)">
+                        <div class="d-flex flex-row">
+                            <div class="w-75 me-0">
+                                {{ key.name }}
+                            </div>
+                            <div class="me-2">
+                                {{ key.keycode.toString(16).toUpperCase().padStart(4, '0') }}
+                            </div>
+                            <span class="w-25 rounded mx-0 px-0 bg-secondary-subtle text-center">
+                                {{ key.is_consumer_key ? "CC" : "Keyboard" }}
+                            </span>
                         </div>
-                        <div class="me-2">
-                            {{ key.keycode.toString(16).toUpperCase().padStart(4, '0') }}
-                        </div>
-                        <span class="w-25 rounded mx-0 px-0 bg-secondary-subtle text-center">
-                            {{ key.is_consumer_key ? "CC" : "Keyboard" }}
-                        </span>
-                    </div>
-                </a>
-            </li>
+                    </a>
+                </li>
+            </div>
         </ul>
         <button class="btn btn-sm dropdown-toggle border" href="#" role="button" data-bs-toggle="dropdown"
             :disabled="(current_keycode & 0x8000) != 0">
             Modifiers
         </button>
-        <form class="dropdown-menu modifiers-dropdown">
+        <form class="dropdown-menu modifiers-dropdown rounded-0">
             <div class="row mx-3 mt-1">
                 <div class="col">
                 </div>
@@ -244,8 +255,8 @@ Object.assign(matching_keys.value, keys.key_codes);
     background-color: var(--bs-secondary-bg)
 }
 
-.limit-height ul {
-    max-height: 250px;
+.limit-height {
+    max-height: 40vh;
     overflow-y: auto;
 }
 </style>
