@@ -27,10 +27,44 @@ watch(current, (n) => {
     emit('update:modelValue', current.value);
 });
 
+//////////////////////////////////////////////////////////////////////
+
+let matching_cc = ref([]);
+let search_text = ref("");
+
+function do_search() {
+
+    matching_cc.value = [];
+    if (search_text.value != "") {
+        const needle = search_text.value.toUpperCase();
+        for (const cc of CC.CCs) {
+            if (cc.name.toUpperCase().includes(needle)) {
+                matching_cc.value.push(cc);
+            }
+        }
+    }
+    if (matching_cc.value.length == 0) {
+        Object.assign(matching_cc.value, CC.CCs);
+    }
+}
+
+//onMounted(() => { search_text.value = ""; });
+
+Object.assign(matching_cc.value, CC.CCs);
+
+//////////////////////////////////////////////////////////////////////
+
+watch(search_text, (n) => {
+    search_text.value = n;
+    do_search();
+});
+
+//////////////////////////////////////////////////////////////////////
+
 </script>
 
 <template>
-    <div class="input-group limit-height">
+    <div class="input-group">
 
         <input type="number" class="form-control" v-model.number="current">
 
@@ -40,28 +74,36 @@ watch(current, (n) => {
             <span class="d-inline-block"></span>
         </button>
 
-        <ul class="dropdown-menu border-secondary-subtle rounded-0" style="width:300px">
+        <ul class="dropdown-menu rounded-0 py-0" style="width:300px">
 
-            <li v-for="(cc, index) in CC.CCs" class="w-100">
+            <div class="input-group border-bottom">
+                <input type="text" v-model="search_text" class="form-control border-0 rounded-0 my-0 pt-1
+            shadow-none small-text">
+                <button type="button" class="btn bg-transparent py-0 float-end small-text">
+                    <i class="btn btn-sm btn-close" @click="search_text = ''; $event.stopPropagation();"></i>
+                </button>
+            </div>
 
-                <a class="dropdown-item small-text" href="#" @click="current = index">
-                    <div class="d-flex flex-row">
-                        <div class="w-75">
-                            {{ cc.name }}
+            <div class="limit-height">
+                <li v-for="(cc, index) in matching_cc" class="w-100">
+                    <a class="dropdown-item small-text" href="#" @click="current = index">
+                        <div class="d-flex flex-row">
+                            <div class="w-75">
+                                {{ cc.name }}
+                            </div>
+                            <div class="w-25 text-end me-4">
+                                {{ index.toString() }}
+                            </div>
+                            <div class="w-25 text-end">
+                                <span class="rounded px-2 pb-1"
+                                    :class='(CC.is_MSB(cc) || CC.is_LSB(cc) ? "bg-secondary-subtle" : "") + " " + (CC.is_MSB(cc) ? "bg-secondary-subtle" : "text-secondary")'>
+                                    {{ CC.is_MSB(cc) ? "EXT" : CC.is_LSB(cc) ? "LSB" : "" }}
+                                </span>
+                            </div>
                         </div>
-                        <div class="w-25 text-end me-4">
-                            {{ index.toString() }}
-                        </div>
-                        <div class="w-25 text-end">
-                            <span class="rounded px-2 pb-1"
-                                :class='(CC.is_MSB(cc) || CC.is_LSB(cc) ? "bg-secondary-subtle" : "") + " " + (CC.is_MSB(cc) ? "bg-secondary-subtle" : "text-secondary")'>
-                                {{ CC.is_MSB(cc) ? "EXT" : CC.is_LSB(cc) ? "LSB" : "" }}
-                            </span>
-                        </div>
-                    </div>
-                </a>
-
-            </li>
+                    </a>
+                </li>
+            </div>
         </ul>
     </div>
     <div class="row mb-2 me-0 small-text text-secondary">
@@ -89,8 +131,8 @@ watch(current, (n) => {
     background-color: var(--bs-secondary-bg)
 }
 
-.limit-height ul {
-    max-height: 250px;
+.limit-height {
+    max-height: 40vh;
     overflow-y: auto;
 }
 </style>
