@@ -85,25 +85,58 @@ __code uint8 const midi_config_desc[] = {
     0x01,                     // Class interface: Header
     0x00,                     // Midi Streaming v1.0 LSB
     0x01,                     // Midi Streaming v1.0 MSB
-    0x25,                     // wTotalLength LSB
+    22,                       // wTotalLength LSB
     0x00,                     // wTotalLength MSB
 
     // IN-JACK
-    0x06, 0x24, 0x02, 0x01, 0x01, 0x00,    //
-    0x06, 0x24, 0x02, 0x02, 0x02, 0x00,    //
+    0x06,                     // bLength
+    USB_DESCR_TYP_CS_INTF,    // CS_INTERFACE
+    0x02,                     // MIDI_IN_JACK
+    0x01,                     // embedded
+    0x01,                     // jack ID
+    0x00,                     // iJack
 
     // OUT-JACK
-    0x09, 0x24, 0x03, 0x01, 0x03, 0x01, 0x02, 0x01, 0x00,    //
-    0x09, 0x24, 0x03, 0x02, 0x04, 0x01, 0x01, 0x01, 0x00,    //
+    0x09,                     // bLength
+    USB_DESCR_TYP_CS_INTF,    // CS_INTERFACE
+    0x03,                     // MIDI_OUT_JACK
+    0x01,                     // embedded
+    0x02,                     // jack ID
+    0x00,                     // input pins
+    0x00,                     // source ID
+    0x00,                     // source pin
+    0x00,                     // iJack
 
     //////////
 
     // then 2 endpoints
-    0x07, 0x05, 0x02, 0x02, 0x40, 0x00, 0x00,    // EMB MIDI JACK = 1, OUT
-    0x05, 0x25, 0x01, 0x01, 0x01,                // Associated JACKID=1, OUT
+    0x07,                      // bLength
+    USB_DESCR_TYP_ENDP,        // ENDPOINT
+    0x02,                      // IN, EP2
+    0x02,                      // bulk, not shared
+    USB_PACKET_SIZE & 0xff,    // max packet size LSB
+    USB_PACKET_SIZE >> 8,      // max packet size MSB
+    0x00,                      // bInterval (unused for bulk EP)
 
-    0x07, 0x05, 0x82, 0x02, 0x40, 0x00, 0x00,    // EMB MIDI JACK = 1, OUT
-    0x05, 0x25, 0x01, 0x01, 0x03                 // Associated JACKID=3, IN
+    0x05,                     // bLength
+    USB_DESCR_TYP_CS_ENDP,    // class specific endpoint
+    0x01,                     // subtype 1
+    0x01,                     // bNumberOfJacks
+    0x01,                     // Jack ID 1
+
+    0x07,                      // bLength
+    USB_DESCR_TYP_ENDP,        // ENDPOINT
+    0x82,                      // OUT, EP2
+    0x02,                      // bulk, not shared
+    USB_PACKET_SIZE & 0xff,    // max packet size LSB
+    USB_PACKET_SIZE >> 8,      // max packet size MSB
+    0x00,                      // bInterval (unused for bulk EP)
+
+    0x05,                     // bLength
+    USB_DESCR_TYP_CS_ENDP,    // class specific endpoint
+    0x01,                     // subtype 1
+    0x01,                     // bNumberOfJacks
+    0x02                      // Jack ID 2
 
 };
 
