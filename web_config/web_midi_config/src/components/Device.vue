@@ -434,6 +434,14 @@ function paste_config(json_text) {
 
 //////////////////////////////////////////////////////////////////////
 
+function reset_to_defaults() {
+
+    props.device.config = midi.default_config;
+    ui.value = ui_from_config(midi.default_config);
+}
+
+//////////////////////////////////////////////////////////////////////
+
 </script>
 
 <template>
@@ -552,6 +560,12 @@ function paste_config(json_text) {
                                     <li>
                                         <a class="dropdown-item" href="#" @click='show_paste_dialog()'>
                                             Paste
+                                        </a>
+                                    </li>
+                                    <hr class="my-0" />
+                                    <li>
+                                        <a class="dropdown-item" href="#" @click='reset_to_defaults()'>
+                                            Reset to defaults
                                         </a>
                                     </li>
                                 </ul>
