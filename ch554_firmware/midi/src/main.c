@@ -136,6 +136,11 @@ int main()
     led_init();
     encoder_init();
 
+    // if button held down when the device is plugged in, go to bootloader
+    if(BTN_BIT == 0) {
+        goto_bootloader();
+    }
+
     // global irq enable
     EA = 1;
 
