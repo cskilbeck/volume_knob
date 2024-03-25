@@ -479,7 +479,7 @@ for (const [key, value] of Object.entries(hid_keys)) {
         keycode: key,
         is_consumer_key: false
     });
-    key_names[value] = key;
+    key_names[value] = key | 0;
 }
 
 for (const [key, value] of Object.entries(consumer_control_keys)) {
@@ -488,7 +488,7 @@ for (const [key, value] of Object.entries(consumer_control_keys)) {
         keycode: key,
         is_consumer_key: true
     });
-    consumer_names[value] = key;
+    consumer_names[value] = key | 0;
 }
 
 key_codes.sort((x, y) => {

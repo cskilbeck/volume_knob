@@ -52,11 +52,11 @@ let default_config = {
     config_version: CONFIG_VERSION,
 
     // what keys to send for rotation
-    key_clockwise: 0xE9, //keys.consumer_control_keys['Volume Up'],
-    key_counterclockwise: 0xEA, //keys.consumer_control_keys['Volume Down'],
+    key_clockwise: keys.consumer_names['Volume Up'],
+    key_counterclockwise: keys.consumer_names['Volume Down'],
 
     // key to send when pressed
-    key_press: 0xE2, //keys.consumer_control_keys['Mute'],
+    key_press: keys.consumer_names['Mute'],
 
     // modifiers
     mod_clockwise: 0,
@@ -66,6 +66,8 @@ let default_config = {
     // flags
     flags: default_flags
 };
+
+console.log("DEFAULT CONFIG:", default_config);
 
 //////////////////////////////////////////////////////////////////////
 // this is for marshalling the config struct to/from a byte array
@@ -186,7 +188,7 @@ async function send(device, data) {
     try {
         await device.hid_device.sendReport(0, new Uint8Array(data)).then(
             () => {
-                //console.log(`Sent: [${data}]`);
+                console.log(`Sent: [${data}]`);
             },
             (err) => {
                 console.log(`Error sending report: ${err}`);
