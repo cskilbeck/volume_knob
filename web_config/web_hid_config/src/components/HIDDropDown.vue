@@ -101,6 +101,7 @@ function update_modifiers(checked, value) {
 
 let matching_keys = ref([]);
 let search_text = ref("");
+let found_text = ref(false);
 
 function do_search() {
 
@@ -113,7 +114,9 @@ function do_search() {
             }
         }
     }
-    if (matching_keys.value.length == 0) {
+    found_text.value = matching_keys.value.length != 0;
+
+    if (!found_text.value) {
         Object.assign(matching_keys.value, keys.key_codes);
     }
 }
@@ -163,7 +166,7 @@ Object.assign(matching_keys.value, keys.key_codes);
 
             <div class="input-group border-bottom">
                 <input type="text" v-model="search_text" class="form-control border-0 rounded-0 my-0 pt-1
-            shadow-none small-text">
+            shadow-none small-text" :class="found_text ? '' : 'dimmer-text'">
                 <button type="button" class="btn bg-transparent py-0 float-end small-text">
                     <i class="btn btn-sm btn-close" @click="search_text = ''; $event.stopPropagation();"></i>
                 </button>
