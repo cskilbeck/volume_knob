@@ -288,15 +288,12 @@ function rotation_matrix(cx, cy, angle) {
 <template>
 
     <svg class='d-none'>
-        <symbol id='little-arrow' xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
-            viewBox="0 0 16 16">
-            <path
-                d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z" />
+        <symbol id='little-arrow' xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+            <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z" />
         </symbol>
     </svg>
 
-    <div class="container border rounded-3 bg-device border-secondary bg-secondary-subtle pt-2 mb-4"
-        :class="collapsed ? 'pb-2' : ' pb-4'">
+    <div class="container border rounded-3 bg-device border-secondary bg-secondary-subtle pt-2 mb-4" :class="collapsed ? 'pb-2' : ' pb-4'">
 
         <div class='row'>
             <div class='col text-left ms-2' :class="!collapsed ? 'mb-1' : ''">
@@ -304,18 +301,14 @@ function rotation_matrix(cx, cy, angle) {
                     <div class="col ps-0">
                         <div class="row">
                             <div class="col pe-0 me-0">
-                                <button class="btn" @click="toggle_expand()"
-                                    style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem;">
-                                    <svg width="20" height="20" style="transition:0.1s"
-                                        :transform="rotation_matrix(0, 0, collapsed ? 0 : 90)">
+                                <button class="btn" @click="toggle_expand()" style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem;">
+                                    <svg width="20" height="20" style="transition:0.1s" :transform="rotation_matrix(0, 0, collapsed ? 0 : 90)">
                                         <use href="#little-arrow"></use>
                                     </svg>
                                 </button>
                                 <strong>{{ device.name }}</strong>
                                 <span class="d-inline-block" style="width:1em"></span>
-                                <input
-                                    class="bg-secondary-subtle text-secondary rounded focus-ring ps-2 bright-focus-input"
-                                    type="text" @blur="save_name()" v-model="device_label"
+                                <input class="bg-secondary-subtle text-secondary rounded focus-ring ps-2 bright-focus-input" type="text" @blur="save_name()" v-model="device_label"
                                     @keypress='(e) => { e.key === "Enter" && e.currentTarget.blur(); }'>
                             </div>
                         </div>
@@ -341,31 +334,26 @@ function rotation_matrix(cx, cy, angle) {
                     <div class="col-6">
                         <div class='btn-group-vertical' role="group" v-if='device.active'>
 
-                            <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
-                                @click='hid.flash_device_led(device)'>
+                            <button class='btn btn-sm tertiary-bg border border-secondary-subtle' @click='hid.flash_device_led(device)'>
                                 <span class="mx-2">Flash LED</span>
                             </button>
 
-                            <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
-                                @click='hid.get_config(device)'>
+                            <button class='btn btn-sm tertiary-bg border border-secondary-subtle' @click='hid.get_config(device)'>
                                 <span class="mx-2">Read from device</span>
                             </button>
 
-                            <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
-                                :class="{ 'red-text': config_changed }" @click='store_config()'>
+                            <button class='btn btn-sm tertiary-bg border border-secondary-subtle' :class="{ 'red-text': config_changed }" @click='store_config()'>
                                 <span class="mx-2">Store to device</span>
                             </button>
 
                             <div class="dropdown w-100">
-                                <button
-                                    class="w-100 btn btn-sm rounded-0 tertiary-bg border-secondary-subtle dropdown-toggle border-top-0"
-                                    href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <button class="w-100 btn btn-sm rounded-0 tertiary-bg border-secondary-subtle dropdown-toggle border-top-0" href="#" role="button" data-bs-toggle="dropdown"
+                                    aria-expanded="false">
                                     Settings
                                 </button>
                                 <ul class="dropdown-menu">
                                     <li>
-                                        <a class="dropdown-item" href="#"
-                                            @click="fileDownload(json_from_config(config_from_ui()), 'tiny_volume_knob_settings.json');">
+                                        <a class="dropdown-item" href="#" @click="fileDownload(json_from_config(config_from_ui()), 'tiny_volume_knob_settings.json');">
                                             Export
                                         </a>
                                     </li>
@@ -390,8 +378,7 @@ function rotation_matrix(cx, cy, angle) {
                                 </ul>
                             </div>
 
-                            <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
-                                @click='flashModal = true'>
+                            <button class='btn btn-sm tertiary-bg border border-secondary-subtle' @click='flashModal = true'>
                                 <span class="mx-2">Advanced</span>
                             </button>
 
@@ -409,8 +396,7 @@ function rotation_matrix(cx, cy, angle) {
                     </div>
                     <div class='col-3'>
                         <div class="form-check pb-0 pt-1 m-0">
-                            <input class="form-check-input" type="checkbox" id="reverse_rotation"
-                                v-model="ui.cf_reverse_rotation">
+                            <input class="form-check-input" type="checkbox" id="reverse_rotation" v-model="ui.cf_reverse_rotation">
                             <label class="form-check-label user-select-none" for="reverse_rotation">
                                 Reversed
                             </label>
@@ -428,8 +414,7 @@ function rotation_matrix(cx, cy, angle) {
                         </div>
                         <div class="row">
                             <div class='col mx-3'>
-                                <HIDDropDown v-model:keycode="ui.key_counterclockwise"
-                                    v-model:mod="ui.mod_counterclockwise">
+                                <HIDDropDown v-model:keycode="ui.key_counterclockwise" v-model:mod="ui.mod_counterclockwise">
                                     Counter-clockwise
                                 </HIDDropDown>
                             </div>
@@ -475,8 +460,7 @@ function rotation_matrix(cx, cy, angle) {
                                 <label class="form-check-label user-select-none" for="flash_on_rot">
                                     Rotate clockwise
                                 </label>
-                                <input class="form-check-input pull-left" type="checkbox" id="flash_on_rot"
-                                    v-model="ui.cf_led_flash_on_cw">
+                                <input class="form-check-input pull-left" type="checkbox" id="flash_on_rot" v-model="ui.cf_led_flash_on_cw">
                             </div>
                         </div>
                     </div>
@@ -486,8 +470,7 @@ function rotation_matrix(cx, cy, angle) {
                                 <label class="form-check-label user-select-none" for="flash_on_limit">
                                     Rotate counter-clockwise
                                 </label>
-                                <input class="form-check-input pull-left" type="checkbox" id="flash_on_limit"
-                                    v-model="ui.cf_led_flash_on_ccw">
+                                <input class="form-check-input pull-left" type="checkbox" id="flash_on_limit" v-model="ui.cf_led_flash_on_ccw">
                             </div>
                         </div>
                     </div>
@@ -497,8 +480,7 @@ function rotation_matrix(cx, cy, angle) {
                                 <label class="form-check-label user-select-none" for="flash_on_click">
                                     Press
                                 </label>
-                                <input class="form-check-input pull-left" type="checkbox" id="flash_on_click"
-                                    v-model="ui.cf_led_flash_on_press">
+                                <input class="form-check-input pull-left" type="checkbox" id="flash_on_click" v-model="ui.cf_led_flash_on_press">
                             </div>
                         </div>
                     </div>
@@ -508,8 +490,7 @@ function rotation_matrix(cx, cy, angle) {
                                 <label class="form-check-label user-select-none" for="flash_on_release">
                                     Release
                                 </label>
-                                <input class="form-check-input pull-left" type="checkbox" id="flash_on_release"
-                                    v-model="ui.cf_led_flash_on_release">
+                                <input class="form-check-input pull-left" type="checkbox" id="flash_on_release" v-model="ui.cf_led_flash_on_release">
                             </div>
                         </div>
                     </div>
@@ -537,8 +518,7 @@ function rotation_matrix(cx, cy, angle) {
         </div>
         <div class="row mx-2 my-2">
             <div class="col text-center">
-                <button class='btn btn-sm btn-danger'
-                    @click='hid.goto_firmware_update_mode(device); flashModal = false'>
+                <button class='btn btn-sm btn-danger' @click='hid.goto_firmware_update_mode(device); flashModal = false'>
                     Put device in Firmware Update Mode
                 </button>
             </div>
@@ -563,8 +543,7 @@ function rotation_matrix(cx, cy, angle) {
 
     <Modal v-model="pasteConfigModal" maxwidth="30%" closeable backdrop-no-close header="Paste Settings">
         <div class="row mx-2">
-            <textarea class="font-monospace form-control smaller-text" style="height:26rem;"
-                v-model="config_paste_textarea_contents" placeholder="Paste your settings JSON in here...">
+            <textarea class="font-monospace form-control smaller-text" style="height:26rem;" v-model="config_paste_textarea_contents" placeholder="Paste your settings JSON in here...">
         </textarea>
         </div>
         <div class="row mt-4 mb-2">
@@ -579,8 +558,7 @@ function rotation_matrix(cx, cy, angle) {
                         </button>
                     </div>
                     <div class="col">
-                        <button class="btn btn-primary btn-sm"
-                            @click='pasteConfigModal = false; paste_config(config_paste_textarea_contents)'>
+                        <button class="btn btn-primary btn-sm" @click='pasteConfigModal = false; paste_config(config_paste_textarea_contents)'>
                             Apply
                         </button>
                     </div>
@@ -593,8 +571,7 @@ function rotation_matrix(cx, cy, angle) {
         <div class="row mx-2">
             <div class="col">
                 <ul v-for="(err, idx) in error_messages" :key="idx" class="list-group list-group-flush">
-                    <li class="list-group-item font-monospace"
-                        :class='(idx != error_messages.length - 1) ? "border-bottom" : ""'>
+                    <li class="list-group-item font-monospace" :class='(idx != error_messages.length - 1) ? "border-bottom" : ""'>
                         {{ err }}
                     </li>
                 </ul>

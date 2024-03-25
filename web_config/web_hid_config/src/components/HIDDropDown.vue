@@ -142,6 +142,12 @@ Object.assign(matching_keys.value, keys.key_codes);
 
 //////////////////////////////////////////////////////////////////////
 
+function keycode_name(keycode) {
+    return ((keycode & 0x8000) == 0) ? keys.hid_keys[keycode & 0x7fff] : keys.consumer_control_keys[keycode & 0x7fff];
+}
+
+//////////////////////////////////////////////////////////////////////
+
 </script>
 
 <template>
@@ -154,19 +160,15 @@ Object.assign(matching_keys.value, keys.key_codes);
     </div>
     <div class="input-group">
 
-        <button class="btn btn-sm tertiary-bg small-text form-select text-start form-control border" type="button"
-            data-bs-toggle="dropdown">
+        <button class="btn btn-sm tertiary-bg small-text form-select text-start form-control border" type="button" data-bs-toggle="dropdown">
             <span class="d-inline-block">
-                {{ ((current_keycode & 0x8000) == 0) ?
-                    keys.hid_keys[current_keycode & 0x7fff] :
-                    keys.consumer_control_keys[current_keycode & 0x7fff] }} </span>
+                {{ keycode_name(current_keycode) }} </span>
         </button>
 
         <ul class="dropdown-menu rounded-0 py-0" style="width:25rem">
 
             <div class="input-group border-bottom">
-                <input type="text" v-model="search_text" class="form-control border-0 rounded-0 my-0 pt-1
-            shadow-none small-text" :class="found_text ? '' : 'dimmer-text'">
+                <input type="text" v-model="search_text" class="form-control border-0 rounded-0 my-0 pt-1 shadow-none small-text" :class="found_text ? '' : 'dimmer-text'">
                 <button type="button" class="btn bg-transparent py-0 float-end small-text">
                     <i class="btn btn-sm btn-close" @click="search_text = ''; $event.stopPropagation();"></i>
                 </button>
@@ -190,8 +192,7 @@ Object.assign(matching_keys.value, keys.key_codes);
                 </li>
             </div>
         </ul>
-        <button class="btn btn-sm dropdown-toggle border" href="#" role="button" data-bs-toggle="dropdown"
-            :disabled="(current_keycode & 0x8000) != 0">
+        <button class="btn btn-sm dropdown-toggle border" href="#" role="button" data-bs-toggle="dropdown" :disabled="(current_keycode & 0x8000) != 0">
             Modifiers
         </button>
         <form class="dropdown-menu modifiers-dropdown rounded-0">
@@ -210,12 +211,10 @@ Object.assign(matching_keys.value, keys.key_codes);
                     {{ name }}
                 </div>
                 <div class="col text-center">
-                    <input class="form-check-input" type="checkbox" :checked="(current_mod & val) != 0"
-                        @change="update_modifiers($event.target.checked, val)" />
+                    <input class="form-check-input" type="checkbox" :checked="(current_mod & val) != 0" @change="update_modifiers($event.target.checked, val)" />
                 </div>
                 <div class="col text-center">
-                    <input class="form-check-input" type="checkbox" :checked="(current_mod & (val << 4)) != 0"
-                        @change="update_modifiers($event.target.checked, val << 4)" />
+                    <input class="form-check-input" type="checkbox" :checked="(current_mod & (val << 4)) != 0" @change="update_modifiers($event.target.checked, val << 4)" />
                 </div>
             </div>
             <div class="row">
