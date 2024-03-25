@@ -18,7 +18,7 @@ void encoder_init()
 
 //////////////////////////////////////////////////////////////////////
 
-#if DEVICE == DEVICE_DEVKIT
+#if DEVICE == DEVICE_DEVKIT || DEVICE == DEVICE_ORIGINAL
 #define ROTATE_CW 1
 #define ROTATE_CWW -1
 #else
