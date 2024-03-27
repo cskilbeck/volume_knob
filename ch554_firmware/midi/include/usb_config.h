@@ -21,7 +21,7 @@ __code uint8 const device_desc[] = {
     0x00,                    // device class
     0x00,                    // device subclass
     0x00,                    // device protocol
-    ENDPOINT_0_SIZE,         // Define it in interface level
+    USB_PACKET_SIZE,         // Define it in interface level
     USB_VID & 0xff,          // USB_VID (low)
     USB_VID >> 8,            // USB_VID (high)
     USB_PID & 0xff,          // USB_PID (low)

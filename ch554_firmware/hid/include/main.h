@@ -62,44 +62,12 @@
 
 #define FIRMWARE_VERSION (FIRMWARE_CURRENT_VERSION | DEVICE)
 
-//////////////////////////////////////////////////////////////////////
+#define HID_QUEUE_LEN 16
 
-#include <stdint.h>
-#include <string.h>
+#include "common.h"
 
-#define bool _Bool
-#define true 1
-#define false 0
+typedef STRUCT_QUEUE(uint8, HID_QUEUE_LEN) hid_queue_t;
 
-#include "vs_lint.h"
-#include <compiler.h>
-
-//////////////////////////////////////////////////////////////////////
-
-#if defined(DEBUG)
-#include <stdio.h>
-#else
-#define printf(...) NOP_MACRO
-#define puts(...) NOP_MACRO
-#endif
-
-//////////////////////////////////////////////////////////////////////
-
-#include "ch554.h"
-#include "ch554_usb.h"
-
-//////////////////////////////////////////////////////////////////////
-
-#include "types.h"
-#include "util.h"
-#include "xdata_common.h"
-#include "gpio_drv.h"
-#include "debug.h"
-#include "tick.h"
-#include "usb_drv.h"
-#include "led.h"
-#include "encoder.h"
-#include "flash.h"
-
+#include "xdata_extra.h"
 #include "config.h"
 #include "hid.h"

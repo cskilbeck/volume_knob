@@ -1,5 +1,9 @@
 #include "main.h"
 
+#define XDATA __xdata
+#include "xdata_extra.h"
+#undef XDATA
+
 //////////////////////////////////////////////////////////////////////
 // TIMER0 = LED pwm
 // TIMER1 = UART
@@ -30,77 +34,9 @@ typedef enum event
 } event_t;
 
 //////////////////////////////////////////////////////////////////////
-// must be a power of 2
 
-#define KEY_QUEUE_LEN 16
-
-__idata uint8 queue_buffer[KEY_QUEUE_LEN];
-__idata uint8 queue_head = 0;
-__idata uint8 queue_size = 0;
-
-//////////////////////////////////////////////////////////////////////
-
-inline bool queue_full()
+void hid_process_event(event_t e)
 {
-    return queue_size == KEY_QUEUE_LEN;
-}
-
-//////////////////////////////////////////////////////////////////////
-
-inline uint8 queue_space()
-{
-    return KEY_QUEUE_LEN - queue_size;
-}
-
-//////////////////////////////////////////////////////////////////////
-
-inline bool queue_empty()
-{
-    return queue_size == 0;
-}
-
-//////////////////////////////////////////////////////////////////////
-// check it's got space before calling this
-
-void queue_put(event_t e)
-{
-    queue_buffer[(queue_head + queue_size) & (KEY_QUEUE_LEN - 1)] = (uint8)e;
-    queue_size += 1;
-}
-
-//////////////////////////////////////////////////////////////////////
-// check it's not empty before calling these
-
-void queue_pop_front()
-{
-    queue_size -= 1;
-    queue_head = ++queue_head & (KEY_QUEUE_LEN - 1);
-}
-
-//////////////////////////////////////////////////////////////////////
-
-event_t queue_get()
-{
-    uint16 next = queue_buffer[queue_head];
-    queue_pop_front();
-    return (event_t)next;
-}
-
-//////////////////////////////////////////////////////////////////////
-
-event_t queue_peek()
-{
-    return (event_t)queue_buffer[queue_head];
-}
-
-//////////////////////////////////////////////////////////////////////
-
-bool hid_process_event(event_t e)
-{
-    if(!usb_is_endpoint_idle(endpoint_1)) {
-        return false;
-    }
-
     uint8 modifiers = 0;
     uint16 key = 0;
 
@@ -151,8 +87,6 @@ bool hid_process_event(event_t e)
         k->key[5] = 0;
         usb_send(endpoint_1, 9);
     }
-
-    return true;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -254,6 +188,8 @@ void main()
 
     puts("Main loop");
 
+    QUEUE_INIT(hid_queue);
+
     while(1) {
 
         // read/debounce the button
@@ -330,8 +266,8 @@ void main()
                 led_flash();
             }
 
-            if(queue_space() >= 1) {
-                queue_put(event_press | event_keydown);
+            if(QUEUE_SPACE(hid_queue) >= 1) {
+                QUEUE_PUSH(hid_queue, event_press | event_keydown);
             }
         }
 
@@ -341,8 +277,8 @@ void main()
                 led_flash();
             }
 
-            if(queue_space() >= 1) {
-                queue_put(event_press | event_keyup);
+            if(QUEUE_SPACE(hid_queue) >= 1) {
+                QUEUE_PUSH(hid_queue, event_press | event_keyup);
             }
         }
 
@@ -354,9 +290,9 @@ void main()
                 led_flash();
             }
 
-            if(queue_space() >= 2) {
-                queue_put(event_clockwise | event_keydown);
-                queue_put(event_clockwise | event_keyup);
+            if(QUEUE_SPACE(hid_queue) >= 2) {
+                QUEUE_PUSH(hid_queue, event_clockwise | event_keydown);
+                QUEUE_PUSH(hid_queue, event_clockwise | event_keyup);
             }
 
         } else if(direction == -turn_value) {
@@ -365,15 +301,17 @@ void main()
                 led_flash();
             }
 
-            if(queue_space() >= 2) {
-                queue_put(event_counterclockwise | event_keydown);
-                queue_put(event_counterclockwise | event_keyup);
+            if(QUEUE_SPACE(hid_queue) >= 2) {
+                QUEUE_PUSH(hid_queue, event_counterclockwise | event_keydown);
+                QUEUE_PUSH(hid_queue, event_counterclockwise | event_keyup);
             }
         }
 
         // send key on/off to usb hid if there are some waiting to be sent
-        if(!queue_empty() && hid_process_event(queue_peek())) {
-            queue_pop_front();
+        if(!QUEUE_IS_EMPTY(hid_queue) && usb_is_endpoint_idle(endpoint_1)) {
+            uint8 p;
+            QUEUE_POP(hid_queue, p);
+            hid_process_event(p);
         }
         led_update();
     }

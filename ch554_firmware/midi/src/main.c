@@ -2,6 +2,10 @@
 
 #include "main.h"
 
+#define XDATA __xdata
+
+#include "xdata_extra.h"
+
 //////////////////////////////////////////////////////////////////////
 // TIMER0 = LED pwm
 // TIMER1 = UART
@@ -33,29 +37,38 @@
 
 void send_cc(uint8 channel, uint8 cc_msb, uint8 cc_lsb, uint16 value, bool is_extended)
 {
-    uint8 packet[MIDI_PACKET_SIZE];
+    if(QUEUE_SPACE(midi_queue) < 2) {
+        puts("Q full");
+        return;
+    }
+
+    uint32 midi_packet;
+
+#define _pkt ((uint8 *)&midi_packet)
 
     // CC header
-    packet[0] = 0x0B;
-    packet[1] = 0xB0 | channel;
+    _pkt[0] = 0x0B;
+    _pkt[1] = 0xB0 | channel;
 
     // cc[0] is the value to send (or MSB of value)
-    packet[2] = cc_msb;
+    _pkt[2] = cc_msb;
 
     // send MSB first if extended mode
     if(is_extended) {
 
         // send MSB of value
-        packet[3] = (value >> 7) & 0x7F;
-        queue_put(packet);
+        _pkt[3] = (value >> 7) & 0x7F;
+        QUEUE_PUSH(midi_queue, midi_packet);
 
         // cc[1] is LSB of value
-        packet[2] = cc_lsb;
+        _pkt[2] = cc_lsb;
     }
 
     // send value (or LSB of value)
-    packet[3] = value & 0x7f;
-    queue_put(packet);
+    _pkt[3] = value & 0x7f;
+    QUEUE_PUSH(midi_queue, midi_packet);
+
+#undef _pkt
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -150,6 +163,9 @@ int main()
 
     load_config();
 
+    // At this point we are done with standard boot
+    // Look at the config and decide to use midi or hid
+
     usb_init_strings();
     usb_device_config();
     usb_device_endpoint_config();
@@ -159,7 +175,8 @@ int main()
 
     usb_wait_for_connection();
 
-    uint16 press_time = 0;
+    midi_init();
+
     uint8 button_ticks = 0;
     bool button_state = false;    // for debouncing the button
 
@@ -181,20 +198,11 @@ int main()
 
         // if tick
         if(TF2) {
-            deceleration_ticks += 1;
             TF2 = 0;
             if(button_ticks <= 2) {
                 button_ticks += 1;
             }
-            if(button_state) {
-                press_time += 1;
-                if(press_time == BOOTLOADER_BUTTON_DELAY_MS) {
-
-                    goto_bootloader();
-                }
-            } else {
-                press_time = 0;
-            }
+            deceleration_ticks += 1;
             led_on_tick();
         }
 
@@ -215,7 +223,7 @@ int main()
         if(!midi_send_update()) {
 
             // no midi packets waiting to be sent, queue up any keypress/rotations
-            if(!queue_full()) {
+            if(!QUEUE_IS_FULL(midi_queue)) {
 
                 // BUTTON
 

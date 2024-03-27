@@ -1,5 +1,7 @@
 ﻿#include "main.h"
 
+//////////////////////////////////////////////////////////////////////
+
 #define _BAUD_X1(clk, baud) (10 * clk / baud / 16)
 #define _BAUD_X2(clk, baud) (_BAUD_X1(clk, baud) % 10)
 #define _BAUD_X3(clk, baud) (_BAUD_X2(clk, baud) / 5)

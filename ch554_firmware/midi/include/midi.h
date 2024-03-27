@@ -60,32 +60,10 @@ enum midi_packet_header_t
     midi_packet_end_3 = 0x7,    // SysEx ends with following three bytes.
 };
 
-extern uint8 queue_size;
-
 //////////////////////////////////////////////////////////////////////
-// a queue of MIDI packets
-// we have to queue things up because the rotary encoder can generate
-// messages faster than we can send them
 
-inline bool queue_full()
-{
-    return queue_size == MIDI_QUEUE_LEN;
-}
-
-inline uint8 queue_space()
-{
-    return MIDI_QUEUE_LEN - queue_size;
-}
-
-inline bool queue_empty()
-{
-    return queue_size == 0;
-}
-
-
+void midi_init();
 void process_midi_packet_in(uint8 length);
 void handle_midi_packet();
 void midi_flush_queue();
 bool midi_send_update();
-
-void queue_put(uint8 *k);

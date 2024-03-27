@@ -6,12 +6,8 @@
 #define XDATA extern __xdata
 #endif
 
-#define ENDPOINT_0_SIZE 64
+XDATA uint8 usb_endpoint_0_buffer[USB_PACKET_SIZE];
 
-// System config channel
-XDATA uint8 usb_endpoint_0_buffer[ENDPOINT_0_SIZE];
-
-// User endpoint buffers
 XDATA uint8 usb_endpoint_1_rx_buffer[USB_PACKET_SIZE];
 XDATA uint8 usb_endpoint_1_tx_buffer[USB_PACKET_SIZE];
 XDATA uint8 usb_endpoint_2_rx_buffer[USB_PACKET_SIZE];
@@ -26,7 +22,5 @@ XDATA uint8 product_name_string[(2 + 2 * ((sizeof(PRODUCT_NAME) - 1)))];    // e
 XDATA struct usb_data usb;
 
 XDATA struct save_buffer save_buffer;
-
-#include "xdata_extra.h"
 
 #undef XDATA

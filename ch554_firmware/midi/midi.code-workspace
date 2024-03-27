@@ -18,7 +18,8 @@
 			"compiler.h": "c",
 			"stdint.h": "c",
 			"vs_lint.h": "c",
-			"usb_config.h": "c"
+			"usb_config.h": "c",
+			"xdata_extra.h": "c"
 		}
 	}
 }

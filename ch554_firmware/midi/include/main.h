@@ -40,12 +40,6 @@
 #define BOOT_FLASH_LED_COUNT 20
 #define BOOT_FLASH_LED_SPEED 20
 
-#if defined(DEBUG)
-#define BOOTLOADER_BUTTON_DELAY_MS 1000
-#else
-#define BOOTLOADER_BUTTON_DELAY_MS 30000
-#endif
-
 //////////////////////////////////////////////////////////////////////
 
 // uncomment this line for full speed (12Mb), comment it out for low speed (1.5Mb)
@@ -68,39 +62,16 @@
 #define FIRMWARE_VERSION ((FIRMWARE_CURRENT_VERSION << 8) | DEVICE)
 
 //////////////////////////////////////////////////////////////////////
+// MIDI_QUEUE_LEN must be a power of 2 and
+// MIDI_QUEUE_LEN * sizeof(uint32) must be < USB_PACKET_SIZE (64) so
+// effectively the max length is 16
 
-#include <stdint.h>
-#include <string.h>
+#define MIDI_QUEUE_LEN 16
 
-#define bool _Bool
-#define true 1
-#define false 0
+#include "common.h"
 
-#include "vs_lint.h"
+typedef STRUCT_QUEUE(uint32, MIDI_QUEUE_LEN) midi_queue_t;
 
-//////////////////////////////////////////////////////////////////////
-
-#if defined(DEBUG)
-#include <stdio.h>
-#define printf printf_fast
-#else
-#define printf(...) NOP_MACRO
-#define puts(...) NOP_MACRO
-#endif
-
-#include "ch554.h"
-#include "ch554_usb.h"
-
-#include "types.h"
-#include "util.h"
-#include "xdata_common.h"
-#include "gpio_drv.h"
-#include "debug.h"
-#include "tick.h"
-#include "usb_drv.h"
-#include "led.h"
-#include "encoder.h"
-#include "flash.h"
-
+#include "xdata_extra.h"
 #include "config.h"
 #include "midi.h"

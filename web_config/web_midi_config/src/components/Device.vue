@@ -100,6 +100,7 @@ function get_btn_channel(config) {
 }
 
 function get_rot_channel(config) {
+    console.log(config);
     return config.channels & 0xf;
 }
 
@@ -213,7 +214,7 @@ function ui_from_config(config) {
 
 props.device.on_control_change = (channel, cc, val) => {
 
-    // console.log(channel, cc, val);
+    console.log(channel, cc, val);
 
     let update_knob = false;
 
@@ -283,6 +284,7 @@ watch(() => { return ui },
 props.device.on_config_loaded = () => {
     loading_config = true;
     stored_config = Object.assign({}, toRaw(props.device.config));
+    console.log("CONFIG LOADED", stored_config);
     ui.value = ui_from_config(props.device.config) || midi.default_config;
     nextTick(() => {
         loading_config = false;
@@ -297,6 +299,7 @@ props.device.on_config_loaded = () => {
 props.device.on_config_saved = () => {
     stored_config = Object.assign({}, toRaw(props.device.config));
     config_changed.value = false;
+    console.log("CONFIG SAVED", stored_config);
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -305,6 +308,7 @@ props.device.on_config_saved = () => {
 
 function store_config() {
     props.device.config = config_from_ui();
+    console.log("CONFIG SAVING", props.device.config);
     midi.write_flash(props.device.device_index);
 }
 
@@ -447,15 +451,12 @@ function reset_to_defaults() {
 <template>
 
     <svg class='d-none'>
-        <symbol id='little-arrow' xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
-            viewBox="0 0 16 16">
-            <path
-                d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z" />
+        <symbol id='little-arrow' xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+            <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z" />
         </symbol>
     </svg>
 
-    <div class="container border rounded-3 bg-device border-secondary bg-secondary-subtle pt-2 mb-4"
-        :class="collapsed ? 'pb-2' : ' pb-4'">
+    <div class="container border rounded-3 bg-device border-secondary bg-secondary-subtle pt-2 mb-4" :class="collapsed ? 'pb-2' : ' pb-4'">
 
         <div class='row'>
             <div class='col text-left ms-2' :class="!collapsed ? 'mb-1' : ''">
@@ -463,18 +464,14 @@ function reset_to_defaults() {
                     <div class="col ps-0">
                         <div class="row">
                             <div class="col pe-0 me-0">
-                                <button class="btn" @click="toggle_expand()"
-                                    style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem;">
-                                    <svg width="20" height="20" style="transition:0.1s"
-                                        :transform="rotation_matrix(0, 0, collapsed ? 0 : 90)">
+                                <button class="btn" @click="toggle_expand()" style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem;">
+                                    <svg width="20" height="20" style="transition:0.1s" :transform="rotation_matrix(0, 0, collapsed ? 0 : 90)">
                                         <use href="#little-arrow"></use>
                                     </svg>
                                 </button>
                                 <strong>{{ device.name }}</strong>
                                 <span class="d-inline-block" style="width:1em"></span>
-                                <input
-                                    class="bg-secondary-subtle text-secondary rounded focus-ring ps-2 bright-focus-input"
-                                    type="text" @blur="save_name()" v-model="device_label"
+                                <input class="bg-secondary-subtle text-secondary rounded focus-ring ps-2 bright-focus-input" type="text" @blur="save_name()" v-model="device_label"
                                     @keypress='(e) => { e.key === "Enter" && e.currentTarget.blur(); }'>
                             </div>
                         </div>
@@ -490,8 +487,7 @@ function reset_to_defaults() {
             <div class='col-lg-3'>
                 <div class='row mt-1'>
                     <div class="col-6 text-center">
-                        <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
-                            @click='toggle_connection(device)'>
+                        <button class='btn btn-sm tertiary-bg border border-secondary-subtle' @click='toggle_connection(device)'>
                             {{ !device.active ? 'Connect' : 'Disconnect' }}
                         </button>
                         <div class="small mt-3" v-if="device.active">
@@ -511,10 +507,8 @@ function reset_to_defaults() {
                         <div class="row text-center" v-if="device.active">
                             <div class="col">
                                 <span style="width:40px;display:inline-block">
-                                    <div class="progress border bg-body border-secondary" role="progressbar"
-                                        aria-valuemax="16383" aria-valuemin="0" aria-valuenow="0" style="height:8px">
-                                        <div class="progress-bar value-bar"
-                                            :style="`width:${rotation_value * 100 / 16383}%`">
+                                    <div class="progress border bg-body border-secondary" role="progressbar" aria-valuemax="16383" aria-valuemin="0" aria-valuenow="0" style="height:8px">
+                                        <div class="progress-bar value-bar" :style="`width:${rotation_value * 100 / 16383}%`">
                                         </div>
                                     </div>
                                 </span>
@@ -524,31 +518,26 @@ function reset_to_defaults() {
                     <div class="col-6">
                         <div class='btn-group-vertical' role="group" v-if='device.active'>
 
-                            <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
-                                @click='midi.flash_device_led(device.device_index)'>
+                            <button class='btn btn-sm tertiary-bg border border-secondary-subtle' @click='midi.flash_device_led(device.device_index)'>
                                 <span class="mx-2">Flash LED</span>
                             </button>
 
-                            <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
-                                @click='midi.read_flash(device.device_index)'>
+                            <button class='btn btn-sm tertiary-bg border border-secondary-subtle' @click='midi.read_flash(device.device_index)'>
                                 <span class="mx-2">Read from device</span>
                             </button>
 
-                            <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
-                                :class="{ 'red-text': config_changed }" @click='store_config()'>
+                            <button class='btn btn-sm tertiary-bg border border-secondary-subtle' :class="{ 'red-text': config_changed }" @click='store_config()'>
                                 <span class="mx-2">Store to device</span>
                             </button>
 
                             <div class="dropdown w-100">
-                                <button
-                                    class="w-100 btn btn-sm rounded-0 tertiary-bg border-secondary-subtle btn-secondary dropdown-toggle border-top-0"
-                                    href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <button class="w-100 btn btn-sm rounded-0 tertiary-bg border-secondary-subtle btn-secondary dropdown-toggle border-top-0" href="#" role="button"
+                                    data-bs-toggle="dropdown" aria-expanded="false">
                                     Settings
                                 </button>
                                 <ul class="dropdown-menu">
                                     <li>
-                                        <a class="dropdown-item" href="#"
-                                            @click="fileDownload(JSON.stringify(config_from_ui(), 4, ' '), 'midi_knob_settings.json');">
+                                        <a class="dropdown-item" href="#" @click="fileDownload(JSON.stringify(config_from_ui(), 4, ' '), 'midi_knob_settings.json');">
                                             Export
                                         </a>
                                     </li>
@@ -571,8 +560,7 @@ function reset_to_defaults() {
                                 </ul>
                             </div>
 
-                            <button class='btn btn-sm tertiary-bg border border-secondary-subtle'
-                                @click='flashModal = true'>
+                            <button class='btn btn-sm tertiary-bg border border-secondary-subtle' @click='flashModal = true'>
                                 <span class="mx-2">Advanced</span>
                             </button>
 
@@ -597,8 +585,7 @@ function reset_to_defaults() {
                                     <label class="form-check-label user-select-none" for="extended_check_rot">
                                         Extended CC
                                     </label>
-                                    <input class="form-check-input pull-left" type="checkbox" id="extended_check_rot"
-                                        v-model="ui.rotate_extended">
+                                    <input class="form-check-input pull-left" type="checkbox" id="extended_check_rot" v-model="ui.rotate_extended">
                                 </div>
                             </div>
                         </div>
@@ -622,8 +609,7 @@ function reset_to_defaults() {
                                     <label class="form-check-label user-select-none" for="rotate_reverse_check">
                                         Reverse rotation
                                     </label>
-                                    <input class="form-check-input pull-left" type="checkbox" id="rotate_reverse_check"
-                                        v-model="ui.rotate_reverse">
+                                    <input class="form-check-input pull-left" type="checkbox" id="rotate_reverse_check" v-model="ui.rotate_reverse">
                                 </div>
                             </div>
                         </div>
@@ -654,8 +640,7 @@ function reset_to_defaults() {
                         <div class="row">
                             <div class="col">
                                 <div class="input-group">
-                                    <select class="form-select smaller-text" id="accel_input_group"
-                                        v-model="ui.acceleration">
+                                    <select class="form-select smaller-text" id="accel_input_group" v-model="ui.acceleration">
                                         <option selected value="0">Off</option>
                                         <option value="1">Low</option>
                                         <option value="2">Medium</option>
@@ -667,11 +652,8 @@ function reset_to_defaults() {
                         </div>
                         <div class="row mx-4 mt-1 mb-0">
                             <div class="col mb-1" style="height:1.5rem;margin: 0px;padding: 0px;">
-                                <Toggle v-model="ui.rotate_relative" :checked-background-color='"var(--bs-tertiary-bg)"'
-                                    :unchecked-background-color='"var(--bs-tertiary-bg)"'
-                                    :border-color='"var(--bs-border-color)"'
-                                    :unchecked-pill-color='"var(--bs-border-color)"'
-                                    :checked-pill-color='"var(--bs-border-color)"'>
+                                <Toggle v-model="ui.rotate_relative" :checked-background-color='"var(--bs-tertiary-bg)"' :unchecked-background-color='"var(--bs-tertiary-bg)"'
+                                    :border-color='"var(--bs-border-color)"' :unchecked-pill-color='"var(--bs-border-color)"' :checked-pill-color='"var(--bs-border-color)"'>
                                     <template #unchecked>
                                         Absolute
                                     </template>
@@ -708,8 +690,7 @@ function reset_to_defaults() {
                                 <div class="form-check">
                                     <label class="form-check-label user-select-none" for="extended_check_btn">Extended
                                         CC</label>
-                                    <input class="form-check-input pull-left" type="checkbox" id="extended_check_btn"
-                                        v-model="ui.btn_extended">
+                                    <input class="form-check-input pull-left" type="checkbox" id="extended_check_btn" v-model="ui.btn_extended">
                                 </div>
                             </div>
                         </div>
@@ -739,11 +720,8 @@ function reset_to_defaults() {
                         </div>
                         <div class="row mx-4 mt-1">
                             <div class="col mb-1" style="height:1.5rem;padding: 0px;">
-                                <Toggle v-model="ui.btn_momentary" :checked-background-color='"var(--bs-tertiary-bg)"'
-                                    :unchecked-background-color='"var(--bs-tertiary-bg)"'
-                                    :border-color='"var(--bs-border-color)"'
-                                    :unchecked-pill-color='"var(--bs-border-color)"'
-                                    :checked-pill-color='"var(--bs-border-color)"'>
+                                <Toggle v-model="ui.btn_momentary" :checked-background-color='"var(--bs-tertiary-bg)"' :unchecked-background-color='"var(--bs-tertiary-bg)"'
+                                    :border-color='"var(--bs-border-color)"' :unchecked-pill-color='"var(--bs-border-color)"' :checked-pill-color='"var(--bs-border-color)"'>
                                     <template #checked>
                                         Momentary
                                     </template>
@@ -815,8 +793,7 @@ function reset_to_defaults() {
                                 <label class="form-check-label user-select-none" for="flash_on_rot">
                                     Rotate
                                 </label>
-                                <input class="form-check-input pull-left" type="checkbox" id="flash_on_rot"
-                                    v-model="ui.led_flash_on_rot">
+                                <input class="form-check-input pull-left" type="checkbox" id="flash_on_rot" v-model="ui.led_flash_on_rot">
                             </div>
                         </div>
                     </div>
@@ -826,8 +803,7 @@ function reset_to_defaults() {
                                 <label class="form-check-label user-select-none" for="flash_on_limit">
                                     Limit
                                 </label>
-                                <input class="form-check-input pull-left" type="checkbox" id="flash_on_limit"
-                                    v-model="ui.led_flash_on_limit">
+                                <input class="form-check-input pull-left" type="checkbox" id="flash_on_limit" v-model="ui.led_flash_on_limit">
                             </div>
                         </div>
                     </div>
@@ -837,8 +813,7 @@ function reset_to_defaults() {
                                 <label class="form-check-label user-select-none" for="flash_on_click">
                                     Press
                                 </label>
-                                <input class="form-check-input pull-left" type="checkbox" id="flash_on_click"
-                                    v-model="ui.led_flash_on_click">
+                                <input class="form-check-input pull-left" type="checkbox" id="flash_on_click" v-model="ui.led_flash_on_click">
                             </div>
                         </div>
                     </div>
@@ -848,8 +823,7 @@ function reset_to_defaults() {
                                 <label class="form-check-label user-select-none" for="flash_on_release">
                                     Release
                                 </label>
-                                <input class="form-check-input pull-left" type="checkbox" id="flash_on_release"
-                                    v-model="ui.led_flash_on_release">
+                                <input class="form-check-input pull-left" type="checkbox" id="flash_on_release" v-model="ui.led_flash_on_release">
                             </div>
                         </div>
                     </div>
@@ -860,8 +834,7 @@ function reset_to_defaults() {
                                 <label class="form-check-label user-select-none" for="track_button_value">
                                     Track button
                                 </label>
-                                <input class="form-check-input pull-left" type="checkbox" id="track_button_value"
-                                    v-model="ui.led_track_button_toggle">
+                                <input class="form-check-input pull-left" type="checkbox" id="track_button_value" v-model="ui.led_track_button_toggle">
                             </div>
                         </div>
                     </div>
@@ -871,8 +844,7 @@ function reset_to_defaults() {
                                 <label class="form-check-label user-select-none" for="led_invert">
                                     Invert
                                 </label>
-                                <input class="form-check-input pull-left" type="checkbox" id="led_invert"
-                                    v-model="ui.led_invert">
+                                <input class="form-check-input pull-left" type="checkbox" id="led_invert" v-model="ui.led_invert">
                             </div>
                         </div>
                     </div>
@@ -926,8 +898,7 @@ function reset_to_defaults() {
 
     <Modal v-model="pasteConfigModal" maxwidth="30%" closeable backdrop-no-close header="Paste Settings">
         <div class="row mx-2">
-            <textarea class="font-monospace form-control smaller-text" style="height:26rem;"
-                v-model="config_paste_textarea_contents" placeholder="Paste your settings JSON in here...">
+            <textarea class="font-monospace form-control smaller-text" style="height:26rem;" v-model="config_paste_textarea_contents" placeholder="Paste your settings JSON in here...">
         </textarea>
         </div>
         <div class="row mt-4 mb-2">
@@ -942,8 +913,7 @@ function reset_to_defaults() {
                         </button>
                     </div>
                     <div class="col">
-                        <button class="btn btn-primary btn-sm"
-                            @click='pasteConfigModal = false; paste_config(config_paste_textarea_contents)'>
+                        <button class="btn btn-primary btn-sm" @click='pasteConfigModal = false; paste_config(config_paste_textarea_contents)'>
                             Apply
                         </button>
                     </div>
@@ -956,8 +926,7 @@ function reset_to_defaults() {
         <div class="row mx-2">
             <div class="col">
                 <ul v-for="(err, idx) in error_messages" :key="idx" class="list-group list-group-flush">
-                    <li class="list-group-item font-monospace"
-                        :class='(idx != error_messages.length - 1) ? "border-bottom" : ""'>
+                    <li class="list-group-item font-monospace" :class='(idx != error_messages.length - 1) ? "border-bottom" : ""'>
                         {{ err }}
                     </li>
                 </ul>

@@ -2,9 +2,6 @@
 
 #include "main.h"
 
-uint8 queue_size = 0;
-
-static uint8 queue_head = 0;
 static uint8 device_id = 0;
 static uint8 *midi_send_ptr;
 static uint8 midi_send_remain = 0;
@@ -65,37 +62,6 @@ static void bits7_to_bytes(uint8 *src_data, uint8 offset, uint8 len, uint8 *dest
 }
 
 //////////////////////////////////////////////////////////////////////
-// push one onto the queue, check it's got space before calling this
-
-void queue_put(uint8 *k)
-{
-    uint8 const offset = ((queue_head + queue_size) & (MIDI_QUEUE_LEN - 1)) * MIDI_PACKET_SIZE;
-    memcpy(queue_buffer + offset, k, MIDI_PACKET_SIZE);
-    queue_size += 1;
-}
-
-// //////////////////////////////////////////////////////////////////////
-// // pop next from the queue, check it's not empty before calling this
-
-// static midi_packet queue_get()
-// {
-//     uint8 old_head = queue_head;
-//     queue_size -= 1;
-//     queue_head = ++queue_head & (MIDI_QUEUE_LEN - 1);
-//     return queue_buffer[old_head];
-// }
-
-//////////////////////////////////////////////////////////////////////
-// pop next into somewhere, check it's not empty before calling this
-
-static inline void queue_get_at(uint8 *dst)
-{
-    memcpy(dst, queue_buffer + (queue_head * MIDI_PACKET_SIZE), MIDI_PACKET_SIZE);
-    queue_size -= 1;
-    queue_head = ++queue_head & (MIDI_QUEUE_LEN - 1);
-}
-
-//////////////////////////////////////////////////////////////////////
 
 void *init_sysex_response(uint8 sysex_code)
 {
@@ -117,14 +83,18 @@ void midi_flush_queue()
         return;
     }
 
-    uint8 *dst;
-    for(dst = usb_endpoint_2_tx_buffer; !queue_empty() && dst < (usb_endpoint_2_tx_buffer + MAX_PACKET_SIZE); dst += 4) {
-        queue_get_at(dst);
+    uint8 packets;
+    uint32 *dst = (uint32 *)usb_endpoint_2_tx_buffer;
+    for(packets = 0; packets < USB_PACKET_SIZE / sizeof(*dst); ++packets) {
+        if(QUEUE_IS_EMPTY(midi_queue)) {
+            break;
+        }
+        QUEUE_POP(midi_queue, *dst);
+        dst += 1;
     }
-    if(dst != usb_endpoint_2_tx_buffer) {
-        uint8 len = dst - usb_endpoint_2_tx_buffer;
-        hexdump("send", usb_endpoint_2_tx_buffer, len);
-        usb_send(endpoint_2, len);
+    if(packets != 0) {
+        // hexdump("send", usb_endpoint_2_tx_buffer, packets * 4);
+        usb_send(endpoint_2, packets * 4);
     }
 }
 
@@ -135,7 +105,9 @@ bool midi_send_update()
     if(midi_send_remain == 0) {
         return false;
     }
-    while(!queue_full() && midi_send_remain != 0) {
+
+    while(midi_send_remain != 0 && !QUEUE_IS_FULL(midi_queue)) {
+
         uint8 r = midi_send_remain;
         if(r > 3) {
             r = 3;
@@ -144,13 +116,14 @@ bool midi_send_update()
         if(r < 3 || midi_send_remain <= 3) {
             cmd = midi_packet_end_1 + r - 1;
         }
-        uint8 packet[MIDI_PACKET_SIZE];
-        uint8 *dst = packet;
+        uint32 packet = 0;
+        uint8 *dst = (uint8 *)&packet;
         *dst++ = cmd;
         for(uint8 i = 0; i < r; ++i) {
             *dst++ = *midi_send_ptr++;
         }
-        queue_put(packet);
+        hexdump("PUT", &packet, 4);
+        QUEUE_PUSH(midi_queue, packet);
         midi_send_remain -= r;
     }
     return true;
@@ -287,4 +260,12 @@ void process_midi_packet_in(uint8 length)
         }
         sysex_recv_packet_offset += 4;
     }
+}
+
+//////////////////////////////////////////////////////////////////////
+
+void midi_init()
+{
+    puts("MIDI INIT");
+    QUEUE_INIT(midi_queue);
 }

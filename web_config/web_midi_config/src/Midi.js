@@ -436,6 +436,7 @@ function init_devices() {
 
     for (const input of midi.inputs.values()) {
         console.log(`Found ${input.name} at ${input.id}`);
+        input.removeEventListener("midimessage", on_midi_message);
         input.addEventListener("midimessage", on_midi_message);
     }
 
@@ -526,11 +527,11 @@ function on_midi_message(event) {
 
     let input_port = event.target;
 
-    // console.log(event);
+    console.log(event);
 
     const data = event.data;
 
-    // console.log(`RECV: ${bytes_to_hex_string(data, data.length, " ")}`);
+    console.log(`RECV: ${bytes_to_hex_string(data, data.length, " ")}`);
 
     let midi_status = data[0] & 0xf0;
 
@@ -621,7 +622,9 @@ function on_state_change(event) {
                             break;
                     }
                     if (device.input && device.output) {
-                        console.log(`Reconnect ${device.name}`);
+                        console.log(`Reconnect: ${device.name}`);
+                        device.input.removeEventListener("midimessage", on_midi_message);
+                        device.input.addEventListener("midimessage", on_midi_message);
                     }
                 }
             }

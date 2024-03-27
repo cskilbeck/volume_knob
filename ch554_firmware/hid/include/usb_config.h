@@ -118,7 +118,7 @@ __code const uint8 device_desc[] = {
     0x00,                            // bDeviceClass
     0x00,                            // bDeviceSubClass
     0x00,                            // bDeviceProtocol
-    ENDPOINT_0_SIZE,                 // bMaxPacketSize0
+    USB_PACKET_SIZE,                 // bMaxPacketSize0
     USB_VID & 0xff,                  // idVendor (LSB)
     USB_VID >> 8,                    // idVendor (MSB)
     USB_PID & 0xff,                  // idProduct (LSB)
