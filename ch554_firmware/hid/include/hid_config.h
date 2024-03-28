@@ -14,7 +14,7 @@
 
 //////////////////////////////////////////////////////////////////////
 
-typedef enum config_flags
+typedef enum hid_config_flags
 {
     cf_led_flash_on_cw = 0x01,
     cf_led_flash_on_ccw = 0x02,
@@ -22,11 +22,11 @@ typedef enum config_flags
     cf_led_flash_on_release = 0x08,
     cf_reverse_rotation = 0x10,
 
-} config_flags_t;
+} hid_config_flags_t;
 
 //////////////////////////////////////////////////////////////////////
 
-struct config
+struct hid_config
 {
     uint8 version;
 
@@ -47,11 +47,11 @@ struct config
     uint8 pad[CONFIG_MAX_LEN - 12];
 };
 
-typedef struct config config_t;
+typedef struct hid_config hid_config_t;
 
 //////////////////////////////////////////////////////////////////////
 
-#define CONFIG_SIZE (sizeof(config_t))
+#define CONFIG_SIZE (sizeof(hid_config_t))
 
 STATIC_ASSERT(CONFIG_SIZE == CONFIG_MAX_LEN);
 

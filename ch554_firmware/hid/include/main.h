@@ -57,4 +57,4 @@
 
 #include "hid.h"
 #include "xdata_extra.h"
-#include "config.h"
+#include "hid_config.h"

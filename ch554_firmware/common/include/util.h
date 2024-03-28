@@ -11,6 +11,8 @@
 // where a > b but either might have wrapped
 #define TICK_DIFF(a, b) ((uint16)(a - (int16)b))
 
+#define CLEAR_CONSOLE "\033c\033[3J\033[2J"
+
 //////////////////////////////////////////////////////////////////////
 
 #define NOP_MACRO \

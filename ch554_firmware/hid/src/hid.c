@@ -30,18 +30,18 @@ void hid_process_event(event_t e)
     switch(e & event_mask) {
 
     case event_clockwise:
-        key = config.key_clockwise;
-        modifiers = config.mod_clockwise;
+        key = hid_config.key_clockwise;
+        modifiers = hid_config.mod_clockwise;
         break;
 
     case event_counterclockwise:
-        key = config.key_counterclockwise;
-        modifiers = config.mod_counterclockwise;
+        key = hid_config.key_counterclockwise;
+        modifiers = hid_config.mod_counterclockwise;
         break;
 
     case event_press:
-        key = config.key_press;
-        modifiers = config.mod_press;
+        key = hid_config.key_press;
+        modifiers = hid_config.mod_press;
         break;
     }
 
@@ -107,14 +107,14 @@ void hid_rotate(int8 direction)
 {
     if(QUEUE_SPACE(hid_queue) >= 2) {
 
-        if((config.flags & cf_reverse_rotation) != 0) {
+        if((hid_config.flags & cf_reverse_rotation) != 0) {
             direction = -direction;
         }
 
         switch(direction) {
 
         case -1:
-            if((config.flags & cf_led_flash_on_cw) != 0) {
+            if((hid_config.flags & cf_led_flash_on_cw) != 0) {
                 led_flash();
             }
             QUEUE_PUSH(hid_queue, (uint8)(event_clockwise | event_keydown));
@@ -122,7 +122,7 @@ void hid_rotate(int8 direction)
             break;
 
         case 1:
-            if((config.flags & cf_led_flash_on_ccw) != 0) {
+            if((hid_config.flags & cf_led_flash_on_ccw) != 0) {
                 led_flash();
             }
             QUEUE_PUSH(hid_queue, (uint8)(event_counterclockwise | event_keydown));
@@ -138,7 +138,7 @@ void hid_press()
 {
     if(!QUEUE_IS_FULL(hid_queue)) {
 
-        if((config.flags & cf_led_flash_on_press) != 0) {
+        if((hid_config.flags & cf_led_flash_on_press) != 0) {
             led_flash();
         }
 
@@ -152,7 +152,7 @@ void hid_release()
 {
     if(!QUEUE_IS_FULL(hid_queue)) {
 
-        if((config.flags & cf_led_flash_on_release) != 0) {
+        if((hid_config.flags & cf_led_flash_on_release) != 0) {
             led_flash();
         }
 
@@ -173,13 +173,13 @@ void hid_usb_receive(uint8 length)
     case hcc_get_config:
         if(usb_is_endpoint_idle(endpoint_3)) {
             usb_endpoint_3_tx_buffer[0] = hcc_here_is_config;
-            memcpy(usb_endpoint_3_tx_buffer + 1, &config, sizeof(config));
+            memcpy(usb_endpoint_3_tx_buffer + 1, &hid_config, sizeof(hid_config));
             usb_send(endpoint_3, 32);
         }
         break;
 
     case hcc_set_config:
-        memcpy(&config, usb_endpoint_3_rx_buffer + 1, sizeof(config));
+        memcpy(&hid_config, usb_endpoint_3_rx_buffer + 1, sizeof(hid_config));
         usb_endpoint_3_tx_buffer[0] = hcc_set_config_ack;
         usb_endpoint_3_tx_buffer[1] = 0;
         if(save_config()) {

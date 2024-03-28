@@ -344,7 +344,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
         // ENDPOINT 1 receive from host complete
         case UIS_TOKEN_OUT | 1:
             if(U_TOG_OK) {
-                usb.recv_len[1] = USB_RX_LEN;
+                usb.recv_len[endpoint_1] = USB_RX_LEN;
                 UEP1_CTRL = (UEP1_CTRL & ~MASK_UEP_R_RES) | UEP_R_RES_ACK;
             }
             break;
@@ -359,7 +359,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
         // ENDPOINT 2 receive from host complete
         case UIS_TOKEN_OUT | 2:
             if(U_TOG_OK) {
-                usb.recv_len[2] = USB_RX_LEN;
+                usb.recv_len[endpoint_2] = USB_RX_LEN;
                 UEP2_CTRL = (UEP2_CTRL & ~MASK_UEP_R_RES) | UEP_R_RES_ACK;
             }
             break;
@@ -374,7 +374,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
         // ENDPOINT 3 receive from host complete
         case UIS_TOKEN_OUT | 3:
             if(U_TOG_OK) {
-                usb.recv_len[3] = USB_RX_LEN;
+                usb.recv_len[endpoint_3] = USB_RX_LEN;
                 UEP3_CTRL = (UEP3_CTRL & ~MASK_UEP_R_RES) | UEP_R_RES_ACK;
             }
             break;
@@ -473,11 +473,9 @@ static void usb_device_endpoint_config()
     UEP4_1_MOD = (uint8)(~(bUEP4_RX_EN | bUEP4_TX_EN | bUEP1_BUF_MOD) | bUEP1_RX_EN | bUEP1_TX_EN);
     UEP2_3_MOD = (uint8)(~(bUEP3_BUF_MOD | bUEP2_BUF_MOD) | bUEP2_RX_EN | bUEP2_TX_EN | bUEP3_RX_EN | bUEP3_TX_EN);
 
-    usb.recv_len[0] = 0;    // this is a dummy - endpoint 0 is for config
-
-    usb.recv_len[1] = 0;
-    usb.recv_len[2] = 0;
-    usb.recv_len[3] = 0;
+    usb.recv_len[endpoint_1] = 0;
+    usb.recv_len[endpoint_2] = 0;
+    usb.recv_len[endpoint_3] = 0;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -568,20 +566,22 @@ void usb_send(usb_endpoint_t endpoint, uint8 len)
         UEP3_CTRL = (UEP3_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_ACK;
         mask = (uint8)(~(1 << 2));
         break;
-    case endpoint_4:
-        UEP4_T_LEN = len;
-        UEP4_CTRL = (UEP4_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_ACK;
-        mask = (uint8)(~(1 << 3));
-        break;
+        // case endpoint_4:
+        //     UEP4_T_LEN = len;
+        //     UEP4_CTRL = (UEP4_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_ACK;
+        //     mask = (uint8)(~(1 << 3));
+        //     break;
     }
     usb.idle &= mask;
 }
 
 //////////////////////////////////////////////////////////////////////
 
+static uint8 usb_idle_mask[num_endpoints] = { 1, 2, 4 };
+
 bool usb_is_endpoint_idle(usb_endpoint_t endpoint)
 {
-    return (usb.idle & (1 << (endpoint - 1))) != 0;
+    return (usb.idle & usb_idle_mask[endpoint]) != 0;
 }
 
 //////////////////////////////////////////////////////////////////////

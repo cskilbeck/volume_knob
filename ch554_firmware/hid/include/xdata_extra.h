@@ -5,6 +5,6 @@
 #endif
 
 XDATA hid_queue_t hid_queue;
-XDATA struct config config;
+XDATA struct hid_config hid_config;
 
 #undef XDATA

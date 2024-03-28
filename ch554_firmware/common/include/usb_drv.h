@@ -11,6 +11,18 @@ typedef struct usb_descriptor
 
 //////////////////////////////////////////////////////////////////////
 
+typedef enum usb_endpoint
+{
+    endpoint_1 = 0,
+    endpoint_2 = 1,
+    endpoint_3 = 2,
+    endpoint_4 = 3,    // endpoint 4 not supported
+    num_endpoints = 3
+
+} usb_endpoint_t;
+
+//////////////////////////////////////////////////////////////////////
+
 typedef struct usb_config_data
 {
     usb_descriptor_t *device_descriptor;
@@ -37,7 +49,7 @@ extern usb_config_data_t const usb_cfg;
 typedef struct usb_data
 {
     // if recv_len[x] != 0 then bytes are available in endpoint x
-    uint8 recv_len[4];
+    uint8 recv_len[num_endpoints];
 
     // bitmask of idle endpoints for sending (1 = ep1, 2 = ep2, 4 = ep3)
     volatile uint8 idle;
@@ -53,17 +65,6 @@ typedef struct usb_data
     uint8 const *current_config_desc;
 
 } usb_data_t;
-
-//////////////////////////////////////////////////////////////////////
-
-typedef enum usb_endpoint
-{
-    endpoint_1 = 1,
-    endpoint_2 = 2,
-    endpoint_3 = 3,
-    endpoint_4 = 4
-
-} usb_endpoint_t;
 
 //////////////////////////////////////////////////////////////////////
 

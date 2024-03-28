@@ -1,14 +1,5 @@
 #include "main.h"
 
-//////////////////////////////////////////////////////////////////////
-// TIMER0 = LED pwm
-// TIMER1 = UART
-// TIMER2 = 1KHz tick
-
-//////////////////////////////////////////////////////////////////////
-
-#define CLEAR_CONSOLE "\033c\033[3J\033[2J"
-
 void main()
 {
     clk_init();
@@ -17,25 +8,18 @@ void main()
     led_init();
     encoder_init();
 
-    // if button held down when the device is plugged in, go to bootloader
-    if(BTN_BIT == 0) {
+    if(BTN_BIT == 0) {    // if button held down when the device is plugged in, go to bootloader
         goto_bootloader();
     }
 
-    // global irq enable
-    EA = 1;
+    EA = 1;    // global irq enable
 
     printf(CLEAR_CONSOLE "---------- %s ----------\nCHIP ID: %08lx\n", current_process->process_name, chip_id);
 
     load_config();
-
     usb_init();
-
     led_flash_n_times(BOOT_FLASH_LED_COUNT, BOOT_FLASH_LED_SPEED);
-
     usb_wait_for_connection();
-
-    puts("Main loop");
 
     current_process->on_init();
 
@@ -64,27 +48,20 @@ void main()
             led_on_tick();
         }
 
-        // read the rotary encoder (returns -1, 0 or 1)
-        int8 direction = encoder_read();
-
         if(pressed) {
-
             current_process->on_press();
         }
 
         if(released) {
-
             current_process->on_release();
         }
 
+        int8 direction = encoder_read();
         if(direction != 0) {
-
             current_process->on_rotate(direction);
         }
 
-        // process or discard any incoming USB data
-
-        for(uint8 i = 1; i < 4; ++i) {
+        for(uint8 i = 1; i < 4; ++i) {    // process or discard any incoming USB data
             uint8 got = usb.recv_len[i];
             if(got != 0 && current_process->on_usb_receive[i - 1] != NULL) {
                 current_process->on_usb_receive[i - 1](got);

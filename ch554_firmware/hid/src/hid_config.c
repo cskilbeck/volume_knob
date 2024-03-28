@@ -10,7 +10,7 @@
 
 //////////////////////////////////////////////////////////////////////
 
-__code const config_t default_config = {
+__code const hid_config_t default_hid_config = {
     CONFIG_VERSION,                                                     //
     MEDIA_KEY(KEY_MEDIA_VOLUMEUP),                                      //
     MEDIA_KEY(KEY_MEDIA_VOLUMEDOWN),                                    //
@@ -25,11 +25,11 @@ __code const config_t default_config = {
 
 bool load_config()
 {
-    if(!flash_load(&config, sizeof(config_t)) || config.version != CONFIG_VERSION) {
-        printf("No config (or wrong version: %d)\n", config.version);
-        memcpy(&config, &default_config, sizeof(config_t));
+    if(!flash_load(&hid_config, sizeof(hid_config_t)) || hid_config.version != CONFIG_VERSION) {
+        printf("No config (or wrong version: %d)\n", hid_config.version);
+        memcpy(&hid_config, &default_hid_config, sizeof(hid_config_t));
     }
-    printf("Config version: %d\n", config.version);
+    printf("Config version: %d\n", hid_config.version);
     return true;
 }
 
@@ -37,5 +37,5 @@ bool load_config()
 
 bool save_config()
 {
-    return flash_save(&config, sizeof(config_t));
+    return flash_save(&hid_config, sizeof(hid_config_t));
 }
