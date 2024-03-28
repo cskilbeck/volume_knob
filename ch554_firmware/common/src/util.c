@@ -2,20 +2,48 @@
 
 #include "main.h"
 
+#define BOOTLOADER_FLASH_LED_COUNT 30
+#define BOOTLOADER_FLASH_LED_SPEED 40
+
+#define SOFTWARE_RESET_FLASH_LED_COUNT 30
+#define SOFTWARE_RESET_FLASH_LED_SPEED 40
+
+//////////////////////////////////////////////////////////////////////
+// shutdown peripherals
+
+static void shutdown_peripherals()
+{
+    EA = 0;
+    USB_CTRL = 0;
+    UDEV_CTRL = 0;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+void software_reset()
+{
+    led_flash_n_times(SOFTWARE_RESET_FLASH_LED_COUNT, SOFTWARE_RESET_FLASH_LED_SPEED);
+
+    shutdown_peripherals();
+
+    SAFE_MOD = 0x55;
+    SAFE_MOD = 0xAA;
+
+    GLOBAL_CFG |= bSW_RESET;
+
+    while(1) {
+    }
+}
+
 //////////////////////////////////////////////////////////////////////
 
 void goto_bootloader()
 {
-    // flash the led a few times
     led_flash_n_times(BOOTLOADER_FLASH_LED_COUNT, BOOTLOADER_FLASH_LED_SPEED);
 
-    // shutdown peripherals
-    EA = 0;
-    USB_CTRL = 0;
-    UDEV_CTRL = 0;
+    shutdown_peripherals();
 
-    // and jump to bootloader
-    ((void (*)())BOOT_LOAD_ADDR)();
+    ((void (*)())BOOT_LOAD_ADDR)();    // jump to bootloader
 }
 
 //////////////////////////////////////////////////////////////////////

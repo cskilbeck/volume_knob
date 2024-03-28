@@ -9,6 +9,8 @@
 
 #define BAUD_SET(clk, baud) ((uint8)(0x100 - _BAUD_X4(clk, baud)))
 
+#define UART0_BAUD 115200
+
 //////////////////////////////////////////////////////////////////////
 
 void clk_init()

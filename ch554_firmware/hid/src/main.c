@@ -1,5 +1,8 @@
 #include "main.h"
 
+#define BOOT_FLASH_LED_COUNT 10
+#define BOOT_FLASH_LED_SPEED 20
+
 void main()
 {
     clk_init();
