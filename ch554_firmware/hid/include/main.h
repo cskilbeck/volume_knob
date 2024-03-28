@@ -34,22 +34,15 @@
 
 #define UART0_BAUD 115200
 
-#define BOOTLOADER_FLASH_LED_COUNT 10
+#define BOOTLOADER_FLASH_LED_COUNT 30
 #define BOOTLOADER_FLASH_LED_SPEED 40
 
-#define BOOT_FLASH_LED_COUNT 20
+#define BOOT_FLASH_LED_COUNT 10
 #define BOOT_FLASH_LED_SPEED 20
 
 //////////////////////////////////////////////////////////////////////
 
-// uncomment this line for full speed (12Mb), comment it out for low speed (1.5Mb)
-#define USB_FULL_SPEED 1
-
-#if defined(USB_FULL_SPEED)
 #define USB_PACKET_SIZE 64
-#else
-#define USB_PACKET_SIZE 8
-#endif
 
 //////////////////////////////////////////////////////////////////////
 // USB String descriptor stuff

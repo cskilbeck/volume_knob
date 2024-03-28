@@ -1,6 +1,6 @@
-#pragma once
+#include "main.h"
 
-#include "vs_lint.h"
+#include "xdata_extra.h"
 
 //////////////////////////////////////////////////////////////////////
 // USB config
@@ -14,7 +14,7 @@
 
 // KEYBOARD DEVICE
 
-__code const uint8 hid_rep_desc[] = {
+static __code const uint8 hid_rep_desc[] = {
 
     0x05, 0x01,    // Usage Page: Generic Desktop Controls
     0x09, 0x06,    // Usage: Keyboard
@@ -79,7 +79,7 @@ __code const uint8 hid_rep_desc[] = {
 
 // CUSTOM HID DEVICE
 
-__code const uint8 custom_rep_desc[] = {
+static __code const uint8 custom_rep_desc[] = {
 
     0x06, 0x00, 0xff,    // USAGE_PAGE (Vendor Defined Page 1)
     0x09, 0x01,          // USAGE (Vendor Usage 1)
@@ -105,13 +105,11 @@ __code const uint8 custom_rep_desc[] = {
 #define SERIAL_NUMBER_STRING_DESC_ID 3
 #define CONFIG_STRING_DESC_ID 4
 
-#define NUM_STRING_DESCRIPTORS 5
-
 //////////////////////////////////////////////////////////////////////
 
-__code const uint8 device_desc[] = {
+static __code const uint8 device_desc[] = {
 
-    sizeof(device_desc),             // bLength
+    SIZEOF_LSB(device_desc),         // bLength
     USB_DESCR_TYP_DEVICE,            // bDescriptorType
     0x10,                            // bcdUSB (1)
     0x01,                            // bcdUSB (2)
@@ -136,7 +134,7 @@ __code const uint8 device_desc[] = {
 
 #define NUM_INTERFACES 2
 
-__code const uint8 config_desc[] = {
+static __code const uint8 config_desc[] = {
 
     // Config
     0x09,                       // bLength
@@ -230,16 +228,20 @@ __code const uint8 config_desc[] = {
 STATIC_ASSERT(sizeof(config_desc) < 256);
 
 //////////////////////////////////////////////////////////////////////
+
+static __code const usb_descriptor_t usb_device_descriptor = DESCRIPTOR(device_desc);
+
+//////////////////////////////////////////////////////////////////////
 // Configuration descriptors
 
-__code const usb_descriptor_t config_descs[] = {
+static __code const usb_descriptor_t config_descs[] = {
     DESCRIPTOR(config_desc),    // HID config
 };
 
 //////////////////////////////////////////////////////////////////////
 // HID report descriptors
 
-__code const usb_descriptor_t report_descs[] = {
+static __code const usb_descriptor_t report_descs[] = {
     DESCRIPTOR(hid_rep_desc),       // main HID report
     DESCRIPTOR(custom_rep_desc),    // custom HID report
 };
@@ -248,19 +250,21 @@ __code const usb_descriptor_t report_descs[] = {
 // String admin - UINT16s in here...
 
 #define LANGUAGE_DESC_STRING 0x0409
+#define PRODUCT_NAME_STRING 'T', 'i', 'n', 'y', ' ', 'U', 'S', 'B', ' ', 'K', 'n', 'o', 'b'
 #define MANUFACTURER_STRING 'T', 'i', 'n', 'y', ' ', 'L', 'i', 't', 't', 'l', 'e', ' ', 'T', 'h', 'i', 'n', 'g', 's'
 #define CONFIG_STRING 'T', 'i', 'n', 'y', ' ', 'U', 'S', 'B', ' ', 'K', 'n', 'o', 'b'
 
 #define STR_HDR(x) (SIZEOF_LSB(x) | (USB_DESCR_TYP_STRING << 8))
 
-__code const uint16 language_desc[] = { STR_HDR(language_desc), LANGUAGE_DESC_STRING };
-__code const uint16 manufacturer_string[] = { STR_HDR(manufacturer_string), MANUFACTURER_STRING };
-__code const uint16 config_string[] = { STR_HDR(config_string), CONFIG_STRING };
+static __code const uint16 language_desc[] = { STR_HDR(language_desc), LANGUAGE_DESC_STRING };
+static __code const uint16 product_string[] = { STR_HDR(product_string), PRODUCT_NAME_STRING };
+static __code const uint16 manufacturer_string[] = { STR_HDR(manufacturer_string), MANUFACTURER_STRING };
+static __code const uint16 config_string[] = { STR_HDR(config_string), CONFIG_STRING };
 
 //////////////////////////////////////////////////////////////////////
 // String descriptors
 
-__code const usb_descriptor_t string_descs[NUM_STRING_DESCRIPTORS] = {
+static __code const usb_descriptor_t string_descs[] = {
     DESCRIPTOR(language_desc),           // #define LANGUAGE_DESC_ID             0
     DESCRIPTOR(manufacturer_string),     // #define MANUFACTURER_STRING_DESC_ID  1
     DESCRIPTOR(product_name_string),     // #define PRODUCT_NAME_STRING_DESC_ID  2 (dynamic in xdata)
@@ -273,3 +277,17 @@ __code const usb_descriptor_t string_descs[NUM_STRING_DESCRIPTORS] = {
 #define NUM_CONFIG_DESCS ARRAY_COUNT(config_descs)
 #define NUM_REPORT_DESCS ARRAY_COUNT(report_descs)
 #define NUM_STRING_DESCS ARRAY_COUNT(string_descs)
+
+static char const product_name_text[] = "Tiny USB Knob";
+
+//////////////////////////////////////////////////////////////////////
+
+usb_config_data_t const usb_cfg = { .device_descriptor = &usb_device_descriptor,
+                                    .config_descriptors = config_descs,
+                                    .report_descriptors = report_descs,
+                                    .string_descriptors = string_descs,
+                                    .num_config_descriptors = NUM_CONFIG_DESCS,
+                                    .num_report_descriptors = NUM_REPORT_DESCS,
+                                    .num_string_descriptors = NUM_STRING_DESCS,
+                                    .product_name = product_name_text,
+                                    .product_name_length = sizeof(product_name_text) - 1 };

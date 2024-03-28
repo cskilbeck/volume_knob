@@ -165,10 +165,7 @@ void main()
 
     load_config();
 
-    usb_init_strings();
-    usb_device_config();
-    usb_device_endpoint_config();
-    usb_device_int_config();
+    usb_init();
 
     led_flash_n_times(BOOT_FLASH_LED_COUNT, BOOT_FLASH_LED_SPEED);
 
@@ -267,7 +264,7 @@ void main()
             }
 
             if(QUEUE_SPACE(hid_queue) >= 1) {
-                QUEUE_PUSH(hid_queue, event_press | event_keydown);
+                QUEUE_PUSH(hid_queue, (uint8)(event_press | event_keydown));
             }
         }
 
@@ -278,7 +275,7 @@ void main()
             }
 
             if(QUEUE_SPACE(hid_queue) >= 1) {
-                QUEUE_PUSH(hid_queue, event_press | event_keyup);
+                QUEUE_PUSH(hid_queue, (uint8)(event_press | event_keyup));
             }
         }
 
@@ -291,8 +288,8 @@ void main()
             }
 
             if(QUEUE_SPACE(hid_queue) >= 2) {
-                QUEUE_PUSH(hid_queue, event_clockwise | event_keydown);
-                QUEUE_PUSH(hid_queue, event_clockwise | event_keyup);
+                QUEUE_PUSH(hid_queue, (uint8)(event_clockwise | event_keydown));
+                QUEUE_PUSH(hid_queue, (uint8)(event_clockwise | event_keyup));
             }
 
         } else if(direction == -turn_value) {
@@ -302,8 +299,8 @@ void main()
             }
 
             if(QUEUE_SPACE(hid_queue) >= 2) {
-                QUEUE_PUSH(hid_queue, event_counterclockwise | event_keydown);
-                QUEUE_PUSH(hid_queue, event_counterclockwise | event_keyup);
+                QUEUE_PUSH(hid_queue, (uint8)(event_counterclockwise | event_keydown));
+                QUEUE_PUSH(hid_queue, (uint8)(event_counterclockwise | event_keyup));
             }
         }
 

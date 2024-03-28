@@ -21,7 +21,6 @@
 // flash), reverse by triple-clicking the knob
 
 #if DEVICE == DEVICE_DEVKIT
-
 #define ROTARY_DIRECTION (ROT_CLOCKWISE)
 #else
 #define ROTARY_DIRECTION (ROT_ANTI_CLOCKWISE)
@@ -37,8 +36,10 @@
 
 void send_cc(uint8 channel, uint8 cc_msb, uint8 cc_lsb, uint16 value, bool is_extended)
 {
-    if(QUEUE_SPACE(midi_queue) < 2) {
-        puts("Q full");
+    uint8 space_needed = is_extended ? 2 : 1;
+
+    if(QUEUE_SPACE(midi_queue) < space_needed) {
+        printf("send cc: queue full (need %d)\n", space_needed);
         return;
     }
 
@@ -166,10 +167,7 @@ int main()
     // At this point we are done with standard boot
     // Look at the config and decide to use midi or hid
 
-    usb_init_strings();
-    usb_device_config();
-    usb_device_endpoint_config();
-    usb_device_int_config();
+    usb_init();
 
     led_flash_n_times(BOOT_FLASH_LED_COUNT, BOOT_FLASH_LED_SPEED);
 

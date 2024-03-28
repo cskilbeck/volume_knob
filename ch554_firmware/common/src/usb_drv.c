@@ -2,12 +2,8 @@
 
 //////////////////////////////////////////////////////////////////////
 
-#define usb_setup ((USB_SETUP_REQ *)usb_endpoint_0_buffer)
-
-#include "usb_config.h"
-
 #if defined(DEBUG)
-//#define USB_LOGGING
+// #define USB_LOGGING
 #endif
 
 #if defined(USB_LOGGING)
@@ -19,6 +15,8 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////
+
+#define usb_setup ((USB_SETUP_REQ *)usb_endpoint_0_buffer)
 
 void usb_isr(void) __interrupt(INT_NO_USB)
 {
@@ -56,18 +54,18 @@ void usb_isr(void) __interrupt(INT_NO_USB)
 
                         case USB_DESCR_TYP_DEVICE:
                             usb_puts("USB:GetDevice");
-                            usb.current_descriptor = device_desc;
-                            len = sizeof(device_desc);
+                            usb.current_descriptor = usb_cfg.device_descriptor->p;
+                            len = usb_cfg.device_descriptor->len;
                             break;
 
                         case USB_DESCR_TYP_CONFIG: {
                             uint8 desc = usb_setup->wValueL;
                             usb_printf("USB:GetConfig %d\n", desc);
                             len = 0xff;
-                            if(desc < NUM_CONFIG_DESCS) {
-                                usb.current_config_desc = config_descs[desc].p;
+                            if(desc < usb_cfg.num_config_descriptors) {
+                                usb.current_config_desc = usb_cfg.config_descriptors[desc].p;
                                 usb.current_descriptor = usb.current_config_desc;
-                                len = config_descs[desc].len;
+                                len = usb_cfg.config_descriptors[desc].len;
                             }
                         } break;
 
@@ -75,22 +73,20 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                             len = 0xff;
                             uint8 desc = usb_setup->wValueL;
                             usb_printf("USB:GetString %d\n", desc);
-                            if(desc < NUM_STRING_DESCS) {
-                                usb.current_descriptor = string_descs[desc].p;
-                                len = string_descs[desc].len;
+                            if(desc < usb_cfg.num_string_descriptors) {
+                                usb.current_descriptor = usb_cfg.string_descriptors[desc].p;
+                                len = usb_cfg.string_descriptors[desc].len;
                             }
                         } break;
 
                         case USB_DESCR_TYP_REPORT: {
                             len = 0xff;
-#if defined(NUM_REPORT_DESCS)
                             uint8 desc = usb_setup->wIndexL;    // !! Index!? I guess...
                             usb_printf("USB:GetReport %d\n", desc);
-                            if(desc < NUM_REPORT_DESCS) {
-                                usb.current_descriptor = report_descs[desc].p;
-                                len = report_descs[desc].len;
+                            if(desc < usb_cfg.num_report_descriptors) {
+                                usb.current_descriptor = usb_cfg.report_descriptors[desc].p;
+                                len = usb_cfg.report_descriptors[desc].len;
                             }
-#endif
                         } break;
 
                         default:
@@ -426,7 +422,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
 
 //////////////////////////////////////////////////////////////////////
 
-void usb_device_config()
+static void usb_device_config()
 {
     // USB device and internal pull-up enabled, automatically
     // return to NAK before the interrupt flag is cleared during the interrupt.
@@ -435,20 +431,13 @@ void usb_device_config()
     // device address 0 before host assigns it
     USB_DEV_AD = 0x00;
 
-#if !defined(USB_FULL_SPEED)
-    USB_CTRL |= bUC_LOW_SPEED;
-    UDEV_CTRL |= bUD_LOW_SPEED;
-#else
-    UDEV_CTRL &= ~bUD_LOW_SPEED;
-#endif
-
     // Disable DP/DM pull-downs, enable USB port
-    UDEV_CTRL |= bUD_PD_DIS | bUD_PORT_EN;
+    UDEV_CTRL = bUD_PD_DIS | bUD_PORT_EN;
 }
 
 //////////////////////////////////////////////////////////////////////
 
-void usb_device_int_config()
+static void usb_device_int_config()
 {
     // suspend, transmission complete, bus reset IRQs enabled
     USB_INT_EN |= bUIE_SUSPEND | bUIE_TRANSFER | bUIE_BUS_RST;
@@ -462,7 +451,7 @@ void usb_device_int_config()
 
 //////////////////////////////////////////////////////////////////////
 
-void usb_device_endpoint_config()
+static void usb_device_endpoint_config()
 {
     UEP0_T_LEN = 0;
     UEP1_T_LEN = 0;
@@ -493,30 +482,33 @@ void usb_device_endpoint_config()
 
 //////////////////////////////////////////////////////////////////////
 
-static __code uint8 const product_name[] = PRODUCT_NAME;
-
-#define PRODUCT_PREFIX (sizeof(product_name) - 1 - SERIAL_LEN)
-
-void usb_init_strings()
+static void usb_init_strings()
 {
     // insert chip id into serial string and product name string
 
-    product_name_string[0] = sizeof(product_name_string);
-    product_name_string[1] = USB_DESCR_TYP_STRING;
+    ASSERT(usb_cfg.product_name_length < (sizeof(product_name_string) / 2));
 
-    for(uint8 i = 0; i < PRODUCT_PREFIX; ++i) {
-        product_name_string[2 + i * 2] = product_name[i];
-        product_name_string[3 + i * 2] = 0;
-    }
+    uint8 name_prefix = usb_cfg.product_name_length;
+
+    product_name_string[0] = (name_prefix + SERIAL_LEN + 1) * 2;
+    product_name_string[1] = USB_DESCR_TYP_STRING;
 
     serial_number_string[0] = sizeof(serial_number_string);
     serial_number_string[1] = USB_DESCR_TYP_STRING;
+
+    for(uint8 i = 0; i < name_prefix; ++i) {
+        product_name_string[2 + i * 2] = usb_cfg.product_name[i];
+        product_name_string[3 + i * 2] = 0;
+    }
+
+    product_name_string[name_prefix * 2 + 2] = ' ';
+    product_name_string[name_prefix * 2 + 3] = 0;
 
     uint32 n = chip_id;
 
     for(uint8 i = 0; i < SERIAL_LEN; ++i) {
 
-        uint8 c = (uint8)(n >> 28);    // @hardcoded
+        uint8 c = (uint8)(n >> 28);
 
         if(c < 10) {
             c += '0';
@@ -527,8 +519,8 @@ void usb_init_strings()
         serial_number_string[2 + 2 * i] = c;
         serial_number_string[3 + 2 * i] = 0;
 
-        product_name_string[2 + 2 * (i + PRODUCT_PREFIX)] = c;
-        product_name_string[3 + 2 * (i + PRODUCT_PREFIX)] = 0;
+        product_name_string[2 + 2 * (i + name_prefix + 1)] = c;
+        product_name_string[3 + 2 * (i + name_prefix + 1)] = 0;
 
         n <<= 4;
     }
@@ -557,27 +549,32 @@ void usb_wait_for_connection()
 
 //////////////////////////////////////////////////////////////////////
 
-void usb_send(uint8 endpoint, uint8 len)
+void usb_send(usb_endpoint_t endpoint, uint8 len)
 {
+    uint8 mask = 0xff;
     switch(endpoint) {
-    case 1:
+    case endpoint_1:
         UEP1_T_LEN = len;
         UEP1_CTRL = (UEP1_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_ACK;
+        mask = (uint8)(~(1 << 0));
         break;
-    case 2:
+    case endpoint_2:
         UEP2_T_LEN = len;
         UEP2_CTRL = (UEP2_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_ACK;
+        mask = (uint8)(~(1 << 1));
         break;
-    case 3:
+    case endpoint_3:
         UEP3_T_LEN = len;
         UEP3_CTRL = (UEP3_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_ACK;
+        mask = (uint8)(~(1 << 2));
         break;
-    case 4:
+    case endpoint_4:
         UEP4_T_LEN = len;
         UEP4_CTRL = (UEP4_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_ACK;
+        mask = (uint8)(~(1 << 3));
         break;
     }
-    usb.idle &= ~(1 << (endpoint - 1));
+    usb.idle &= mask;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -585,4 +582,14 @@ void usb_send(uint8 endpoint, uint8 len)
 bool usb_is_endpoint_idle(usb_endpoint_t endpoint)
 {
     return (usb.idle & (1 << (endpoint - 1))) != 0;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+void usb_init()
+{
+    usb_init_strings();
+    usb_device_config();
+    usb_device_endpoint_config();
+    usb_device_int_config();
 }

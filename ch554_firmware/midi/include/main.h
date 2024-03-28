@@ -34,10 +34,10 @@
 
 #define UART0_BAUD 115200
 
-#define BOOTLOADER_FLASH_LED_COUNT 10
+#define BOOTLOADER_FLASH_LED_COUNT 30
 #define BOOTLOADER_FLASH_LED_SPEED 40
 
-#define BOOT_FLASH_LED_COUNT 20
+#define BOOT_FLASH_LED_COUNT 10
 #define BOOT_FLASH_LED_SPEED 20
 
 //////////////////////////////////////////////////////////////////////

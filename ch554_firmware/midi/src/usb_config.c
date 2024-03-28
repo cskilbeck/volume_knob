@@ -1,8 +1,4 @@
-#pragma once
-
-#if defined(VSCODE)
 #include "main.h"
-#endif
 
 //////////////////////////////////////////////////////////////////////
 // VID = 16D0, PID = 1317
@@ -13,25 +9,25 @@
 //////////////////////////////////////////////////////////////////////
 // Device descriptor
 
-__code uint8 const device_desc[] = {
-    sizeof(device_desc),     // length
-    USB_DESCR_TYP_DEVICE,    // USB_DESC_TYPE_DEVICE
-    0x10,                    // USB v2.01 LOW BCD
-    0x01,                    // USB v2.01 HIGH BCD
-    0x00,                    // device class
-    0x00,                    // device subclass
-    0x00,                    // device protocol
-    USB_PACKET_SIZE,         // Define it in interface level
-    USB_VID & 0xff,          // USB_VID (low)
-    USB_VID >> 8,            // USB_VID (high)
-    USB_PID & 0xff,          // USB_PID (low)
-    USB_PID >> 8,            // USB_PID (high)
-    0x00,                    // device rel LOW BCD
-    0x01,                    // device rel HIGH BCD
-    0x01,                    // manufacturer string id
-    0x02,                    // product string id
-    0x03,                    // serial number string id
-    0x01                     // num configurations
+static __code uint8 const device_desc[] = {
+    SIZEOF_LSB(device_desc),    // length
+    USB_DESCR_TYP_DEVICE,       // USB_DESC_TYPE_DEVICE
+    0x10,                       // USB v2.01 LOW BCD
+    0x01,                       // USB v2.01 HIGH BCD
+    0x00,                       // device class
+    0x00,                       // device subclass
+    0x00,                       // device protocol
+    USB_PACKET_SIZE,            // Define it in interface level
+    USB_VID & 0xff,             // USB_VID (low)
+    USB_VID >> 8,               // USB_VID (high)
+    USB_PID & 0xff,             // USB_PID (low)
+    USB_PID >> 8,               // USB_PID (high)
+    0x00,                       // device rel LOW BCD
+    0x01,                       // device rel HIGH BCD
+    0x01,                       // manufacturer string id
+    0x02,                       // product string id
+    0x03,                       // serial number string id
+    0x01                        // num configurations
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -39,7 +35,7 @@ __code uint8 const device_desc[] = {
 
 #define NUM_INTERFACES 2
 
-__code uint8 const midi_config_desc[] = {
+static __code uint8 const midi_config_desc[] = {
 
     // Configuration descriptor (two interfaces)
     0x09,                            // length
@@ -175,32 +171,49 @@ __code uint8 const midi_config_desc[] = {
 
 #define STR_HDR(x) (SIZEOF_LSB(x) | (USB_DESCR_TYP_STRING << 8))
 
-__code const uint16 language_desc[] = { STR_HDR(language_desc), LANGUAGE_DESC };
-__code const uint16 manufacturer_string[] = { STR_HDR(manufacturer_string), MANUFACTURER_STRING };
-__code const uint16 audio_string[] = { STR_HDR(audio_string), AUDIO_STRING };
-__code const uint16 jack_string[] = { STR_HDR(jack_string), JACK_STRING };
+static __code const uint16 language_desc[] = { STR_HDR(language_desc), LANGUAGE_DESC };
+static __code const uint16 manufacturer_string[] = { STR_HDR(manufacturer_string), MANUFACTURER_STRING };
+static __code const uint16 audio_string[] = { STR_HDR(audio_string), AUDIO_STRING };
+static __code const uint16 jack_string[] = { STR_HDR(jack_string), JACK_STRING };
 
 //////////////////////////////////////////////////////////////////////
 
-__code const usb_descriptor_t config_descs[] = {
+static __code const usb_descriptor_t usb_device_descriptor = DESCRIPTOR(device_desc);
+
+//////////////////////////////////////////////////////////////////////
+
+static __code const usb_descriptor_t config_descs[] = {
     DESCRIPTOR(midi_config_desc)    // USB config
 };
 
 //////////////////////////////////////////////////////////////////////
 
-__code const usb_descriptor_t string_descs[] = {
+static __code const usb_descriptor_t string_descs[] = {
     DESCRIPTOR(language_desc),           // 0
     DESCRIPTOR(manufacturer_string),     // 1
     DESCRIPTOR(product_name_string),     // 2 - dynamic in xdata
     DESCRIPTOR(serial_number_string),    // 3 - dynamic in xdata
-
-    DESCRIPTOR(audio_string),    // 4
-    DESCRIPTOR(jack_string)      // 5
+    DESCRIPTOR(audio_string),            // 4
+    DESCRIPTOR(jack_string)              // 5
 };
 
 //////////////////////////////////////////////////////////////////////
 // undef NUM_XXX_DESCS if there aren't any of that type
 
 #define NUM_CONFIG_DESCS ARRAY_COUNT(config_descs)
-#undef NUM_REPORT_DESCS
+#define NUM_REPORT_DESCS 0
 #define NUM_STRING_DESCS ARRAY_COUNT(string_descs)
+
+static char const product_name_text[] = "Tiny Midi Knob";
+
+//////////////////////////////////////////////////////////////////////
+
+usb_config_data_t const usb_cfg = { .device_descriptor = &usb_device_descriptor,
+                                    .config_descriptors = config_descs,
+                                    .report_descriptors = NULL,
+                                    .string_descriptors = string_descs,
+                                    .num_config_descriptors = NUM_CONFIG_DESCS,
+                                    .num_report_descriptors = NUM_REPORT_DESCS,
+                                    .num_string_descriptors = NUM_STRING_DESCS,
+                                    .product_name = product_name_text,
+                                    .product_name_length = sizeof(product_name_text) - 1 };

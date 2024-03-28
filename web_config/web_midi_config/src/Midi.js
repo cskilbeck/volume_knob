@@ -297,6 +297,7 @@ function bits7_to_bytes(src_data, offset, dst_len) {
 //////////////////////////////////////////////////////////////////////
 
 function flash_device_led(index) {
+
     const device = midi_devices.value[index];
     if (device === undefined) {
         console.log(`Can't find device ${index}`);
@@ -309,6 +310,7 @@ function flash_device_led(index) {
 //////////////////////////////////////////////////////////////////////
 
 function flash_mode(index) {
+
     const device = midi_devices.value[index];
     if (device === undefined) {
         console.log(`Can't find device ${index}`);
@@ -366,6 +368,7 @@ function on_device_id_response(input_port, data) {
 // send a request for the flash contents
 
 function read_flash(index) {
+
     const device = midi_devices.value[index];
     if (device === undefined) {
         console.log(`read_flash: No such device ${index}`);
@@ -378,6 +381,7 @@ function read_flash(index) {
 // send new flash contents
 
 function write_flash(index) {
+
     const device = midi_devices.value[index];
     if (device === undefined) {
         console.log(`write_flash: No such device ${index}`);
@@ -395,6 +399,7 @@ function write_flash(index) {
 // convert some bytes to a hex string
 
 function bytes_to_hex_string(data, len, separator) {
+
     if (separator == undefined) {
         separator = " ";
     }
@@ -415,6 +420,7 @@ function bytes_to_hex_string(data, len, separator) {
 // send some data to a midi device
 
 function send_midi(midi_device, data) {
+
     // console.log(`SEND: ${bytes_to_hex_string(data, data.length, " ")}`);
     midi_device.output.send(data);
 }
@@ -475,6 +481,7 @@ function init_devices() {
 //////////////////////////////////////////////////////////////////////
 
 function connect_device(d) {
+
     d.output.send([0xF0, 0x7E, d.device_index & 0x7f, 0x06, sysex_request_device_id, 0xF7]);
 }
 
@@ -482,6 +489,7 @@ function connect_device(d) {
 // port.close() doesn't seem to work so this is kind of moot
 
 function toggle_device_connection(device_index) {
+
     console.log(`Toggle device ${device_index} connection`);
     let d = midi_devices.value[device_index];
     if (d != null) {
