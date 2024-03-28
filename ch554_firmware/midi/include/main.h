@@ -66,12 +66,8 @@
 // MIDI_QUEUE_LEN * sizeof(uint32) must be < USB_PACKET_SIZE (64) so
 // effectively the max length is 16
 
-#define MIDI_QUEUE_LEN 16
-
 #include "common.h"
 
-typedef STRUCT_QUEUE(uint32, MIDI_QUEUE_LEN) midi_queue_t;
-
-#include "xdata_extra.h"
-#include "config.h"
 #include "midi.h"
+#include "xdata_extra.h"
+#include "midi_config.h"

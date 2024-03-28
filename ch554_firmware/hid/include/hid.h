@@ -2,12 +2,18 @@
 
 //////////////////////////////////////////////////////////////////////
 
+#define HID_QUEUE_LEN 16
+
+typedef STRUCT_QUEUE(uint8, HID_QUEUE_LEN) hid_queue_t;
+
+//////////////////////////////////////////////////////////////////////
+
 #define KEY_MEDIA_MUTE 0xe2
 #define KEY_MEDIA_VOLUMEUP 0xe9
 #define KEY_MEDIA_VOLUMEDOWN 0xea
 
 //////////////////////////////////////////////////////////////////////
-// See usb_config.h
+// See usb_config.c
 // these structs must match the hid report descriptor layouts exactly
 
 typedef struct _consumer_control_hid_report

@@ -8,6 +8,9 @@
 
 #define ARRAY_COUNT(x) (sizeof(x) / sizeof((x)[0]))
 
+// where a > b but either might have wrapped
+#define TICK_DIFF(a, b) ((uint16)(a - (int16)b))
+
 //////////////////////////////////////////////////////////////////////
 
 #define NOP_MACRO \

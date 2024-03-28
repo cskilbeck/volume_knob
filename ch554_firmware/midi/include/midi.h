@@ -2,6 +2,12 @@
 
 //////////////////////////////////////////////////////////////////////
 
+#define MIDI_QUEUE_LEN 16
+
+typedef STRUCT_QUEUE(uint32, MIDI_QUEUE_LEN) midi_queue_t;
+
+//////////////////////////////////////////////////////////////////////
+
 #define MIDI_MANUFACTURER_ID 0x36    // Cheetah Marketing, defunct?
 #define MIDI_FAMILY_CODE 0x5544
 #define MIDI_MODEL_NUMBER 0x3322

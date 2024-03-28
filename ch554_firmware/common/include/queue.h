@@ -29,10 +29,10 @@
 
 //////////////////////////////////////////////////////////////////////
 
-#define QUEUE_PUSH(q, v)                                           \
-    STATIC_ASSERT(sizeof(v) == sizeof(q.buffer[0]));               \
-    do {                                                           \
-        q.buffer[(q.head + q.length++) % QUEUE_CAPACITY(q)] = (v); \
+#define QUEUE_PUSH(q, v)                                                 \
+    STATIC_ASSERT(sizeof(v) == sizeof(q.buffer[0]));                     \
+    do {                                                                 \
+        q.buffer[(q.head + q.length++) & (QUEUE_CAPACITY(q) - 1)] = (v); \
     } while(0)
 
 //////////////////////////////////////////////////////////////////////
@@ -42,7 +42,7 @@
     do {                                             \
         (v) = q.buffer[q.head];                      \
         q.length -= 1;                               \
-        q.head = ++q.head % QUEUE_CAPACITY(q);       \
+        q.head = ++q.head & (QUEUE_CAPACITY(q) - 1); \
     } while(0)
 
 /* USAGE:

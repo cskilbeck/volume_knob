@@ -7,7 +7,7 @@ static __code uint8 const accel_values[2][4] = { { 0, 1, 2, 3 }, { 0, 20, 40, 80
 
 #define DEFAULT_FLAGS cf_led_flash_on_limit | cf_led_flash_on_click | cf_btn_momentary | cf_rotate_extended
 
-__code const config_t default_config = {
+__code const midi_config_t default_midi_config = {
 
     CONFIG_VERSION,    // uint8 config_version;        // config struct version - must be 1st byte!
     7,                 // uint8 rot_control_msb;       // Control Change index MSB,LSB for knob
@@ -32,7 +32,7 @@ __code const config_t default_config = {
 
 uint8 get_acceleration()
 {
-    uint8 accel_index = config.acceleration & 3;
+    uint8 accel_index = midi_config.acceleration & 3;
     uint8 accel_table = config_flag(cf_rotate_extended) ? 1 : 0;
     return accel_values[accel_table][accel_index];
 }
@@ -41,8 +41,10 @@ uint8 get_acceleration()
 
 bool load_config()
 {
-    if(!flash_load(&config, sizeof(config_t))) {
-        memcpy(&config, &default_config, sizeof(config));
+    if(!flash_load(&midi_config, sizeof(midi_config_t))) {
+
+        // if no valid config in the flash, use the default config
+        memcpy(&midi_config, &default_midi_config, sizeof(midi_config));
     }
     return true;
 }
@@ -51,5 +53,5 @@ bool load_config()
 
 bool save_config()
 {
-    return flash_save(&config, sizeof(config_t));
+    return flash_save(&midi_config, sizeof(midi_config));
 }

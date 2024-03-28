@@ -2,10 +2,6 @@
 
 #include "main.h"
 
-#define XDATA __xdata
-
-#include "xdata_extra.h"
-
 //////////////////////////////////////////////////////////////////////
 // TIMER0 = LED pwm
 // TIMER1 = UART
@@ -13,136 +9,9 @@
 
 //////////////////////////////////////////////////////////////////////
 
-#define ROT_CLOCKWISE 2
-#define ROT_ANTI_CLOCKWISE 0
-
-// Define ROTARY_DIRECTION as ROT_CLOCKWISE for one kind of encoders, ROT_ANTI_CLOCKWISE for
-// the other ones (some are reversed). This sets the default rotation (after first
-// flash), reverse by triple-clicking the knob
-
-#if DEVICE == DEVICE_DEVKIT
-#define ROTARY_DIRECTION (ROT_CLOCKWISE)
-#else
-#define ROTARY_DIRECTION (ROT_ANTI_CLOCKWISE)
-#endif
-
-//////////////////////////////////////////////////////////////////////
-// Send a control change notification
-//
-//  if is_extended
-//      send 14 bit value as two midi packets
-//  else
-//      send 7 bit value as a single midi packet
-
-void send_cc(uint8 channel, uint8 cc_msb, uint8 cc_lsb, uint16 value, bool is_extended)
-{
-    uint8 space_needed = is_extended ? 2 : 1;
-
-    if(QUEUE_SPACE(midi_queue) < space_needed) {
-        printf("send cc: queue full (need %d)\n", space_needed);
-        return;
-    }
-
-    uint32 midi_packet;
-
-#define _pkt ((uint8 *)&midi_packet)
-
-    // CC header
-    _pkt[0] = 0x0B;
-    _pkt[1] = 0xB0 | channel;
-
-    // cc[0] is the value to send (or MSB of value)
-    _pkt[2] = cc_msb;
-
-    // send MSB first if extended mode
-    if(is_extended) {
-
-        // send MSB of value
-        _pkt[3] = (value >> 7) & 0x7F;
-        QUEUE_PUSH(midi_queue, midi_packet);
-
-        // cc[1] is LSB of value
-        _pkt[2] = cc_lsb;
-    }
-
-    // send value (or LSB of value)
-    _pkt[3] = value & 0x7f;
-    QUEUE_PUSH(midi_queue, midi_packet);
-
-#undef _pkt
-}
-
-//////////////////////////////////////////////////////////////////////
-
-typedef enum
-{
-    value_a = 0,
-    value_b = 1
-} which_value_t;
-
-void send_button_cc(which_value_t val)
-{
-    bool extended = config_flag(cf_btn_extended);
-
-    uint16 value = extended ? config.btn_value_a_14 : config.btn_value_a_7;
-
-    if(val == value_b) {
-
-        value = extended ? config.btn_value_b_14 : config.btn_value_b_7;
-    }
-    send_cc(get_btn_channel(), config.btn_control_msb, config.btn_control_lsb, value, extended);
-}
-
-//////////////////////////////////////////////////////////////////////
-
-static int16 rotation_velocity = 0;
-static uint8 deceleration_ticks = 0;
-
-void do_absolute_rotation(int16 offset)
-{
-    bool extended = config_flag(cf_rotate_extended);
-    bool at_limit = false;
-    int32 cur = extended ? config.rot_current_value_14 : config.rot_current_value_7;
-    int16 limit = extended ? 0x3fff : 0x7f;
-    cur += (int32)offset * (rotation_velocity + 1);
-    if(cur < 0) {
-        cur = 0;
-        at_limit = true;
-    } else if(cur > limit) {
-        cur = limit;
-        at_limit = true;
-    }
-    if(extended) {
-        config.rot_current_value_14 = (int16)cur;
-    } else {
-        config.rot_current_value_7 = (int16)cur;
-    }
-    send_cc(get_rot_channel(), config.rot_control_msb, config.rot_control_lsb, cur, extended);
-
-    if(config_flag(cf_led_flash_on_rot) || (at_limit && config_flag(cf_led_flash_on_limit))) {
-
-        led_flash();
-    }
-}
-
-//////////////////////////////////////////////////////////////////////
-// relative rotation is forced 7 bit mode
-
-void do_relative_rotation(int16 offset)
-{
-    uint8 cur = (config.rot_zero_point + offset * (rotation_velocity + 1)) & 0x7f;
-    send_cc(get_rot_channel(), config.rot_control_msb, 0, cur, false);
-
-    if(config_flag(cf_led_flash_on_rot)) {
-        led_flash();
-    }
-}
-
-//////////////////////////////////////////////////////////////////////
-
 #define CLEAR_CONSOLE "\033c\033[3J\033[2J"
 
-int main()
+void main()
 {
     clk_init();
     tick_init();
@@ -158,14 +27,9 @@ int main()
     // global irq enable
     EA = 1;
 
-    printf(CLEAR_CONSOLE "---------- MIDI ----------\nCHIP ID: %08lx\n", chip_id);
-
-    hexdump("default config", (uint8 *)&default_config, sizeof(default_config));
+    printf(CLEAR_CONSOLE "---------- %s ----------\nCHIP ID: %08lx\n", current_process->process_name, chip_id);
 
     load_config();
-
-    // At this point we are done with standard boot
-    // Look at the config and decide to use midi or hid
 
     usb_init();
 
@@ -173,119 +37,65 @@ int main()
 
     usb_wait_for_connection();
 
-    midi_init();
+    puts("Main loop");
 
-    uint8 button_ticks = 0;
-    bool button_state = false;    // for debouncing the button
+    current_process->on_init();
 
-    int8 turn_value = ROTARY_DIRECTION - 1;
+    bool button_state = false;
+    uint8 button_debounce_ticks = 0;
 
     while(1) {
 
-        // read/debounce the button
         bool pressed = false;
         bool released = false;
         bool new_state = !BTN_BIT;
 
-        if(new_state != button_state && button_ticks > 1) {
-            button_ticks = 0;
+        if(new_state != button_state && button_debounce_ticks > 1) {
+            button_debounce_ticks = 0;
             pressed = new_state;
             released = !new_state;
             button_state = new_state;
         }
 
-        // if tick
-        if(TF2) {
+        if(TF2) {    // tick
             TF2 = 0;
-            if(button_ticks <= 2) {
-                button_ticks += 1;
+            if(button_debounce_ticks <= 2) {
+                button_debounce_ticks += 1;
             }
-            deceleration_ticks += 1;
+            current_process->on_tick();
             led_on_tick();
         }
 
         // read the rotary encoder (returns -1, 0 or 1)
         int8 direction = encoder_read();
 
-        if(usb.recv_len[2] != 0) {
-            process_midi_packet_in(usb.recv_len[2]);
-            UEP2_CTRL = (UEP2_CTRL & ~MASK_UEP_R_RES) | UEP_R_RES_ACK;
-            usb.recv_len[2] = 0;
-            handle_midi_packet();
+        if(pressed) {
+
+            current_process->on_press();
         }
 
-        // flush any waiting midi packets
-        midi_flush_queue();
+        if(released) {
 
-        // queue up any new waiting midi packets
-        if(!midi_send_update()) {
+            current_process->on_release();
+        }
 
-            // no midi packets waiting to be sent, queue up any keypress/rotations
-            if(!QUEUE_IS_FULL(midi_queue)) {
+        if(direction != 0) {
 
-                // BUTTON
+            current_process->on_rotate(direction);
+        }
 
-                if(pressed) {
+        // process or discard any incoming USB data
 
-                    config.flags ^= cf_toggle;
-
-                    which_value_t value = value_a;
-                    if(!config_flag(cf_btn_momentary) && config_flag(cf_toggle)) {
-                        value = value_b;
-                    }
-                    send_button_cc(value);
-
-                    if(config_flag(cf_led_flash_on_click)) {
-                        led_flash();
-                    }
-
-                } else if(released) {
-
-                    if(config_flag(cf_btn_momentary)) {
-                        send_button_cc(value_b);
-                    }
-
-                    if(config_flag(cf_led_flash_on_release)) {
-                        led_flash();
-                    }
-                }
-
-                // ROTATION
-
-                if(direction != 0) {
-
-                    if(config_flag(cf_rotate_reverse)) {
-                        direction = -direction;
-                    }
-
-                    int16 delta = config_flag(cf_rotate_extended) ? config.rot_delta_14 : config.rot_delta_7;
-                    if(direction == turn_value) {
-                        delta = -delta;
-                    }
-
-                    if(config_flag(cf_rotate_relative)) {
-                        do_relative_rotation(delta);
-                    } else {
-                        do_absolute_rotation(delta);
-                    }
-
-                    int16 limit = config_flag(cf_rotate_extended) ? 0x3fff : 0x7f;
-
-                    rotation_velocity += get_acceleration();
-
-                    if(rotation_velocity >= limit) {
-                        rotation_velocity = limit;
-                    }
-
-                    deceleration_ticks = 0;
-
-                } else if(deceleration_ticks == 50) {
-
-                    deceleration_ticks = 0;
-                    rotation_velocity >>= 1;
-                }
+        for(uint8 i = 1; i < 4; ++i) {
+            uint8 got = usb.recv_len[i];
+            if(got != 0 && current_process->on_usb_receive[i - 1] != NULL) {
+                current_process->on_usb_receive[i - 1](got);
             }
+            usb.recv_len[i] = 0;
         }
+
+        current_process->on_update();
+
         led_update();
     }
 }

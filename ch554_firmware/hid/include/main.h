@@ -49,18 +49,12 @@
 
 #define SERIAL_LEN 8    // 8 chars for 32 bit hex serial # from chip_id 01234567
 
-#define PRODUCT_NAME "Tiny USB Knob 00000000"    // last 8 chars filled in with serial #
-
 #define FIRMWARE_CURRENT_VERSION 0x01000000lu
 
 #define FIRMWARE_VERSION (FIRMWARE_CURRENT_VERSION | DEVICE)
 
-#define HID_QUEUE_LEN 16
-
 #include "common.h"
 
-typedef STRUCT_QUEUE(uint8, HID_QUEUE_LEN) hid_queue_t;
-
+#include "hid.h"
 #include "xdata_extra.h"
 #include "config.h"
-#include "hid.h"

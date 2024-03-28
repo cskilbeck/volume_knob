@@ -2,11 +2,17 @@
 
 #include "main.h"
 
+#define XDATA __xdata
+#include "xdata_extra.h"
+#undef XDATA
+
 static uint8 device_id = 0;
-static uint8 *midi_send_ptr;
-static uint8 midi_send_remain = 0;
+static uint8 *midi_sysex_ptr;
+static uint8 midi_sysex_remain = 0;
 static uint8 sysex_recv_length = 0;
 static uint8 sysex_recv_packet_offset = 0;
+
+#define CONFIG_7BIT_LEN (((CONFIG_MAX_LEN * 8) + 6) / 7)
 
 //////////////////////////////////////////////////////////////////////
 // expand some bytes into an array of 7 bit values
@@ -65,6 +71,10 @@ static void bits7_to_bytes(uint8 *src_data, uint8 offset, uint8 len, uint8 *dest
 
 void *init_sysex_response(uint8 sysex_code)
 {
+    if(midi_sysex_remain != 0) {
+        return NULL;
+    }
+
     sysex_hdr_t *p = (sysex_hdr_t *)midi_send_buffer;
     p->sysex_start = 0xF0;
     p->sysex_realtime = 0x7E;
@@ -75,72 +85,60 @@ void *init_sysex_response(uint8 sysex_code)
 }
 
 //////////////////////////////////////////////////////////////////////
-// send the next waiting packet if there is one and the usb is ready
+// send the next waiting packet(s) if there are any and the usb is ready
 
 void midi_flush_queue()
 {
-    if((usb.idle & 2) == 0) {
-        return;
-    }
+    if(usb_is_endpoint_idle(endpoint_2)) {
 
-    uint8 packets;
-    uint32 *dst = (uint32 *)usb_endpoint_2_tx_buffer;
-    for(packets = 0; packets < USB_PACKET_SIZE / sizeof(*dst); ++packets) {
-        if(QUEUE_IS_EMPTY(midi_queue)) {
-            break;
+        uint32 *end = (uint32 *)(usb_endpoint_2_tx_buffer + USB_PACKET_SIZE);
+
+        uint32 *dst = (uint32 *)usb_endpoint_2_tx_buffer;
+
+        for(; dst < end && !QUEUE_IS_EMPTY(midi_queue); ++dst) {
+
+            QUEUE_POP(midi_queue, *dst);
         }
-        QUEUE_POP(midi_queue, *dst);
-        dst += 1;
-    }
-    if(packets != 0) {
-        // hexdump("send", usb_endpoint_2_tx_buffer, packets * 4);
-        usb_send(endpoint_2, packets * 4);
+
+        uint8 num_bytes = (uint8 *)dst - usb_endpoint_2_tx_buffer;
+
+        if(num_bytes != 0) {
+
+            // hexdump("send", usb_endpoint_2_tx_buffer, num_bytes);
+            usb_send(endpoint_2, num_bytes);
+        }
     }
 }
 
 //////////////////////////////////////////////////////////////////////
+// send as much midi sysex data as we can
 
 bool midi_send_update()
 {
-    if(midi_send_remain == 0) {
+    if(midi_sysex_remain == 0) {
         return false;
     }
 
-    while(midi_send_remain != 0 && !QUEUE_IS_FULL(midi_queue)) {
+    while(midi_sysex_remain != 0 && !QUEUE_IS_FULL(midi_queue)) {
 
-        uint8 r = midi_send_remain;
+        uint8 r = midi_sysex_remain;
         if(r > 3) {
             r = 3;
         }
         uint8 cmd = midi_packet_start;
-        if(r < 3 || midi_send_remain <= 3) {
+        if(r < 3 || midi_sysex_remain <= 3) {
             cmd = midi_packet_end_1 + r - 1;
         }
         uint32 packet = 0;
         uint8 *dst = (uint8 *)&packet;
         *dst++ = cmd;
         for(uint8 i = 0; i < r; ++i) {
-            *dst++ = *midi_send_ptr++;
+            *dst++ = *midi_sysex_ptr++;
         }
         hexdump("PUT", &packet, 4);
         QUEUE_PUSH(midi_queue, packet);
-        midi_send_remain -= r;
+        midi_sysex_remain -= r;
     }
-    return true;
-}
-
-//////////////////////////////////////////////////////////////////////
-
-static bool midi_send(uint8 *midi_data, uint8 length)
-{
-    if(midi_send_remain != 0) {
-        return false;
-    }
-    if(length < 4) {
-        return false;
-    }
-    midi_send_remain = length;
-    midi_send_ptr = midi_data;
     return true;
 }
 
@@ -150,12 +148,15 @@ bool midi_send_sysex(uint8 payload_length)
 {
     uint8 total_length = sizeof(sysex_hdr_t) + payload_length + 1;    // +1 for 0xF7 terminator
     midi_send_buffer[total_length - 1] = 0xF7;
-    return midi_send(midi_send_buffer, total_length);
+    midi_sysex_remain = total_length;
+    midi_sysex_ptr = midi_send_buffer;
+    return true;
 }
 
 //////////////////////////////////////////////////////////////////////
+// Handle a sysex midi message
 
-void handle_midi_packet()
+void handle_sysex_in()
 {
     if(midi_recv_buffer[0] == 0xF0 &&                      // sysex status byte
        midi_recv_buffer[1] == 0x7E &&                      // non-realtime
@@ -170,42 +171,45 @@ void handle_midi_packet()
         case sysex_request_device_id: {
             device_id = midi_recv_buffer[2];
             sysex_identity_response_t *response = init_sysex_response(sysex_response_device_id);
-            response->manufacturer_id = MIDI_MANUFACTURER_ID;
-            response->family_code = MIDI_FAMILY_CODE;
-            response->model_number = MIDI_MODEL_NUMBER;
-            response->version_number = FIRMWARE_VERSION;
-            midi_send_sysex(sizeof(sysex_identity_response_t));
+            if(response != NULL) {
+                response->manufacturer_id = MIDI_MANUFACTURER_ID;
+                response->family_code = MIDI_FAMILY_CODE;
+                response->model_number = MIDI_MODEL_NUMBER;
+                response->version_number = FIRMWARE_VERSION;
+                midi_send_sysex(sizeof(sysex_identity_response_t));
+            }
         } break;
 
         // toggle led
-        case sysex_request_toggle_led:
+        case sysex_request_toggle_led: {
             led_flash();
-            break;
+        } break;
 
         // Get flash
         case sysex_request_get_flash: {
             load_config();
-            hexdump("READ", (uint8 *)&config, sizeof(config));
+            hexdump("READ", (uint8 *)&midi_config, sizeof(midi_config));
             uint8 *buf = init_sysex_response(sysex_response_get_flash);
-            bytes_to_bits7((uint8 *)&config, 0, sizeof(config), buf);
-
-#define CONFIG_7BIT_LEN (((CONFIG_MAX_LEN * 8) + 6) / 7)
-
-            midi_send_sysex(CONFIG_7BIT_LEN);
+            if(buf != NULL) {
+                bytes_to_bits7((uint8 *)&midi_config, 0, sizeof(midi_config), buf);
+                midi_send_sysex(CONFIG_7BIT_LEN);
+            }
         } break;
 
         // Set flash
         case sysex_request_set_flash: {
 
-            bits7_to_bytes(midi_recv_buffer, 5, CONFIG_MAX_LEN, (uint8 *)&config);
-            hexdump("WRITE", (uint8 *)&config, CONFIG_MAX_LEN);
+            bits7_to_bytes(midi_recv_buffer, 5, CONFIG_MAX_LEN, (uint8 *)&midi_config);
+            hexdump("WRITE", (uint8 *)&midi_config, CONFIG_MAX_LEN);
             uint8 *buf = init_sysex_response(sysex_response_set_flash_ack);
-            *buf = 0x01;
-            if(!save_config()) {
-                puts("Error saving flash");
-                *buf = 0xff;
+            if(buf != NULL) {
+                *buf = 0x01;
+                if(!save_config()) {
+                    puts("Error saving flash");
+                    *buf = 0xff;
+                }
+                midi_send_sysex(1);
             }
-            midi_send_sysex(1);
         } break;
 
         case sysex_request_bootloader: {
@@ -237,6 +241,7 @@ void process_midi_packet_in(uint8 length)
     sysex_recv_packet_offset = 0;
 
     while(sysex_recv_packet_offset < length) {
+
         uint8 cmd = usb_endpoint_2_rx_buffer[sysex_recv_packet_offset];
 
         switch(cmd) {
@@ -249,6 +254,7 @@ void process_midi_packet_in(uint8 length)
         case midi_packet_end_1:
             sysex_parse_add(1);
             break;
+
         case midi_packet_end_2:
             sysex_parse_add(2);
             break;
@@ -260,6 +266,119 @@ void process_midi_packet_in(uint8 length)
         }
         sysex_recv_packet_offset += 4;
     }
+    handle_sysex_in();
+}
+
+//////////////////////////////////////////////////////////////////////
+// Send a control change notification
+//
+//  if is_extended
+//      send 14 bit value as two midi packets
+//  else
+//      send 7 bit value as a single midi packet
+
+void send_cc(uint8 channel, uint8 cc_msb, uint8 cc_lsb, uint16 value, bool is_extended)
+{
+    uint8 space_needed = is_extended ? 2 : 1;
+
+    if(QUEUE_SPACE(midi_queue) < space_needed) {
+        printf("send cc: queue full (need %d)\n", space_needed);
+        return;
+    }
+
+    uint32 midi_packet;
+
+#define _pkt ((uint8 *)&midi_packet)
+
+    // CC header
+    _pkt[0] = 0x0B;
+    _pkt[1] = 0xB0 | channel;
+
+    // cc[0] is the value to send (or MSB of value)
+    _pkt[2] = cc_msb;
+
+    // send MSB first if extended mode
+    if(is_extended) {
+
+        // send MSB of value
+        _pkt[3] = (value >> 7) & 0x7F;
+        QUEUE_PUSH(midi_queue, midi_packet);
+
+        // cc[1] is LSB of value
+        _pkt[2] = cc_lsb;
+    }
+
+    // send value (or LSB of value)
+    _pkt[3] = value & 0x7f;
+    QUEUE_PUSH(midi_queue, midi_packet);
+
+#undef _pkt
+}
+
+//////////////////////////////////////////////////////////////////////
+
+typedef enum
+{
+    value_a = 0,
+    value_b = 1
+} which_value_t;
+
+void send_button_cc(which_value_t val)
+{
+    bool extended = config_flag(cf_btn_extended);
+
+    uint16 value = extended ? midi_config.btn_value_a_14 : midi_config.btn_value_a_7;
+
+    if(val == value_b) {
+
+        value = extended ? midi_config.btn_value_b_14 : midi_config.btn_value_b_7;
+    }
+    send_cc(get_btn_channel(), midi_config.btn_control_msb, midi_config.btn_control_lsb, value, extended);
+}
+
+//////////////////////////////////////////////////////////////////////
+
+static int16 rotation_velocity = 0;
+static uint8 deceleration_ticks = 0;
+
+void do_absolute_rotation(int16 offset)
+{
+    bool extended = config_flag(cf_rotate_extended);
+    bool at_limit = false;
+    int32 cur = extended ? midi_config.rot_current_value_14 : midi_config.rot_current_value_7;
+    int16 limit = extended ? 0x3fff : 0x7f;
+    cur += (int32)offset * (rotation_velocity + 1);
+    if(cur < 0) {
+        cur = 0;
+        at_limit = true;
+    } else if(cur > limit) {
+        cur = limit;
+        at_limit = true;
+    }
+    if(extended) {
+        midi_config.rot_current_value_14 = (int16)cur;
+    } else {
+        midi_config.rot_current_value_7 = (int16)cur;
+    }
+    send_cc(get_rot_channel(), midi_config.rot_control_msb, midi_config.rot_control_lsb, cur, extended);
+
+    if(config_flag(cf_led_flash_on_rot) || (at_limit && config_flag(cf_led_flash_on_limit))) {
+
+        led_flash();
+    }
+}
+
+//////////////////////////////////////////////////////////////////////
+// relative rotation is forced 7 bit mode
+
+void do_relative_rotation(int16 offset)
+{
+    uint8 cur = (midi_config.rot_zero_point + offset * (rotation_velocity + 1)) & 0x7f;
+    send_cc(get_rot_channel(), midi_config.rot_control_msb, 0, cur, false);
+
+    if(config_flag(cf_led_flash_on_rot)) {
+        led_flash();
+    }
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -269,3 +388,122 @@ void midi_init()
     puts("MIDI INIT");
     QUEUE_INIT(midi_queue);
 }
+
+//////////////////////////////////////////////////////////////////////
+
+void midi_tick()
+{
+    deceleration_ticks += 1;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+void midi_usb_receive(uint8 len)
+{
+    process_midi_packet_in(len);
+}
+
+//////////////////////////////////////////////////////////////////////
+
+void midi_update()
+{
+    midi_flush_queue();
+    midi_send_update();
+
+    if(deceleration_ticks == 50) {
+
+        deceleration_ticks = 0;
+        rotation_velocity >>= 1;
+    }
+}
+
+//////////////////////////////////////////////////////////////////////
+
+void midi_rotate(int8 direction)
+{
+    if(config_flag(cf_rotate_reverse)) {
+        direction = -direction;
+    }
+
+    int16 delta = config_flag(cf_rotate_extended) ? midi_config.rot_delta_14 : midi_config.rot_delta_7;
+
+    if(direction == 1) {
+        delta = -delta;
+    }
+
+    if(config_flag(cf_rotate_relative)) {
+        do_relative_rotation(delta);
+    } else {
+        do_absolute_rotation(delta);
+    }
+
+    int16 limit = config_flag(cf_rotate_extended) ? 0x3fff : 0x7f;
+
+    rotation_velocity += get_acceleration();
+
+    if(rotation_velocity >= limit) {
+        rotation_velocity = limit;
+    }
+
+    deceleration_ticks = 0;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+void midi_press()
+{
+    if(midi_sysex_remain != 0) {
+        return;
+    }
+
+    if(QUEUE_IS_FULL(midi_queue)) {
+        return;
+    }
+
+    if(config_flag(cf_led_flash_on_click)) {
+        led_flash();
+    }
+
+    midi_config.flags ^= cf_toggle;
+
+    which_value_t value = value_a;
+
+    if(!config_flag(cf_btn_momentary) && config_flag(cf_toggle)) {
+        value = value_b;
+    }
+    send_button_cc(value);
+}
+
+//////////////////////////////////////////////////////////////////////
+
+void midi_release()
+{
+    if(midi_sysex_remain != 0) {
+        return;
+    }
+
+    if(QUEUE_IS_FULL(midi_queue)) {
+        return;
+    }
+
+    if(config_flag(cf_led_flash_on_release)) {
+        led_flash();
+    }
+
+    if(config_flag(cf_btn_momentary)) {
+        send_button_cc(value_b);
+    }
+}
+
+//////////////////////////////////////////////////////////////////////
+
+__code const process_t midi_process = { .process_name = "MIDI",
+                                        .on_init = midi_init,
+                                        .on_tick = midi_tick,
+                                        .on_update = midi_update,
+                                        .on_rotate = midi_rotate,
+                                        .on_press = midi_press,
+                                        .on_release = midi_release,
+                                        .on_usb_receive = { NULL, midi_usb_receive, NULL, NULL } };
+
+__code const process_t *current_process = &midi_process;

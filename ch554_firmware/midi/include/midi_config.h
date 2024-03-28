@@ -10,7 +10,7 @@
 //////////////////////////////////////////////////////////////////////
 // flags in config.cf_flags
 
-typedef enum config_flags
+typedef enum midi_config_flags
 {
     // rotate modifies both CC MSB and LSB
     cf_rotate_extended = 0x0001,
@@ -55,7 +55,7 @@ typedef enum config_flags
 //////////////////////////////////////////////////////////////////////
 // sizeof config_t must be CONFIG_MAX_LEN
 
-struct config
+struct midi_config
 {
     uint8 config_version;           // Config struct version - must be 1st byte!
     uint8 rot_control_msb;          // CC index MSB for knob
@@ -78,27 +78,27 @@ struct config
     uint8 pad[CONFIG_MAX_LEN - 22];
 };
 
-typedef struct config config_t;
+typedef struct midi_config midi_config_t;
 
-#define CONFIG_SIZE (sizeof(config_t))
+#define CONFIG_SIZE (sizeof(midi_config_t))
 
 STATIC_ASSERT(CONFIG_SIZE == CONFIG_MAX_LEN);
 
-extern __code const config_t default_config;
+extern __code const midi_config_t default_midi_config;
 
 inline uint8 get_rot_channel()
 {
-    return config.channels & 0xf;
+    return midi_config.channels & 0xf;
 }
 
 inline uint8 get_btn_channel()
 {
-    return config.channels >> 4;
+    return midi_config.channels >> 4;
 }
 
 inline bool config_flag(uint16 mask)
 {
-    return (config.flags & mask) != 0;
+    return (midi_config.flags & mask) != 0;
 }
 
 //////////////////////////////////////////////////////////////////////

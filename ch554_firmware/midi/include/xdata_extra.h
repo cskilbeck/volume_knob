@@ -8,6 +8,6 @@
 XDATA uint8 midi_send_buffer[48];
 XDATA uint8 midi_recv_buffer[48];
 XDATA midi_queue_t midi_queue;
-XDATA struct config config;
+XDATA struct midi_config midi_config;
 
 #undef XDATA
