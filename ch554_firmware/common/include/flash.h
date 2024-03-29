@@ -22,7 +22,7 @@
 #define FLASH_SLOT_SIZE 32
 #define FLASH_NUM_SLOTS (FLASH_SIZE / FLASH_SLOT_SIZE)
 
-#define CONFIG_MAX_LEN (FLASH_SLOT_SIZE - 6)
+#define CONFIG_MAX_LEN (FLASH_SLOT_SIZE - 6)    // 1 x uint32 (index) and 1 x uint16 (crc)
 
 //////////////////////////////////////////////////////////////////////
 

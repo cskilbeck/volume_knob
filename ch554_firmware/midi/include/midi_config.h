@@ -5,7 +5,7 @@
 //
 // KEEP THIS IN SYNC WITH THE WEB UI, THAT'S A HASSLE!!!!
 
-#define CONFIG_VERSION 0x0A
+#define CONFIG_VERSION 0x09
 
 //////////////////////////////////////////////////////////////////////
 // flags in config.cf_flags

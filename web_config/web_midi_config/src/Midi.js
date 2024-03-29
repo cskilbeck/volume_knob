@@ -5,7 +5,7 @@ import { ref, toRaw } from 'vue'
 
 const CONFIG_LEN = 26;
 
-const CONFIG_VERSION = 0x0A
+const CONFIG_VERSION = 0x09
 
 const MIDI_MANUFACTURER_ID = 0x36;    // Cheetah Marketing, defunct?
 

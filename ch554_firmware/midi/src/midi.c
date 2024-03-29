@@ -244,7 +244,7 @@ void handle_sysex_in()
         // Get flash
         case sysex_request_get_flash: {
             load_config();
-            hexdump("READ", (uint8 *)&midi_config, sizeof(midi_config));
+            hexdump("READ Flash", (uint8 *)&midi_config, sizeof(midi_config));
             uint8 *buf = init_sysex_response(sysex_response_get_flash);
             if(buf != NULL) {
                 bytes_to_bits7((uint8 *)&midi_config, 0, sizeof(midi_config), buf);
@@ -256,7 +256,7 @@ void handle_sysex_in()
         case sysex_request_set_flash: {
 
             bits7_to_bytes(midi_recv_buffer, 5, CONFIG_MAX_LEN, (uint8 *)&midi_config);
-            hexdump("WRITE", (uint8 *)&midi_config, CONFIG_MAX_LEN);
+            hexdump("WRITE Flash", (uint8 *)&midi_config, CONFIG_MAX_LEN);
             uint8 *buf = init_sysex_response(sysex_response_set_flash_ack);
             if(buf != NULL) {
                 *buf = 0x01;

@@ -18,6 +18,10 @@
 
 #define usb_setup ((USB_SETUP_REQ *)usb_endpoint_0_buffer)
 
+static __code const uint8 usb_idle_mask[num_endpoints] = { 1, 2, 4 };
+
+//////////////////////////////////////////////////////////////////////
+
 void usb_isr(void) __interrupt(INT_NO_USB)
 {
     uint8 len;
@@ -341,7 +345,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
         case UIS_TOKEN_IN | 1:
             UEP1_T_LEN = 0;
             UEP1_CTRL = (UEP1_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_NAK;
-            usb.idle |= 1;
+            usb.idle |= usb_idle_mask[endpoint_1];
             break;
 
         // ENDPOINT 1 receive from host complete
@@ -356,7 +360,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
         case UIS_TOKEN_IN | 2:
             UEP2_T_LEN = 0;
             UEP2_CTRL = (UEP2_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_NAK;
-            usb.idle |= 2;
+            usb.idle |= usb_idle_mask[endpoint_2];
             break;
 
         // ENDPOINT 2 receive from host complete
@@ -371,7 +375,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
         case UIS_TOKEN_IN | 3:
             UEP3_T_LEN = 0;
             UEP3_CTRL = (UEP3_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_NAK;
-            usb.idle |= 4;
+            usb.idle |= usb_idle_mask[endpoint_3];
             break;
 
         // ENDPOINT 3 receive from host complete
@@ -526,9 +530,6 @@ static void usb_init_strings()
 
         n <<= 4;
     }
-    for(uint8 i = 0; i < product_name_string[0]; ++i) {
-        hexdump(">", product_name_string + i, 1);
-    }
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -553,8 +554,6 @@ void usb_wait_for_connection()
 }
 
 //////////////////////////////////////////////////////////////////////
-
-static __code const uint8 usb_idle_mask[num_endpoints] = { 1, 2, 4 };
 
 void usb_send(usb_endpoint_t endpoint, uint8 len)
 {
@@ -602,6 +601,5 @@ void usb_init()
     usb_device_config();
     usb_device_endpoint_config();
     usb_device_int_config();
-    usb.idle = 7;
-    printf("IDLE INIT: %d\n", usb.idle);
+    usb.idle = 0xff;
 }
