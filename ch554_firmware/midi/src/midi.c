@@ -477,7 +477,8 @@ void midi_update()
 
 void midi_rotate(int8 direction)
 {
-    if(config_flag(cf_rotate_reverse)) {
+    // direction is backwards so negate it _unless_ cf_rotate_reverse
+    if(!config_flag(cf_rotate_reverse)) {
         direction = -direction;
     }
 
