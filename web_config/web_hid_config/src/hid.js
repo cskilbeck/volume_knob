@@ -47,13 +47,13 @@ const flags = {
 
 let default_flags = flags.cf_led_flash_on_cw | flags.cf_led_flash_on_ccw | flags.cf_led_flash_on_press;
 
-let default_config = {
+const default_config = {
 
     config_version: CONFIG_VERSION,
 
     // what keys to send for rotation
-    key_clockwise: keys.consumer_names['Volume Up'],
-    key_counterclockwise: keys.consumer_names['Volume Down'],
+    key_clockwise: keys.consumer_names['Volume Up'] | 0x8000,
+    key_counterclockwise: keys.consumer_names['Volume Down'] | 0x8000,
 
     // key to send when pressed
     key_press: keys.consumer_names['Mute'],
@@ -98,14 +98,17 @@ let config_map = [
 
 function config_from_bytes(bytes, offset) {
 
-    let config = default_config;
+    let def_config = {};
+    let new_config = {};
+    Object.assign(def_config, default_config);
+    Object.assign(new_config, default_config);
 
     if (bytes[offset] != CONFIG_VERSION) {
-        return default_config;
+        return def_config;
     }
 
     if (bytes.BYTES_PER_ELEMENT != 1) {
-        return default_config;
+        return def_config;
     }
 
     let field_offset = 0;
@@ -123,16 +126,16 @@ function config_from_bytes(bytes, offset) {
         }
         if (field_size == 0) {
             console.log("ERROR: bad field size/offset array for unmarshalling config");
-            return default_config;
+            return def_config;
         }
         let value = 0;
         for (let i = 0; i < field_size; ++i) {
             value |= bytes[field_offset + offset] << (i * 8);
             field_offset += 1;
         }
-        config[field_name] = value;
+        new_config[field_name] = value;
     }
-    return config;
+    return new_config;
 }
 
 //////////////////////////////////////////////////////////////////////

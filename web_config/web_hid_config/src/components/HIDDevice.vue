@@ -194,7 +194,12 @@ function toggle_expand() {
 
 props.device.on_config_loaded = () => {
     stored_config = Object.assign({}, toRaw(props.device.config));
-    ui.value = ui_from_config(props.device.config) || hid.default_config;
+    let new_ui = ui_from_config(props.device.config);
+    if (!new_ui) {
+        console.log("No config, using default");
+        Object.assign(new_ui, hid.default_config);
+    }
+    ui.value = new_ui;
     nextTick(() => {
         config_changed.value = false;
     });
@@ -230,8 +235,9 @@ function json_from_config(config) {
 
 function reset_to_defaults() {
 
-    props.device.config = hid.default_config;
-    ui.value = ui_from_config(hid.default_config);
+    console.log("reset_to_defaults");
+    Object.assign(props.device.config, hid.default_config);
+    ui.value = ui_from_config(props.device.config);
 }
 
 //////////////////////////////////////////////////////////////////////
