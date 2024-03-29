@@ -166,7 +166,6 @@ void midi_flush_queue()
 
         if(num_bytes != 0) {
 
-            // hexdump("send", usb_endpoint_2_tx_buffer, num_bytes);
             usb_send(endpoint_2, num_bytes);
         }
     }
