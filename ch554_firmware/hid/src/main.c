@@ -24,6 +24,10 @@ void main()
     led_flash_n_times(BOOT_FLASH_LED_COUNT, BOOT_FLASH_LED_SPEED);
     usb_wait_for_connection();
 
+    tick_wait(250);
+
+    led_flash();
+
     current_process->on_init();
 
     bool button_state = false;

@@ -80,6 +80,7 @@ void hid_process_event(event_t e)
 
 void hid_init()
 {
+    puts("HID INIT");
     QUEUE_INIT(hid_queue);
 }
 

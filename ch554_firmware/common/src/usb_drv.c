@@ -57,14 +57,14 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                         switch(usb_setup->wValueH) {
 
                         case USB_DESCR_TYP_DEVICE:
-                            usb_puts("USB:GetDevice");
+                            usb_puts("USB:GetDesc:Device");
                             usb.current_descriptor = usb_cfg.device_descriptor->p;
                             len = usb_cfg.device_descriptor->len;
                             break;
 
                         case USB_DESCR_TYP_CONFIG: {
                             uint8 desc = usb_setup->wValueL;
-                            usb_printf("USB:GetConfig %d\n", desc);
+                            usb_printf("USB:GetDesc:Config %d\n", desc);
                             len = 0xff;
                             if(desc < usb_cfg.num_config_descriptors) {
                                 usb.current_config_desc = usb_cfg.config_descriptors[desc].p;
@@ -76,7 +76,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                         case USB_DESCR_TYP_STRING: {
                             len = 0xff;
                             uint8 desc = usb_setup->wValueL;
-                            usb_printf("USB:GetString %d\n", desc);
+                            usb_printf("USB:GetDesc:String %d\n", desc);
                             if(desc < usb_cfg.num_string_descriptors) {
                                 usb.current_descriptor = usb_cfg.string_descriptors[desc].p;
 
@@ -89,7 +89,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                         case USB_DESCR_TYP_REPORT: {
                             len = 0xff;
                             uint8 desc = usb_setup->wIndexL;    // !! Index!? I guess...
-                            usb_printf("USB:GetReport %d\n", desc);
+                            usb_printf("USB:GetDesc:Report %d\n", desc);
                             if(desc < usb_cfg.num_report_descriptors) {
                                 usb.current_descriptor = usb_cfg.report_descriptors[desc].p;
                                 len = usb_cfg.report_descriptors[desc].len;
@@ -117,28 +117,28 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                         break;
 
                     case USB_SET_ADDRESS:
-                        usb_puts("SetAddr");
+                        usb_puts("USB:SetAddr");
                         usb.setup_len = usb_setup->wValueL;
                         break;
 
                     case USB_GET_CONFIGURATION:
-                        usb_puts("GetConfig");
+                        usb_puts("USB:GetConfiguration");
                         usb_endpoint_0_buffer[0] = usb.config;
                         usb.setup_len = MIN(usb.setup_len, 1);
                         break;
 
                     case USB_SET_CONFIGURATION:
-                        usb_puts("SetConfig");
+                        usb_puts("USB:SetConfiguration");
                         usb.config = usb_setup->wValueL;
                         usb.active = true;
                         break;
 
                     case USB_SET_INTERFACE:
-                        usb_puts("SetInterface...?");
+                        usb_puts("USB:SetInterface...?");
                         break;
 
                     case USB_GET_INTERFACE:
-                        usb_puts("GetInterface...?");
+                        usb_puts("USB:GetInterface...?");
                         break;
 
                     case USB_CLEAR_FEATURE:
@@ -149,9 +149,9 @@ void usb_isr(void) __interrupt(INT_NO_USB)
 
                             if(U16(usb_setup->wValueL) == 0x01) {
                                 if((usb.current_config_desc[7] & 0x20) != 0) {
-                                    usb_puts("Wake");
+                                    usb_puts("USB:Wake");
                                 } else {
-                                    usb_puts("Wake not supported");
+                                    usb_puts("USB:Wake not supported");
                                     len = 0xFF;    // operation failed
                                 }
                             } else {
@@ -262,12 +262,12 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                     switch(usb.setup_request) {
 
                     case HID_SET_REPORT:
-                        usb_printf("Set report\n");
+                        usb_printf("USB:Set report\n");
                         len = 0;
                         break;
 
                     case HID_SET_IDLE:
-                        usb_printf("Set Idle\n");
+                        usb_printf("USB:Set Idle\n");
                         len = 0;
                         break;
 
@@ -275,12 +275,12 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                     case HID_GET_IDLE:
                     case HID_GET_PROTOCOL:
                     case HID_SET_PROTOCOL:
-                        usb_printf("OK Setup req: %d\n", usb.setup_request);
+                        usb_printf("USB:OK Setup req: %d\n", usb.setup_request);
                         len = 0;
                         break;
 
                     default:
-                        usb_printf("NOT OK Setup req: %d\n", usb.setup_request);
+                        usb_printf("USB:NOT OK Setup req: %d\n", usb.setup_request);
                         len = 0xff;
                         break;
                     }
@@ -291,7 +291,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
 
             if(len == 0xff) {    // if len == 0xff, some error has occurred
 
-                usb_puts("Err - stalling");
+                usb_puts("USB:Err - stalling");
                 usb.setup_request = 0xff;
                 UEP0_CTRL = bUEP_R_TOG | bUEP_T_TOG | UEP_R_RES_STALL | UEP_T_RES_STALL;    // set the data toggles to 1 and indicate stall
 
@@ -394,7 +394,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
 
     // bus reset
     if(UIF_BUS_RST) {
-        usb_puts("USB Reset");
+        usb_puts("USB:Reset");
         UEP0_CTRL = UEP_R_RES_ACK | UEP_T_RES_NAK;
         UEP1_CTRL = bUEP_AUTO_TOG | UEP_T_RES_NAK | UEP_R_RES_ACK;
         UEP2_CTRL = bUEP_AUTO_TOG | UEP_T_RES_NAK | UEP_R_RES_ACK;
@@ -412,7 +412,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
         UIF_SUSPEND = 0;
         // Hang up
         if(USB_MIS_ST & bUMS_SUSPEND) {
-            usb_puts("USB Suspend");
+            usb_puts("USB:Suspend");
             while(XBUS_AUX & bUART0_TX) {    // Wait for msg to send
             }
             SAFE_MOD = 0x55;
@@ -490,7 +490,7 @@ static void usb_device_endpoint_config()
 static void usb_init_strings()
 {
     // insert chip id into serial string and product name string
-    usb_puts("USB init strings");
+    usb_puts("USB:Init strings");
 
     ASSERT(usb_cfg.product_name_length < (sizeof(product_name_string) / 2));
 

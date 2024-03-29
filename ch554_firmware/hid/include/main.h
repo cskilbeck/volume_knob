@@ -6,8 +6,13 @@
 //////////////////////////////////////////////////////////////////////
 // device type config
 
+// USB Micro-B female
 #define DEVICE_ORIGINAL 0
+
+// USB A male
 #define DEVICE_DIRECT 1
+
+// CH554 Dev board
 #define DEVICE_DEVKIT 2
 
 #if !defined(DEVICE)
