@@ -97,7 +97,7 @@ const flags = {
 
 let default_flags = flags.cf_led_flash_on_limit | flags.cf_led_flash_on_click | flags.cf_acceleration_lsb | flags.cf_rotate_extended | flags.cf_btn_momentary;
 
-let default_config = {
+const default_config = {
     config_version: CONFIG_VERSION, // config struct version - must be 1st byte!
     rot_control_msb: 7,             // Control Change index MSB,LSB for knob
     rot_control_lsb: 39,            // Control Change index MSB,LSB for knob
@@ -152,14 +152,17 @@ let config_map = [
 
 function config_from_bytes(bytes) {
 
-    let config = default_config;
+    let def_config = {};
+    let new_config = {};
+    Object.assign(def_config, default_config);
+    Object.assign(new_config, default_config);
 
     if (bytes[0] != CONFIG_VERSION) {
-        return default_config;
+        return def_config;
     }
 
     if (bytes.BYTES_PER_ELEMENT != 1) {
-        return default_config;
+        return def_config;
     }
 
     let field_offset = 0;
@@ -177,16 +180,16 @@ function config_from_bytes(bytes) {
         }
         if (field_size == 0) {
             console.log("ERROR: bad field size/offset array for unmarshalling config");
-            return default_config;
+            return def_config;
         }
         let value = 0;
         for (let i = 0; i < field_size; ++i) {
             value |= bytes[field_offset] << (i * 8);
             field_offset += 1;
         }
-        config[field_name] = value;
+        new_config[field_name] = value;
     }
-    return config;
+    return new_config;
 }
 
 //////////////////////////////////////////////////////////////////////
