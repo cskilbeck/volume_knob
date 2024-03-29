@@ -3,7 +3,7 @@
 //////////////////////////////////////////////////////////////////////
 
 #if defined(DEBUG)
-// #define USB_LOGGING
+#define USB_LOGGING
 #endif
 
 #if defined(USB_LOGGING)
@@ -75,7 +75,10 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                             usb_printf("USB:GetString %d\n", desc);
                             if(desc < usb_cfg.num_string_descriptors) {
                                 usb.current_descriptor = usb_cfg.string_descriptors[desc].p;
-                                len = usb_cfg.string_descriptors[desc].len;
+
+                                // string len comes from byte[0], not descriptor len
+                                // because it might have been modified (product name)
+                                len = usb_cfg.string_descriptors[desc].p[0];
                             }
                         } break;
 
@@ -104,7 +107,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
                         memcpy(usb_endpoint_0_buffer, usb.current_descriptor, len);
                         usb.setup_len -= len;
                         usb.current_descriptor += len;
-                        usb_printf("Start send %d\n", len);
+                        // usb_printf("Start send %d\n", len);
 
                         // remainder will get sent in subsequent packets
                         break;
@@ -305,7 +308,7 @@ void usb_isr(void) __interrupt(INT_NO_USB)
             case USB_GET_DESCRIPTOR:
                 len = MIN(usb.setup_len, USB_PACKET_SIZE);
                 if(len != 0) {
-                    usb_printf(" more send %d\n", len);
+                    // usb_printf(" more send %d\n", len);
                     memcpy(usb_endpoint_0_buffer, usb.current_descriptor, len);
                     usb.setup_len -= len;
                     usb.current_descriptor += len;
@@ -483,6 +486,7 @@ static void usb_device_endpoint_config()
 static void usb_init_strings()
 {
     // insert chip id into serial string and product name string
+    usb_puts("USB init strings");
 
     ASSERT(usb_cfg.product_name_length < (sizeof(product_name_string) / 2));
 
@@ -522,6 +526,9 @@ static void usb_init_strings()
 
         n <<= 4;
     }
+    for(uint8 i = 0; i < product_name_string[0]; ++i) {
+        hexdump(">", product_name_string + i, 1);
+    }
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -547,37 +554,40 @@ void usb_wait_for_connection()
 
 //////////////////////////////////////////////////////////////////////
 
+static __code const uint8 usb_idle_mask[num_endpoints] = { 1, 2, 4 };
+
 void usb_send(usb_endpoint_t endpoint, uint8 len)
 {
-    uint8 mask = 0xff;
     switch(endpoint) {
+
     case endpoint_1:
         UEP1_T_LEN = len;
         UEP1_CTRL = (UEP1_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_ACK;
-        mask = (uint8)(~(1 << 0));
         break;
+
     case endpoint_2:
         UEP2_T_LEN = len;
         UEP2_CTRL = (UEP2_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_ACK;
-        mask = (uint8)(~(1 << 1));
         break;
+
     case endpoint_3:
         UEP3_T_LEN = len;
         UEP3_CTRL = (UEP3_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_ACK;
-        mask = (uint8)(~(1 << 2));
         break;
+
+    default:
+        return;
+
         // case endpoint_4:
         //     UEP4_T_LEN = len;
         //     UEP4_CTRL = (UEP4_CTRL & ~MASK_UEP_T_RES) | UEP_T_RES_ACK;
         //     mask = (uint8)(~(1 << 3));
         //     break;
     }
-    usb.idle &= mask;
+    usb.idle &= ~usb_idle_mask[endpoint];
 }
 
 //////////////////////////////////////////////////////////////////////
-
-static uint8 usb_idle_mask[num_endpoints] = { 1, 2, 4 };
 
 bool usb_is_endpoint_idle(usb_endpoint_t endpoint)
 {
@@ -592,4 +602,6 @@ void usb_init()
     usb_device_config();
     usb_device_endpoint_config();
     usb_device_int_config();
+    usb.idle = 7;
+    printf("IDLE INIT: %d\n", usb.idle);
 }
