@@ -2,14 +2,6 @@
 
 //////////////////////////////////////////////////////////////////////
 
-#if DEVICE == DEVICE_DEVKIT
-#define ROTATE_REVERSE cf_reverse_rotation
-#else
-#define ROTATE_REVERSE 0
-#endif
-
-//////////////////////////////////////////////////////////////////////
-
 __code const hid_config_t default_hid_config = {
     CONFIG_VERSION,                                                     //
     MEDIA_KEY(KEY_MEDIA_VOLUMEUP),                                      //

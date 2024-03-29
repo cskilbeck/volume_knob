@@ -60,6 +60,10 @@
 #define LED_ON 1
 #define LED_OFF 0
 
+#else
+
+#error DEVICE NOT DEFINED!?
+
 #endif
 
 SBIT(ROTA_BIT, ROTA_PORT, ROTA_PIN);

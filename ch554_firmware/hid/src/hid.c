@@ -113,7 +113,7 @@ void hid_rotate(int8 direction)
 
         switch(direction) {
 
-        case -1:
+        case ROTATE_CW:
             if((hid_config.flags & cf_led_flash_on_cw) != 0) {
                 led_flash();
             }
@@ -121,7 +121,7 @@ void hid_rotate(int8 direction)
             QUEUE_PUSH(hid_queue, (uint8)(event_clockwise | event_keyup));
             break;
 
-        case 1:
+        case ROTATE_CCW:
             if((hid_config.flags & cf_led_flash_on_ccw) != 0) {
                 led_flash();
             }
