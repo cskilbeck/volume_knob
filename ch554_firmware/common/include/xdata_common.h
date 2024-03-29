@@ -17,7 +17,7 @@ XDATA uint8 usb_endpoint_3_tx_buffer[USB_PACKET_SIZE];
 
 // serial number stuff - see usb_init_strings()
 XDATA uint8 serial_number_string[(2 + 2 * SERIAL_LEN)];    // e.g "012345678"
-XDATA uint8 product_name_string[(2 + 2 * 32)];             // Max product name is 24 + 8
+XDATA uint8 product_name_string[(2 + 2 * 48)];             // Max product name is 24 + 8
 
 XDATA struct usb_data usb;
 
