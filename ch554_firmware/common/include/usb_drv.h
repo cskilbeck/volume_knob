@@ -16,7 +16,8 @@ typedef enum usb_endpoint
     endpoint_1 = 0,
     endpoint_2 = 1,
     endpoint_3 = 2,
-    endpoint_4 = 3,    // endpoint 4 not supported
+    //endpoint_4 = 3,    // endpoint 4 not supported
+
     num_endpoints = 3
 
 } usb_endpoint_t;

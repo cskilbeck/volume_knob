@@ -64,10 +64,10 @@ void main()
             current_process->on_rotate(direction);
         }
 
-        for(uint8 i = 1; i < 4; ++i) {    // process or discard any incoming USB data
+        for(uint8 i = 0; i < num_endpoints; ++i) {    // process or discard any incoming USB data
             uint8 got = usb.recv_len[i];
-            if(got != 0 && current_process->on_usb_receive[i - 1] != NULL) {
-                current_process->on_usb_receive[i - 1](got);
+            if(got != 0 && current_process->on_usb_receive[i] != NULL) {
+                current_process->on_usb_receive[i](got);
             }
             usb.recv_len[i] = 0;
         }
