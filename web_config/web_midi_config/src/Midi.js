@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////
 // web midi stuff
 
-import { ref, toRaw } from 'vue'
+import { ref } from 'vue'
 
 const CONFIG_LEN = 26;
 
@@ -101,8 +101,8 @@ const default_config = {
     config_version: CONFIG_VERSION, // config struct version - must be 1st byte!
     rot_control_msb: 7,             // Control Change index MSB,LSB for knob
     rot_control_lsb: 39,            // Control Change index MSB,LSB for knob
-    btn_control_msb: 120,             // Control Change index MSB,LSB for button
-    btn_control_lsb: 0,            // Control Change index MSB,LSB for button
+    btn_control_msb: 120,           // Control Change index MSB,LSB for button
+    btn_control_lsb: 0,             // Control Change index MSB,LSB for button
     btn_value_a_14: 0x3fff,         // 1st,2nd button values or pressed/released values if cf_btn_momentary (14 bit mode)
     btn_value_b_14: 0,              // 1st,2nd button values or pressed/released values if cf_btn_momentary (14 bit mode)
     btn_value_a_7: 0x7f,            // 1st,2nd button values or pressed/released values if cf_btn_momentary (7 bit mode)
