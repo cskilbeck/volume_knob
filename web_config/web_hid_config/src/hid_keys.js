@@ -488,7 +488,7 @@ for (const [key, value] of Object.entries(consumer_control_keys)) {
         keycode: key,
         is_consumer_key: true
     });
-    consumer_names[value] = key | 0;
+    consumer_names[value] = key | 0x8000;
 }
 
 key_codes.sort((x, y) => {

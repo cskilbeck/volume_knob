@@ -52,8 +52,8 @@ const default_config = {
     config_version: CONFIG_VERSION,
 
     // what keys to send for rotation
-    key_clockwise: keys.consumer_names['Volume Up'] | 0x8000,
-    key_counterclockwise: keys.consumer_names['Volume Down'] | 0x8000,
+    key_clockwise: keys.consumer_names['Volume Up'],
+    key_counterclockwise: keys.consumer_names['Volume Down'],
 
     // key to send when pressed
     key_press: keys.consumer_names['Mute'],

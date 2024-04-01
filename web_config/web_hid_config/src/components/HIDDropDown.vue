@@ -152,29 +152,29 @@ function keycode_name(keycode) {
 
 <template>
     <div class="row mt-2 me-0 ms-2">
-        <div class="col-8 mt-1 px-0">
+        <div class="col mt-1 px-0">
             <slot></slot>
         </div>
-        <div class="col-4">
-        </div>
     </div>
+
     <div class="input-group">
 
-        <button class="btn btn-sm tertiary-bg small-text form-select text-start form-control border" type="button" data-bs-toggle="dropdown">
-            <span class="d-inline-block">
-                {{ keycode_name(current_keycode) }} </span>
-        </button>
+        <div class="btn-group" data-bs-toggle="dropdown">
+            <button class="tertiary-bg small-text text-start form-control border-secondary-subtle rounded-0" style="min-width: 8rem;">
+                {{ keycode_name(current_keycode) }}
+            </button>
+        </div>
 
-        <ul class="dropdown-menu rounded-0 py-0" style="width:25rem">
+        <ul class="dropdown-menu rounded-0 py-0">
 
             <div class="input-group border-bottom">
                 <input type="text" v-model="search_text" class="form-control border-0 rounded-0 my-0 pt-1 shadow-none small-text" :class="found_text ? '' : 'dimmer-text'">
-                <button type="button" class="btn bg-transparent py-0 float-end small-text">
+                <button type="button" class="btn bg-transparent py-0 px-0 float-end small-text">
                     <i class="btn btn-sm btn-close" @click="search_text = ''; $event.stopPropagation();"></i>
                 </button>
             </div>
 
-            <div class="limit-height">
+            <div class="limit-height" style="min-width: 25rem;">
                 <li v-for="key of matching_keys" class="w-100">
                     <a class="dropdown-item small-text" href="#" @click="on_select_key(key)">
                         <div class="d-flex flex-row">
@@ -184,7 +184,7 @@ function keycode_name(keycode) {
                             <div class="me-2">
                                 {{ key.keycode.toString(16).toUpperCase().padStart(4, '0') }}
                             </div>
-                            <span class="w-25 rounded mx-0 px-0 bg-secondary-subtle text-center">
+                            <span class="mx-0 px-0 bg-secondary-subtle text-center" style="min-width: 4rem;">
                                 {{ key.is_consumer_key ? "CC" : "Keyboard" }}
                             </span>
                         </div>
@@ -192,7 +192,7 @@ function keycode_name(keycode) {
                 </li>
             </div>
         </ul>
-        <button class="btn btn-sm dropdown-toggle border" href="#" role="button" data-bs-toggle="dropdown" :disabled="(current_keycode & 0x8000) != 0">
+        <button class="btn btn-sm dropdown-toggle border-secondary-subtle tertiary-bg rounded-0" href="#" role="button" data-bs-toggle="dropdown" :disabled="(current_keycode & 0x8000) != 0">
             Modifiers
         </button>
         <form class="dropdown-menu modifiers-dropdown rounded-0">

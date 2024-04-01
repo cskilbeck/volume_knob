@@ -24,7 +24,6 @@ const props = defineProps({
 // 3 modal dialogs
 
 const flashModal = ref(false);
-const disconnectModal = ref(false);
 const pasteConfigModal = ref(false);
 const errorModal = ref(false);
 
@@ -236,6 +235,7 @@ function json_from_config(config) {
 function reset_to_defaults() {
 
     console.log("reset_to_defaults");
+    console.log(hid.default_config);
     Object.assign(props.device.config, hid.default_config);
     ui.value = ui_from_config(props.device.config);
 }
@@ -299,12 +299,12 @@ function rotation_matrix(cx, cy, angle) {
         </symbol>
     </svg>
 
-    <div class="container border rounded-3 bg-device border-secondary bg-secondary-subtle pt-2 mb-4" :class="collapsed ? 'pb-2' : ' pb-4'">
+    <div class="container border rounded-0 bg-device border-secondary bg-secondary-subtle pt-2 mb-4" :class="collapsed ? 'pb-2' : ' pb-4'" style="min-width: 1000px;">
 
-        <div class='row'>
+        <div class='row py-1'>
             <div class='col text-left ms-2' :class="!collapsed ? 'mb-1' : ''">
                 <div class="row">
-                    <div class="col ps-0">
+                    <div class="col-5 ps-0">
                         <div class="row">
                             <div class="col pe-0 me-0">
                                 <button class="btn" @click="toggle_expand()" style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem;">
@@ -314,50 +314,31 @@ function rotation_matrix(cx, cy, angle) {
                                 </button>
                                 <strong>{{ device.name }}</strong>
                                 <span class="d-inline-block" style="width:1em"></span>
-                                <input class="bg-secondary-subtle text-secondary rounded focus-ring ps-2 bright-focus-input" type="text" @blur="save_name()" v-model="device_label"
+                                <input class="bg-secondary-subtle text-secondary rounded-0 focus-ring ps-2 bright-focus-input" type="text" @blur="save_name()" v-model="device_label"
                                     @keypress='(e) => { e.key === "Enter" && e.currentTarget.blur(); }'>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
+                    <div class="col-5">
+                        <div class='btn-group rounded-0' role="group" v-if='device.active'>
 
-        <div class='row p-1' v-if="!collapsed">
-
-            <!-- Name, Serial, Buttons -->
-
-            <div class='col-lg-3'>
-                <div class='row'>
-                    <div class="col-6 text-center">
-                        <div class="small" v-if="device.active">
-                            Firmware version
-                            <div class="text-body-secondary font-monospace">
-                                {{ props.device.firmware_version_str }}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class='btn-group-vertical' role="group" v-if='device.active'>
-
-                            <button class='btn btn-sm tertiary-bg border border-secondary-subtle' @click='hid.flash_device_led(device)'>
-                                <span class="mx-2">Flash LED</span>
+                            <button class='btn btn-sm rounded-0 tertiary-bg border border-secondary-subtle' @click='hid.flash_device_led(device)'>
+                                Flash LED
                             </button>
 
-                            <button class='btn btn-sm tertiary-bg border border-secondary-subtle' @click='hid.get_config(device)'>
-                                <span class="mx-2">Read from device</span>
+                            <button class='btn btn-sm rounded-0 tertiary-bg border border-secondary-subtle' @click='hid.get_config(device)'>
+                                Read from device
                             </button>
 
-                            <button class='btn btn-sm tertiary-bg border border-secondary-subtle' :class="{ 'red-text': config_changed }" @click='store_config()'>
-                                <span class="mx-2">Store to device</span>
+                            <button class='btn btn-sm rounded-0 tertiary-bg border border-secondary-subtle' :class="{ 'red-text': config_changed }" @click='store_config()'>
+                                Store to device
                             </button>
 
-                            <div class="dropdown w-100">
-                                <button class="w-100 btn btn-sm rounded-0 tertiary-bg border-secondary-subtle dropdown-toggle border-top-0" href="#" role="button" data-bs-toggle="dropdown"
-                                    aria-expanded="false">
+                            <div class="btn-group rounded-0" role="group">
+                                <button class="w-100 btn btn-sm rounded-0 tertiary-bg border-secondary-subtle dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                     Settings
                                 </button>
-                                <ul class="dropdown-menu">
+                                <ul class="dropdown-menu rounded-0">
                                     <li>
                                         <a class="dropdown-item" href="#" @click="fileDownload(json_from_config(config_from_ui()), 'tiny_volume_knob_settings.json');">
                                             Export
@@ -384,130 +365,145 @@ function rotation_matrix(cx, cy, angle) {
                                 </ul>
                             </div>
 
-                            <button class='btn btn-sm tertiary-bg border border-secondary-subtle' @click='flashModal = true'>
-                                <span class="mx-2">Advanced</span>
+                            <button class='btn rounded-0 btn-sm tertiary-bg border border-secondary-subtle' @click='flashModal = true'>
+                                Advanced
                             </button>
 
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- Rotation -->
-
-            <div v-if='device.active' class='col-lg-3 mx-3 bg-body border border-secondary rounded'>
-                <div class="row pt-2">
-                    <div class='col-8'>
-                        <strong>Rotation</strong>
-                    </div>
-                    <div class='col-3'>
-                        <div class="form-check pb-0 pt-1 m-0">
-                            <input class="form-check-input" type="checkbox" id="reverse_rotation" v-model="ui.cf_reverse_rotation">
-                            <label class="form-check-label user-select-none" for="reverse_rotation">
-                                Reversed
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                <div class="row mb-3">
-                    <div class='col-lg'>
+                    <div class="col-2 small pt-1 pe-3" v-if="device.active">
                         <div class="row">
-                            <div class='col mx-3'>
-                                <HIDDropDown v-model:keycode="ui.key_clockwise" v-model:mod="ui.mod_clockwise">
-                                    Clockwise
-                                </HIDDropDown>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class='col mx-3'>
-                                <HIDDropDown v-model:keycode="ui.key_counterclockwise" v-model:mod="ui.mod_counterclockwise">
-                                    Counter-clockwise
-                                </HIDDropDown>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Button -->
-
-            <div v-if='device.active' class='col-lg-3 mx-3 bg-body border border-secondary rounded'>
-                <div class="row pt-2">
-                    <div class="col mb-1">
-                        <strong>Button</strong>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col mx-3">
-                        <HIDDropDown v-model:keycode="ui.key_press" v-model:mod="ui.mod_press">Key</HIDDropDown>
-                    </div>
-                </div>
-            </div>
-
-            <!-- LED -->
-
-            <div v-if='device.active' class='col-lg-2 mx-3 bg-body border border-secondary rounded'>
-                <div class="row pt-2">
-                    <div class="col mb-1">
-                        <strong>LED</strong>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col">
-                        <div class="row">
-                            <div class="col">
-                                Flash on:
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col">
-                            <div class="form-check">
-                                <label class="form-check-label user-select-none" for="flash_on_rot">
-                                    Rotate clockwise
-                                </label>
-                                <input class="form-check-input pull-left" type="checkbox" id="flash_on_rot" v-model="ui.cf_led_flash_on_cw">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col">
-                            <div class="form-check">
-                                <label class="form-check-label user-select-none" for="flash_on_limit">
-                                    Rotate counter-clockwise
-                                </label>
-                                <input class="form-check-input pull-left" type="checkbox" id="flash_on_limit" v-model="ui.cf_led_flash_on_ccw">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col">
-                            <div class="form-check">
-                                <label class="form-check-label user-select-none" for="flash_on_click">
-                                    Press
-                                </label>
-                                <input class="form-check-input pull-left" type="checkbox" id="flash_on_click" v-model="ui.cf_led_flash_on_press">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col">
-                            <div class="form-check">
-                                <label class="form-check-label user-select-none" for="flash_on_release">
-                                    Release
-                                </label>
-                                <input class="form-check-input pull-left" type="checkbox" id="flash_on_release" v-model="ui.cf_led_flash_on_release">
+                            <div class="col text-end">
+                                Firmware version
+                                <span class="text-body-secondary font-monospace me-2">{{ props.device.firmware_version_str }}</span>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+
+        <div class="container">
+            <div class='row p-1' v-if="!collapsed">
+
+                <!-- Rotation -->
+
+                <div v-if='device.active' class='col-4 bg-body border border-secondary rounded-0'>
+                    <div class="row pt-2">
+                        <div class='col'>
+                            <strong>Rotation</strong>
+                        </div>
+                        <div class='col'>
+                            <div class="form-check form-check-reverse text-end">
+                                <label class="form-check-label user-select-none" for="reverse_rotation">
+                                    Reversed
+                                </label>
+                                <input class="form-check-input" type="checkbox" id="reverse_rotation" v-model="ui.cf_reverse_rotation">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class='col'>
+                            <div class="row">
+                                <div class='col mx-3'>
+                                    <HIDDropDown v-model:keycode="ui.key_clockwise" v-model:mod="ui.mod_clockwise">
+                                        Clockwise
+                                    </HIDDropDown>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class='col mx-3'>
+                                    <HIDDropDown v-model:keycode="ui.key_counterclockwise" v-model:mod="ui.mod_counterclockwise">
+                                        Counter-clockwise
+                                    </HIDDropDown>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Button -->
+
+                <div v-if='device.active' class='col-4 bg-body border-top border-bottom border-secondary'>
+                    <div class="row pt-2">
+                        <div class="col mb-1">
+                            <strong>Button</strong>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col mx-3">
+                            <HIDDropDown v-model:keycode="ui.key_press" v-model:mod="ui.mod_press">Key</HIDDropDown>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LED -->
+
+                <div v-if='device.active' class='col-4 bg-body border border-secondary rounded-0'>
+                    <div class="row pt-2">
+                        <div class="col mb-1">
+                            <strong>LED</strong>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <div class="row">
+                                <div class="col">
+                                    Flash on:
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <div class="form-check">
+                                    <label class="form-check-label user-select-none" for="flash_on_rot">
+                                        Rotate clockwise
+                                    </label>
+                                    <input class="form-check-input pull-left" type="checkbox" id="flash_on_rot" v-model="ui.cf_led_flash_on_cw">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <div class="form-check">
+                                    <label class="form-check-label user-select-none" for="flash_on_limit">
+                                        Rotate counter-clockwise
+                                    </label>
+                                    <input class="form-check-input pull-left" type="checkbox" id="flash_on_limit" v-model="ui.cf_led_flash_on_ccw">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <div class="form-check">
+                                    <label class="form-check-label user-select-none" for="flash_on_click">
+                                        Press
+                                    </label>
+                                    <input class="form-check-input pull-left" type="checkbox" id="flash_on_click" v-model="ui.cf_led_flash_on_press">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col">
+                                <div class="form-check">
+                                    <label class="form-check-label user-select-none" for="flash_on_release">
+                                        Release
+                                    </label>
+                                    <input class="form-check-input pull-left" type="checkbox" id="flash_on_release" v-model="ui.cf_led_flash_on_release">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
     </div>
 
     <!-- Modals -->
 
-    <Modal v-model="flashModal" maxwidth="25%" closeable header="Advanced Functions">
+    <Modal v-model="flashModal" maxwidth="550px" minwidth="550px" closeable header="Advanced Functions">
         <div class="row mx-2 my-1">
             <div class="col">
                 <p class="text-center red-text">
@@ -526,22 +522,6 @@ function rotation_matrix(cx, cy, angle) {
             <div class="col text-center">
                 <button class='btn btn-sm btn-danger' @click='hid.goto_firmware_update_mode(device); flashModal = false'>
                     Put device in Firmware Update Mode
-                </button>
-            </div>
-        </div>
-    </Modal>
-
-    <Modal v-model="disconnectModal" maxwidth="25%" closeable header="Disconnect">
-        <div class="row mx-2">
-            <div class="col text-center">
-                Sorry, I can't seem to make disconnect work.<br>
-                You have to close the tab to disconnect all devices.
-            </div>
-        </div>
-        <div class="row mt-4 mb-2">
-            <div class="col text-center">
-                <button class="btn btn-primary btn-sm" @click="disconnectModal = false">
-                    Bummer
                 </button>
             </div>
         </div>
