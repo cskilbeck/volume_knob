@@ -19,7 +19,8 @@
 			"stdint.h": "c",
 			"vs_lint.h": "c",
 			"usb_config.h": "c",
-			"xdata_extra.h": "c"
+			"xdata_extra.h": "c",
+			"stdarg.h": "c"
 		}
 	}
 }

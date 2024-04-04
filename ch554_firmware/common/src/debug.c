@@ -139,6 +139,20 @@ void watchdog_feed(uint8 count)
 
 //////////////////////////////////////////////////////////////////////
 
+void nano_putchar(uint8_t c)
+{
+#if defined(DEBUG)
+    while(!TI) {
+    }
+    TI = 0;
+    SBUF = (uint8)c;
+#else
+    (void)c;
+#endif
+}
+
+//////////////////////////////////////////////////////////////////////
+
 #if defined(DEBUG)
 
 //////////////////////////////////////////////////////////////////////
@@ -172,13 +186,12 @@ void uart0_init()
 
 //////////////////////////////////////////////////////////////////////
 
-int putchar(int c)
+void puts(char const *line)
 {
-    while(!TI) {
+    while(*line) {
+        nano_putchar(*line++);
     }
-    TI = 0;
-    SBUF = (uint8)c;
-    return 0;
+    nano_putchar('\n');
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -188,13 +201,11 @@ void hexdump(char __code const *msg, uint8 *p, uint8 n)
     printf("%s:", msg);
     while(n != 0) {
         uint8 b = *p;
-        uint8 lsn = b & 0xf;    // workaround - printf_fast can't do leading zeroes?
-        uint8 msn = b >> 4;
-        printf("%1x%1x", msn, lsn);
+        printf("%02x", *p);
         n -= 1;
         p += 1;
     }
-    putchar('\n');
+    nano_putchar('\n');
 }
 
 #endif

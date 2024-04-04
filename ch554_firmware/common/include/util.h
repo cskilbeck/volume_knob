@@ -40,14 +40,14 @@ void hard_fault();
 //////////////////////////////////////////////////////////////////////
 
 #if defined(DEBUG)
-#define ASSERT(x)                                                                             \
-    do {                                                                                      \
-        if(!(x)) {                                                                            \
+#define ASSERT(x)                                                                            \
+    do {                                                                                     \
+        if(!(x)) {                                                                           \
             printf("\n\nASSERT FAILED: %s\n\nAt line %d of %s:\n\n", #x, __LINE__, __FILE__); \
-            while(XBUS_AUX & bUART0_TX) {                                                     \
-            }                                                                                 \
-            hard_fault();                                                                     \
-        }                                                                                     \
+            while(XBUS_AUX & bUART0_TX) {                                                    \
+            }                                                                                \
+            hard_fault();                                                                    \
+        }                                                                                    \
     } while(0)
 #else
 #define ASSERT(...) NOP_MACRO

@@ -21,11 +21,14 @@
 #define __using(x)
 #define __interrupt(x)
 #define __naked
+#define __reentrant
 
 #else
 
 #define STATIC_ASSERT _Static_assert
 #define SIZEOF_LSB(x) (sizeof(x) & 0xff)
 #define SIZEOF_MSB(x) (sizeof(x) >> 8)
+
+#pragma disable_warning 110
 
 #endif

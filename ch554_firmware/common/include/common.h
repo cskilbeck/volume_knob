@@ -12,9 +12,9 @@
 //////////////////////////////////////////////////////////////////////
 
 #if defined(DEBUG)
-#include <stdio.h>
-#define printf printf_fast
+#include "nanoprintf.h"
 #else
+#define print(...) NOP_MACRO
 #define printf(...) NOP_MACRO
 #define puts(...) NOP_MACRO
 #endif
@@ -25,11 +25,12 @@
 #include "ch554.h"
 #include "ch554_usb.h"
 #include "types.h"
+#include "debug.h"
+
 #include "process_drv.h"
 #include "util.h"
 #include "xdata_common.h"
 #include "gpio_drv.h"
-#include "debug.h"
 #include "tick.h"
 #include "usb_drv.h"
 #include "led.h"

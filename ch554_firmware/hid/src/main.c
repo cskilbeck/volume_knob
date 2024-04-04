@@ -17,7 +17,7 @@ void main()
 
     EA = 1;    // global irq enable
 
-    printf(CLEAR_CONSOLE "---------- %s ----------\nCHIP ID: %08lx\n", current_process->process_name, chip_id);
+    printf(CLEAR_CONSOLE "---------- %s ----------\nCHIP ID: %08lX\n", current_process->process_name, chip_id);
 
     load_config();
     usb_init();

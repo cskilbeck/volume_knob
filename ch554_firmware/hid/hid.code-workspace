@@ -14,7 +14,9 @@
 			"usb_config.h": "c",
 			"lint.h": "c",
 			"compiler.h": "c",
-			"stdint.h": "c"
+			"stdint.h": "c",
+			"ch554.h": "c",
+			"nanoprintf.h": "c"
 		},
 		"explorer.excludeGitIgnore": true
 	}
