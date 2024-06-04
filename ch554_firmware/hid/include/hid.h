@@ -36,7 +36,17 @@ typedef struct _keyboard_hid_report
 
 //////////////////////////////////////////////////////////////////////
 
-enum hid_custom_command
+typedef struct _mouse_hid_report
+{
+    uint8 buttons;
+    uint8 x;
+    uint8 y;
+
+} mouse_hid_report;
+
+//////////////////////////////////////////////////////////////////////
+
+typedef enum _hid_custom_command
 {
     // send the config to the web ui
     hcc_get_config = 1,
@@ -52,14 +62,16 @@ enum hid_custom_command
 
     // reboot into firmware flashing mode
     hcc_goto_bootloader = 5
-};
+
+} hid_custom_command;
 
 //////////////////////////////////////////////////////////////////////
 
-enum hid_custom_response
+typedef enum _hid_custom_response
 {
     hcc_here_is_config = 1,
     hcc_here_is_firmware_version = 2,
     hcc_led_flashed = 3,
     hcc_set_config_ack = 4
-};
+
+} hid_custom_response;

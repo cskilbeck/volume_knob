@@ -11,24 +11,19 @@
 // Removed use of divide and modulo in base 10 int printing
 // Generated code is just under 2K
 
-#include <stdint.h>
-#include <stdbool.h>
-
-#if defined(VSCODE) || defined(_MSC_VER)
+#if defined(VSCODE)
 #define true 1
 #define false 0
 #define DEBUG
-#if defined(VSCODE)
-#include "vs_lint.h"
 #endif
-#include <stdarg.h>
-#else
-#include "main.h"
-#endif
-
-void nano_putchar(uint8_t c);
 
 #if defined(DEBUG)
+
+#include <stdint.h>
+#include <stdbool.h>
+#include <stdarg.h>
+
+void nano_putchar(uint8_t c);
 
 typedef enum
 {
@@ -358,10 +353,6 @@ void nano_printf(char const *format, ...)
         }
     }
 }
-
-// double dabble: convert 32 bit unsigned integer to bcd
-// right justified, fills output with leading zeros
-// no mods or divs
 
 #undef NPF_PUTC
 #undef NPF_EXTRACT

@@ -5,23 +5,25 @@
 #include <stdint.h>
 #include <string.h>
 
-#define bool _Bool
-#define true 1
-#define false 0
+//////////////////////////////////////////////////////////////////////
+
+#if !defined(VSCODE)
+#define STATIC_ASSERT _Static_assert
+#define SIZEOF_LSB(x) (sizeof(x) & 0xff)
+#define SIZEOF_MSB(x) (sizeof(x) >> 8)
+#endif
 
 //////////////////////////////////////////////////////////////////////
 
 #if defined(DEBUG)
 #include "nanoprintf.h"
 #else
-#define print(...) NOP_MACRO
 #define printf(...) NOP_MACRO
 #define puts(...) NOP_MACRO
 #endif
 
 //////////////////////////////////////////////////////////////////////
 
-#include "vs_lint.h"
 #include "ch554.h"
 #include "ch554_usb.h"
 #include "types.h"

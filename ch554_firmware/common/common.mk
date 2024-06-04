@@ -3,10 +3,10 @@ OBJCOPY = objcopy
 PACK_HEX = packihx
 WCHISP = wchisp
 
-FREQ_SYS ?= 12000000
 XRAM_SIZE ?= 0x0400
-XRAM_LOC ?= 0x0000
 CODE_SIZE ?= 0x3800
+XRAM_LOC ?= 0x0100
+FREQ_SYS ?= 24000000
 
 INCLUDE_FOLDERS = $(foreach incdir, $(INC), -I$(incdir))
 

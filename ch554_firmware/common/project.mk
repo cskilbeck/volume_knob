@@ -1,9 +1,4 @@
-# HID Makefile
-
-XRAM_SIZE = 0x0400
-CODE_SIZE = 0x3800
-XRAM_LOC = 0x0100
-FREQ_SYS = 24000000
+# HID/MIDI Makefile
 
 # pass in DEVICE=TYPE
 #
@@ -13,27 +8,28 @@ FREQ_SYS = 24000000
 # 	DIRECT
 # 	DEVKIT
 
-EXTRA_FLAGS += --std-c23 --opt-code-speed -DDEVICE=DEVICE_$(DEVICE_TYPE)
+ifndef DEVICE_TYPE
+$(error DEVICE_TYPE is undefined)
+endif
+
+ifeq ($(DEVICE_TYPE), DEVKIT)
+DEBUG = -DDEBUG=1
+else
+DEBUG = -DNDEBUG=1
+endif
+
+XRAM_SIZE = 0x0400
+CODE_SIZE = 0x3800
+XRAM_LOC = 0x0100
+FREQ_SYS = 24000000
 
 PROJECT = $(PROJECT_NAME)_$(DEVICE_TYPE)
 
 SRC = src/ $(COMMON)src/ 
 INC = include/ $(COMMON)include
-
 OBJ = obj/$(DEVICE_TYPE)/
 BIN = bin/$(DEVICE_TYPE)/
 
-.PHONY: check-env
-
-build: check-env
-
-flash: check-env
-
-clean: check-env
-
-check-env:
-ifndef DEVICE_TYPE
-	$(error DEVICE_TYPE is undefined)
-endif
+EXTRA_FLAGS = --std-c23 --opt-code-speed -DDEVICE=DEVICE_$(DEVICE_TYPE) $(DEBUG) --disable-warning 110 --disable-warning 190
 
 include $(COMMON)common.mk

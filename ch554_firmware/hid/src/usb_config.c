@@ -14,41 +14,32 @@
 
 static __code const uint8 hid_rep_desc[] = {
 
-    0x05, 0x01,    // Usage Page: Generic Desktop Controls
-    0x09, 0x06,    // Usage: Keyboard
-    0xA1, 0x01,    // Collection: Application
-    0x85, 0x01,    // REPORT_ID (1)
-
-    // modifiers
-    0x05, 0x07,    // Usage Page: Keyboard
-    0x19, 0xE0,    // Usage Minimum: Keyboard LeftControl
-    0x29, 0xE7,    // Usage Maximum: Keyboard Right GUI
-    0x15, 0x00,    // Logical Minimum: 0
-    0x25, 0x01,    // Logical Maximum: 1
-    0x75, 0x01,    // Report Size: 1
-    0x95, 0x08,    // Report Count: 8
-    0x81, 0x02,    // Input: Data (2)
-
-    // reserved
-    0x95, 0x01,    // Report Count: 1
-    0x75, 0x08,    // Report Size: 8
-    0x81, 0x01,    // Input: Constant (1)
-
-    // LEDs
-    0x95, 0x03,    // Report Count: 3
-    0x75, 0x01,    // Report Size: 1
-    0x05, 0x08,    // Usage Page: LEDs
-    0x19, 0x01,    // Usage Minimum: Num Lock
-    0x29, 0x03,    // Usage Maximum: Scroll Lock
-    0x91, 0x02,    // Output: Data (2)
-
-    // padding x 5 bits
-    0x95, 0x05,    // Report Count: 5
-    0x75, 0x01,    // Report Size: 1
-    0x91, 0x01,    // Output: Constant (1)
-
-    // 6 keys
-    0x95, 0x06,          // Report Count: 6
+    // KEYBOARD
+    0x05, 0x01,          // Usage Page: Generic Desktop Controls
+    0x09, 0x06,          // Usage: Keyboard
+    0xA1, 0x01,          // Collection: Application
+    0x85, 0x01,          // --- REPORT_ID (1)
+    0x05, 0x07,          // Usage Page: Keyboard
+    0x19, 0xE0,          // Usage Minimum: Keyboard LeftControl
+    0x29, 0xE7,          // Usage Maximum: Keyboard Right GUI
+    0x15, 0x00,          // Logical Minimum: 0
+    0x25, 0x01,          // Logical Maximum: 1
+    0x75, 0x01,          // Report Size: 1
+    0x95, 0x08,          // --- MODIFIERS: Report Count: 8
+    0x81, 0x02,          // Input: Data (2)
+    0x95, 0x01,          // --- RESERVED: Report Count: 1
+    0x75, 0x08,          // Report Size: 8
+    0x81, 0x01,          // Input: Constant (1)
+    0x95, 0x03,          // --- LEDS: Report Count: 3
+    0x75, 0x01,          // Report Size: 1
+    0x05, 0x08,          // Usage Page: LEDs
+    0x19, 0x01,          // Usage Minimum: Num Lock
+    0x29, 0x03,          // Usage Maximum: Scroll Lock
+    0x91, 0x02,          // Output: Data (2)
+    0x95, 0x05,          // -PADDING: Report Count: 5
+    0x75, 0x01,          // Report Size: 1
+    0x91, 0x01,          // Output: Constant (1)
+    0x95, 0x06,          // --- KEYS: Report Count: 6
     0x75, 0x08,          // Report Size: 8
     0x15, 0x00,          // Logical Minimum: 0
     0x26, 0xFF, 0x00,    // Logical Maximum: 255
@@ -56,23 +47,50 @@ static __code const uint8 hid_rep_desc[] = {
     0x19, 0x00,          // Usage Minimum: 0
     0x2A, 0xFF, 0x00,    // Usage Maximum: 255
     0x81, 0x00,          // Input: Data (0)
+    0xC0,                // End collection
 
-    0xC0,    // End collection
+    // // MOUSE
+    // 0x05, 0x01,    // USAGE_PAGE (Generic Desktop)
+    // 0x09, 0x02,    // USAGE (Mouse)
+    // 0xa1, 0x01,    // COLLECTION (Application)
+    // 0x85, 0x02,    // --- REPORT_ID (3)
+    // 0x09, 0x01,    // USAGE (Pointer)
+    // 0xa1, 0x00,    // COLLECTION (Physical)
+    // 0x05, 0x09,    // USAGE_PAGE (Button)
+    // 0x19, 0x01,    // USAGE_MINIMUM (Button 1)
+    // 0x29, 0x03,    // USAGE_MAXIMUM (Button 3)
+    // 0x15, 0x00,    // LOGICAL_MINIMUM (0)
+    // 0x25, 0x01,    // LOGICAL_MAXIMUM (1)
+    // 0x95, 0x03,    // --- BUTTONS: REPORT_COUNT (3)
+    // 0x75, 0x01,    // REPORT_SIZE (1)
+    // 0x81, 0x02,    // INPUT (Data,Var,Abs)
+    // 0x95, 0x01,    // --- PADDING: REPORT_COUNT (1)
+    // 0x75, 0x05,    // REPORT_SIZE (5)
+    // 0x81, 0x03,    // INPUT (Cnst,Var,Abs)
+    // 0x05, 0x01,    // USAGE_PAGE (Generic Desktop)
+    // 0x09, 0x30,    // USAGE (X)
+    // 0x09, 0x31,    // USAGE (Y)
+    // 0x15, 0x81,    // LOGICAL_MINIMUM (-127)
+    // 0x25, 0x7f,    // LOGICAL_MAXIMUM (127)
+    // 0x75, 0x08,    // REPORT_SIZE (8)
+    // 0x95, 0x02,    // --- MOUSE XY: REPORT_COUNT (2)
+    // 0x81, 0x06,    // INPUT (Data,Var,Rel)
+    // 0xc0,          // END_COLLECTION
+    // 0xc0,          // END_COLLECTION
 
     // CONSUMER CONTROL DEVICE
     0x05, 0x0c,                      // Usage Page (Consumer Devices)
     0x0b, 0x01, 0x00, 0x0c, 0x00,    // USAGE (Consumer Devices:Consumer Control)
     0xa1, 0x01,                      // Collection (Application)
-    0x85, 0x02,                      //   REPORT_ID (2)
-    0x19, 0x00,                      //   USAGE_MINIMUM (Unassigned)
-    0x2a, 0x08, 0x01,                //   USAGE_MAXIMUM (Police Alarm)
-    0x15, 0x00,                      //   LOGICAL_MINIMUM (0)
-    0x26, 0x3c, 0x02,                //   LOGICAL_MAXIMUM (572)
-    0x95, 0x01,                      //   REPORT_COUNT (1)
-    0x75, 0x10,                      //   REPORT_SIZE (16)
-    0x81, 0x00,                      //   INPUT (Data,Array,Absolute)
-
-    0xc0    // END_COLLECTION
+    0x85, 0x02,                      // --- REPORT_ID (2)
+    0x19, 0x00,                      // USAGE_MINIMUM (Unassigned)
+    0x2a, 0x08, 0x01,                // USAGE_MAXIMUM (Police Alarm)
+    0x15, 0x00,                      // LOGICAL_MINIMUM (0)
+    0x26, 0x3c, 0x02,                // LOGICAL_MAXIMUM (572)
+    0x95, 0x01,                      // --- KEY: REPORT_COUNT (1)
+    0x75, 0x10,                      // REPORT_SIZE (16)
+    0x81, 0x00,                      // INPUT (Data,Array,Absolute)
+    0xc0,                            // END_COLLECTION
 };
 
 // CUSTOM HID DEVICE
@@ -82,15 +100,15 @@ static __code const uint8 custom_rep_desc[] = {
     0x06, 0x00, 0xff,    // USAGE_PAGE (Vendor Defined Page 1)
     0x09, 0x01,          // USAGE (Vendor Usage 1)
     0xa1, 0x01,          // COLLECTION (Application)
-    0x15, 0x00,          //   LOGICAL_MINIMUM 0
-    0x25, 0xff,          //   LOGICAL_MAXIMUM 255
-    0x75, 0x08,          //   REPORT_SIZE 8 bits
-    0x95, 32,            //   REPORT_COUNT 32
-    0x09, 0x01,          //   USAGE (Vendor Usage 1)
-    0x81, 0x02,          //   INPUT (Data,Var,Abs)
-    0x95, 32,            //   REPORT_COUNT 32
-    0x09, 0x01,          //   USAGE (Vendor Usage 1)
-    0x91, 0x02,          //   OUTPUT (Data,Var,Abs)
+    0x15, 0x00,          // LOGICAL_MINIMUM 0
+    0x25, 0xff,          // LOGICAL_MAXIMUM 255
+    0x75, 0x08,          // REPORT_SIZE 8 bits
+    0x95, 32,            // REPORT_COUNT 32
+    0x09, 0x01,          // USAGE (Vendor Usage 1)
+    0x81, 0x02,          // INPUT (Data,Var,Abs)
+    0x95, 32,            // REPORT_COUNT 32
+    0x09, 0x01,          // USAGE (Vendor Usage 1)
+    0x91, 0x02,          // OUTPUT (Data,Var,Abs)
     0xc0                 // END_COLLECTION
 };
 
@@ -146,7 +164,7 @@ static __code const uint8 config_desc[] = {
     50,                         // bMaxPower 50 x 2 = 100mA
 
     //////////////////////////////////////////////////
-    // INTERFACE 0: KEYBOARD / CONSUMER CONTROL HID DEVICE
+    // INTERFACE 0: KEYBOARD / MOUSE / CONSUMER CONTROL HID DEVICE
 
     // Interface
     0x09,                     // bLength
@@ -156,7 +174,7 @@ static __code const uint8 config_desc[] = {
     0x01,                     // bNumEndpoints
     USB_DEV_CLASS_HID,        // bInterfaceClass
     0x01,                     // bInterfaceSubClass
-    0x01,                     // bInterfaceProtocol: Keyboard
+    0x00,                     // bInterfaceProtocol: ?
     CONFIG_STRING_DESC_ID,    // iInterface - HID STRING
 
     // HID
@@ -248,9 +266,15 @@ static __code const usb_descriptor_t report_descs[] = {
 // String admin - UINT16s in here...
 
 #define LANGUAGE_DESC_STRING 0x0409
-#define PRODUCT_NAME_STRING 'T', 'i', 'n', 'y', ' ', 'U', 'S', 'B', ' ', 'K', 'n', 'o', 'b'
 #define MANUFACTURER_STRING 'T', 'i', 'n', 'y', ' ', 'L', 'i', 't', 't', 'l', 'e', ' ', 'T', 'h', 'i', 'n', 'g', 's'
+
+#if DEVICE == DEVICE_DEVKIT
+#define PRODUCT_NAME_STRING 'T', 'i', 'n', 'y', ' ', 'U', 'S', 'B', ' ', 'D', 'v', 'k', 't'
+#define CONFIG_STRING 'T', 'i', 'n', 'y', ' ', 'U', 'S', 'B', ' ', 'D', 'v', 'k', 't'
+#else
+#define PRODUCT_NAME_STRING 'T', 'i', 'n', 'y', ' ', 'U', 'S', 'B', ' ', 'K', 'n', 'o', 'b'
 #define CONFIG_STRING 'T', 'i', 'n', 'y', ' ', 'U', 'S', 'B', ' ', 'K', 'n', 'o', 'b'
+#endif
 
 #define STR_HDR(x) (SIZEOF_LSB(x) | (USB_DESCR_TYP_STRING << 8))
 
@@ -276,7 +300,11 @@ static __code const usb_descriptor_t string_descs[] = {
 #define NUM_REPORT_DESCS ARRAY_COUNT(report_descs)
 #define NUM_STRING_DESCS ARRAY_COUNT(string_descs)
 
+#if DEVICE == DEVICE_DEVKIT
+static char const product_name_text[] = "Tiny USB Dvkt";
+#else
 static char const product_name_text[] = "Tiny USB Knob";
+#endif
 
 //////////////////////////////////////////////////////////////////////
 

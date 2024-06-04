@@ -16,7 +16,8 @@
 			"compiler.h": "c",
 			"stdint.h": "c",
 			"ch554.h": "c",
-			"nanoprintf.h": "c"
+			"nanoprintf.h": "c",
+			"stdarg.h": "c"
 		},
 		"explorer.excludeGitIgnore": true
 	}
