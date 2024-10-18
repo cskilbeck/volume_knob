@@ -17,6 +17,11 @@
 #define ROTATE_CW 1
 #define ROTATE_CCW -1
 
+#elif DEVICE == DEVICE_ORIGINAL_V2
+
+#define ROTATE_CW 1
+#define ROTATE_CCW -1
+
 #else
 
 #error NO DEVICE DEFINED

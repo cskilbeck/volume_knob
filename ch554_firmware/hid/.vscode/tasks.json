@@ -10,13 +10,17 @@
             "options": [
                 "ORIGINAL",
                 "DIRECT",
-                "DEVKIT"
+                "DEVKIT",
+                "ORIGINAL_V2"
             ],
-            "default": "DEVKIT"
+            "default": "ORIGINAL_V2"
         }
     ],
     "tasks": [
         {
+            "runOptions": {
+                "reevaluateOnRerun": false
+            },
             "label": "make",
             "type": "shell",
             "command": "make",

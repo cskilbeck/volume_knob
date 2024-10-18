@@ -4,9 +4,10 @@
 #
 # where type is one of:
 #
-# 	ORIGINAL
-# 	DIRECT
-# 	DEVKIT
+# 	ORIGINAL		- CH554G USB Micro-B Female
+# 	DIRECT			- CH554G USB A Male
+# 	DEVKIT			- Devkit
+#	ORIGINAL_V2		- CH554E USB Micro-B Female
 
 ifndef DEVICE_TYPE
 $(error DEVICE_TYPE is undefined)

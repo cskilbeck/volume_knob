@@ -38,9 +38,12 @@ typedef struct _keyboard_hid_report
 
 typedef struct _mouse_hid_report
 {
+    uint8 report_id;
     uint8 buttons;
-    uint8 x;
-    uint8 y;
+    int8 x;
+    int8 y;
+    int8 wheel1;
+    int8 wheel2;
 
 } mouse_hid_report;
 

@@ -9,8 +9,7 @@
 #define CUSTOM_PACKET_SIZE 32
 
 //////////////////////////////////////////////////////////////////////
-
-// KEYBOARD DEVICE
+// KEYBOARD / CONSUMER CONTROL INTERFACE
 
 static __code const uint8 hid_rep_desc[] = {
 
@@ -49,35 +48,6 @@ static __code const uint8 hid_rep_desc[] = {
     0x81, 0x00,          // Input: Data (0)
     0xC0,                // End collection
 
-    // // MOUSE
-    // 0x05, 0x01,    // USAGE_PAGE (Generic Desktop)
-    // 0x09, 0x02,    // USAGE (Mouse)
-    // 0xa1, 0x01,    // COLLECTION (Application)
-    // 0x85, 0x02,    // --- REPORT_ID (3)
-    // 0x09, 0x01,    // USAGE (Pointer)
-    // 0xa1, 0x00,    // COLLECTION (Physical)
-    // 0x05, 0x09,    // USAGE_PAGE (Button)
-    // 0x19, 0x01,    // USAGE_MINIMUM (Button 1)
-    // 0x29, 0x03,    // USAGE_MAXIMUM (Button 3)
-    // 0x15, 0x00,    // LOGICAL_MINIMUM (0)
-    // 0x25, 0x01,    // LOGICAL_MAXIMUM (1)
-    // 0x95, 0x03,    // --- BUTTONS: REPORT_COUNT (3)
-    // 0x75, 0x01,    // REPORT_SIZE (1)
-    // 0x81, 0x02,    // INPUT (Data,Var,Abs)
-    // 0x95, 0x01,    // --- PADDING: REPORT_COUNT (1)
-    // 0x75, 0x05,    // REPORT_SIZE (5)
-    // 0x81, 0x03,    // INPUT (Cnst,Var,Abs)
-    // 0x05, 0x01,    // USAGE_PAGE (Generic Desktop)
-    // 0x09, 0x30,    // USAGE (X)
-    // 0x09, 0x31,    // USAGE (Y)
-    // 0x15, 0x81,    // LOGICAL_MINIMUM (-127)
-    // 0x25, 0x7f,    // LOGICAL_MAXIMUM (127)
-    // 0x75, 0x08,    // REPORT_SIZE (8)
-    // 0x95, 0x02,    // --- MOUSE XY: REPORT_COUNT (2)
-    // 0x81, 0x06,    // INPUT (Data,Var,Rel)
-    // 0xc0,          // END_COLLECTION
-    // 0xc0,          // END_COLLECTION
-
     // CONSUMER CONTROL DEVICE
     0x05, 0x0c,                      // Usage Page (Consumer Devices)
     0x0b, 0x01, 0x00, 0x0c, 0x00,    // USAGE (Consumer Devices:Consumer Control)
@@ -93,7 +63,48 @@ static __code const uint8 hid_rep_desc[] = {
     0xc0,                            // END_COLLECTION
 };
 
-// CUSTOM HID DEVICE
+//////////////////////////////////////////////////////////////////////
+// MOUSE INTERFACE
+
+static __code const uint8 hid_mouse_rep_desc[] = {
+
+    // MOUSE
+    0x05, 0x01,          // USAGE_PAGE (Generic Desktop)
+    0x09, 0x02,          // USAGE (Mouse)
+    0xa1, 0x01,          // COLLECTION (Application)
+    0x85, 0x03,          //   REPORT_ID (3)
+    0x09, 0x01,          //   USAGE (Pointer)
+    0xa1, 0x00,          //   COLLECTION (Physical)
+    0x05, 0x09,          //     USAGE_PAGE (Button)
+    0x19, 0x01,          //     USAGE_MINIMUM (Button 1)
+    0x29, 0x03,          //     USAGE_MAXIMUM (Button 3)
+    0x15, 0x00,          //     LOGICAL_MINIMUM (0)
+    0x25, 0x01,          //     LOGICAL_MAXIMUM (1)
+    0x95, 0x03,          //     REPORT_COUNT (3)
+    0x75, 0x01,          //     REPORT_SIZE (1)
+    0x81, 0x02,          //     INPUT (Data,Var,Abs)
+    0x95, 0x01,          //     REPORT_COUNT (1)
+    0x75, 0x05,          //     REPORT_SIZE (5)
+    0x81, 0x03,          //     INPUT (Cnst,Var,Abs)
+    0x05, 0x01,          //     USAGE_PAGE (Generic Desktop)
+    0x09, 0x30,          //     USAGE (X)
+    0x09, 0x31,          //     USAGE (Y)
+    0x09, 0x38,          //     USAGE (Wheel)
+    0x15, 0x81,          //     LOGICAL_MINIMUM (-127)
+    0x25, 0x7f,          //     LOGICAL_MAXIMUM (127)
+    0x75, 0x08,          //     REPORT_SIZE (8)
+    0x95, 0x03,          //     REPORT_COUNT (3)
+    0x81, 0x06,          //     INPUT (Data,Var,Rel)
+    0x05, 0x0c,          //     USAGE_PAGE (Consumer Devices)
+    0x0a, 0x38, 0x02,    //     USAGE (Undefined)
+    0x95, 0x01,          //     REPORT_COUNT (1)
+    0x81, 0x06,          //     INPUT (Data,Var,Rel)
+    0xc0,                //   END_COLLECTION
+    0xc0                 // END_COLLECTION
+};
+
+//////////////////////////////////////////////////////////////////////
+// CUSTOM HID INTERFACE
 
 static __code const uint8 custom_rep_desc[] = {
 
@@ -148,7 +159,7 @@ static __code const uint8 device_desc[] = {
 
 //////////////////////////////////////////////////////////////////////
 
-#define NUM_INTERFACES 2
+#define NUM_INTERFACES 3
 
 static __code const uint8 config_desc[] = {
 
@@ -164,7 +175,7 @@ static __code const uint8 config_desc[] = {
     50,                         // bMaxPower 50 x 2 = 100mA
 
     //////////////////////////////////////////////////
-    // INTERFACE 0: KEYBOARD / MOUSE / CONSUMER CONTROL HID DEVICE
+    // INTERFACE 0: KEYBOARD / CONSUMER CONTROL HID DEVICE
 
     // Interface
     0x09,                     // bLength
@@ -239,6 +250,41 @@ static __code const uint8 config_desc[] = {
     CUSTOM_PACKET_SIZE & 0xff,    // wMaxPacketSize (1)
     CUSTOM_PACKET_SIZE >> 8,      // wMaxPacketSize (2)
     0x02,                         // bInterval
+
+    //////////////////////////////////////////////////
+    // INTERFACE 2: MOUSE HID DEVICE
+
+    // Interface
+    0x09,                     // bLength
+    USB_DESCR_TYP_INTERF,     // bDescriptorType
+    0x02,                     // bInterfaceNumber
+    0x00,                     // bAlternateSetting
+    0x01,                     // bNumEndpoints
+    USB_DEV_CLASS_HID,        // bInterfaceClass
+    0x01,                     // bInterfaceSubClass
+    0x00,                     // bInterfaceProtocol: ?
+    CONFIG_STRING_DESC_ID,    // iInterface - HID STRING
+
+    // HID
+    0x09,                              // bLength
+    USB_DESCR_TYP_HID,                 // bDescriptorType: HID
+    0x11,                              // bcdHID(1)
+    0x01,                              // bcdHID(2)
+    0x00,                              // bCountryCode
+    0x01,                              // bNumDescriptors
+    0x22,                              // bDescriptorType: Report
+    SIZEOF_LSB(hid_mouse_rep_desc),    // wDescriptorLength (1)
+    SIZEOF_MSB(hid_mouse_rep_desc),    // wDescriptorLength (2)
+
+    // Endpoint
+    0x07,                      // bLength
+    USB_DESCR_TYP_ENDP,        // bDescriptorType: ENDPOINT
+    0x82,                      // bEndpointAddress: IN/Endpoint2
+    USB_ENDP_TYPE_INTER,       // bmAttributes: Interrupt
+    USB_PACKET_SIZE & 0xff,    // wMaxPacketSize (1)
+    USB_PACKET_SIZE >> 8,      // wMaxPacketSize (2)
+    0x02,                      // bInterval
+
 };
 
 STATIC_ASSERT(sizeof(config_desc) < 256);
@@ -258,8 +304,9 @@ static __code const usb_descriptor_t config_descs[] = {
 // HID report descriptors
 
 static __code const usb_descriptor_t report_descs[] = {
-    DESCRIPTOR(hid_rep_desc),       // main HID report
-    DESCRIPTOR(custom_rep_desc),    // custom HID report
+    DESCRIPTOR(hid_rep_desc),          // keyboard/cc HID report
+    DESCRIPTOR(custom_rep_desc),       // custom HID report
+    DESCRIPTOR(hid_mouse_rep_desc),    // mouse HID report
 };
 
 //////////////////////////////////////////////////////////////////////

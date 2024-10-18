@@ -60,6 +60,21 @@
 #define LED_ON 1
 #define LED_OFF 0
 
+#elif DEVICE == DEVICE_ORIGINAL_V2
+
+#define ROTA_PORT PORT1
+#define ROTB_PORT PORT1
+#define BTN_PORT PORT1
+#define LED_PORT PORT1
+
+#define ROTA_PIN 4
+#define ROTB_PIN 5
+#define BTN_PIN 6
+#define LED_PIN 7
+
+#define LED_ON 0
+#define LED_OFF 1
+
 #else
 
 #error DEVICE NOT DEFINED!?
