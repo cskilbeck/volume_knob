@@ -1,0 +1,15 @@
+Designator,Center-X(mm),Center-Y(mm),Layer,Rotation
+R1,19.7208,12.3678,BottomLayer,180
+D1,13.1378,18.6567,BottomLayer,270
+U1,18.1464,16.533,BottomLayer,360
+USB,27.1723,18.32,BottomLayer,270
+R10,23.8875,10.81,BottomLayer,180
+R8,19.7246,20.6786,BottomLayer,180
+R7,15.978,20.1713,BottomLayer,270
+R6,16.0214,12.3678,BottomLayer,90
+F2,23.4114,21.1286,BottomLayer,180
+D8,22.6144,19.4708,BottomLayer,270
+D7,24.0825,19.42,BottomLayer,90
+D6,23.8285,17.5462,BottomLayer,270
+C7,21.8764,14.7751,BottomLayer,90
+C6,19.6958,13.7413,BottomLayer,360

@@ -1,0 +1,1915 @@
+%TF.GenerationSoftware,Altium Limited,Altium Designer,20.1.8 (145)*%
+G04 Layer_Color=0*
+%FSLAX45Y45*%
+%MOMM*%
+%TF.SameCoordinates,0AB19B83-9B04-4470-A1CB-4E81E99A1085*%
+%TF.FilePolarity,Positive*%
+%TF.FileFunction,NonPlated,1,2,NPTH,Drill*%
+%TF.Part,CustomerPanel*%
+G01*
+G75*
+%TA.AperFunction,OtherDrill,Pad Free-F (5mm,5mm)*%
+%ADD56C,1.15200*%
+%TA.AperFunction,OtherDrill,Pad Free-F (95mm,5mm)*%
+%ADD57C,1.15200*%
+%TA.AperFunction,OtherDrill,Pad Free-F (95mm,95mm)*%
+%ADD58C,1.15200*%
+%TA.AperFunction,OtherDrill,Pad Free-F (5mm,95mm)*%
+%ADD59C,1.15200*%
+%TA.AperFunction,OtherDrill,Pad Free-F (80mm,23mm)*%
+%ADD60C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (80.8mm,23mm)*%
+%ADD61C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (81.6mm,23mm)*%
+%ADD62C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (82.4mm,23mm)*%
+%ADD63C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (69.6mm,9.8mm)*%
+%ADD64C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (69.6mm,10.6mm)*%
+%ADD65C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (69.6mm,11.4mm)*%
+%ADD66C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (69.6mm,12.2mm)*%
+%ADD67C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (69.6mm,13mm)*%
+%ADD68C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (87.2mm,10.6mm)*%
+%ADD69C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (87.2mm,13mm)*%
+%ADD70C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (87.2mm,11.4mm)*%
+%ADD71C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (87.2mm,12.2mm)*%
+%ADD72C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (87.2mm,9.8mm)*%
+%ADD73C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (82.4mm,7mm)*%
+%ADD74C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (81.6mm,7mm)*%
+%ADD75C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (80.8mm,7mm)*%
+%ADD76C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (80mm,7mm)*%
+%ADD77C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (60.8mm,7mm)*%
+%ADD78C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (61.6mm,7mm)*%
+%ADD79C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (62.4mm,7mm)*%
+%ADD80C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (63.2mm,7mm)*%
+%ADD81C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (68mm,9.8mm)*%
+%ADD82C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (68mm,12.2mm)*%
+%ADD83C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (68mm,11.4mm)*%
+%ADD84C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (68mm,13mm)*%
+%ADD85C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (68mm,10.6mm)*%
+%ADD86C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (50.4mm,13mm)*%
+%ADD87C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (50.4mm,12.2mm)*%
+%ADD88C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (50.4mm,11.4mm)*%
+%ADD89C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (50.4mm,10.6mm)*%
+%ADD90C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (50.4mm,9.8mm)*%
+%ADD91C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (63.2mm,23mm)*%
+%ADD92C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (62.4mm,23mm)*%
+%ADD93C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (61.6mm,23mm)*%
+%ADD94C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (60.8mm,23mm)*%
+%ADD95C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (41.6mm,23mm)*%
+%ADD96C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (42.4mm,23mm)*%
+%ADD97C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (43.2mm,23mm)*%
+%ADD98C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (44mm,23mm)*%
+%ADD99C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (31.2mm,9.8mm)*%
+%ADD100C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (31.2mm,10.6mm)*%
+%ADD101C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (31.2mm,11.4mm)*%
+%ADD102C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (31.2mm,12.2mm)*%
+%ADD103C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (31.2mm,13mm)*%
+%ADD104C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (48.8mm,10.6mm)*%
+%ADD105C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (48.8mm,13mm)*%
+%ADD106C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (48.8mm,11.4mm)*%
+%ADD107C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (48.8mm,12.2mm)*%
+%ADD108C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (48.8mm,9.8mm)*%
+%ADD109C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (44mm,7mm)*%
+%ADD110C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (43.2mm,7mm)*%
+%ADD111C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (42.4mm,7mm)*%
+%ADD112C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (41.6mm,7mm)*%
+%ADD113C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (22.4mm,7mm)*%
+%ADD114C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (23.2mm,7mm)*%
+%ADD115C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (24mm,7mm)*%
+%ADD116C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (24.8mm,7mm)*%
+%ADD117C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (29.6mm,9.8mm)*%
+%ADD118C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (29.6mm,12.2mm)*%
+%ADD119C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (29.6mm,11.4mm)*%
+%ADD120C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (29.6mm,13mm)*%
+%ADD121C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (29.6mm,10.6mm)*%
+%ADD122C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (12mm,13mm)*%
+%ADD123C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (12mm,12.2mm)*%
+%ADD124C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (12mm,11.4mm)*%
+%ADD125C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (12mm,10.6mm)*%
+%ADD126C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (12mm,9.8mm)*%
+%ADD127C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (24.8mm,23mm)*%
+%ADD128C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (24mm,23mm)*%
+%ADD129C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (23.2mm,23mm)*%
+%ADD130C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (22.4mm,23mm)*%
+%ADD131C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (80mm,58.2mm)*%
+%ADD132C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (80.8mm,58.2mm)*%
+%ADD133C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (81.6mm,58.2mm)*%
+%ADD134C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (82.4mm,58.2mm)*%
+%ADD135C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (69.6mm,45mm)*%
+%ADD136C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (69.6mm,45.8mm)*%
+%ADD137C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (69.6mm,46.6mm)*%
+%ADD138C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (69.6mm,47.4mm)*%
+%ADD139C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (69.6mm,48.2mm)*%
+%ADD140C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (87.2mm,45.8mm)*%
+%ADD141C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (87.2mm,48.2mm)*%
+%ADD142C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (87.2mm,46.6mm)*%
+%ADD143C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (87.2mm,47.4mm)*%
+%ADD144C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (87.2mm,45mm)*%
+%ADD145C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (82.4mm,42.2mm)*%
+%ADD146C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (81.6mm,42.2mm)*%
+%ADD147C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (80.8mm,42.2mm)*%
+%ADD148C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (80mm,42.2mm)*%
+%ADD149C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (80mm,24.6mm)*%
+%ADD150C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (80.8mm,24.6mm)*%
+%ADD151C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (81.6mm,24.6mm)*%
+%ADD152C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (82.4mm,24.6mm)*%
+%ADD153C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (87.2mm,27.4mm)*%
+%ADD154C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (87.2mm,29.8mm)*%
+%ADD155C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (87.2mm,29mm)*%
+%ADD156C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (87.2mm,30.6mm)*%
+%ADD157C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (87.2mm,28.2mm)*%
+%ADD158C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (69.6mm,30.6mm)*%
+%ADD159C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (69.6mm,29.8mm)*%
+%ADD160C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (69.6mm,29mm)*%
+%ADD161C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (69.6mm,28.2mm)*%
+%ADD162C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (69.6mm,27.4mm)*%
+%ADD163C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (82.4mm,40.6mm)*%
+%ADD164C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (81.6mm,40.6mm)*%
+%ADD165C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (80.8mm,40.6mm)*%
+%ADD166C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (80mm,40.6mm)*%
+%ADD167C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (60.8mm,42.2mm)*%
+%ADD168C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (61.6mm,42.2mm)*%
+%ADD169C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (62.4mm,42.2mm)*%
+%ADD170C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (63.2mm,42.2mm)*%
+%ADD171C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (68mm,45mm)*%
+%ADD172C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (68mm,47.4mm)*%
+%ADD173C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (68mm,46.6mm)*%
+%ADD174C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (68mm,48.2mm)*%
+%ADD175C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (68mm,45.8mm)*%
+%ADD176C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (50.4mm,48.2mm)*%
+%ADD177C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (50.4mm,47.4mm)*%
+%ADD178C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (50.4mm,46.6mm)*%
+%ADD179C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (50.4mm,45.8mm)*%
+%ADD180C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (50.4mm,45mm)*%
+%ADD181C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (63.2mm,58.2mm)*%
+%ADD182C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (62.4mm,58.2mm)*%
+%ADD183C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (61.6mm,58.2mm)*%
+%ADD184C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (60.8mm,58.2mm)*%
+%ADD185C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (60.8mm,24.6mm)*%
+%ADD186C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (61.6mm,24.6mm)*%
+%ADD187C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (62.4mm,24.6mm)*%
+%ADD188C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (63.2mm,24.6mm)*%
+%ADD189C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (68mm,27.4mm)*%
+%ADD190C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (68mm,29.8mm)*%
+%ADD191C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (68mm,29mm)*%
+%ADD192C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (68mm,30.6mm)*%
+%ADD193C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (68mm,28.2mm)*%
+%ADD194C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (50.4mm,30.6mm)*%
+%ADD195C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (50.4mm,29.8mm)*%
+%ADD196C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (50.4mm,29mm)*%
+%ADD197C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (50.4mm,28.2mm)*%
+%ADD198C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (50.4mm,27.4mm)*%
+%ADD199C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (63.2mm,40.6mm)*%
+%ADD200C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (62.4mm,40.6mm)*%
+%ADD201C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (61.6mm,40.6mm)*%
+%ADD202C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (60.8mm,40.6mm)*%
+%ADD203C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (41.6mm,58.2mm)*%
+%ADD204C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (42.4mm,58.2mm)*%
+%ADD205C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (43.2mm,58.2mm)*%
+%ADD206C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (44mm,58.2mm)*%
+%ADD207C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (31.2mm,45mm)*%
+%ADD208C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (31.2mm,45.8mm)*%
+%ADD209C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (31.2mm,46.6mm)*%
+%ADD210C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (31.2mm,47.4mm)*%
+%ADD211C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (31.2mm,48.2mm)*%
+%ADD212C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (48.8mm,45.8mm)*%
+%ADD213C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (48.8mm,48.2mm)*%
+%ADD214C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (48.8mm,46.6mm)*%
+%ADD215C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (48.8mm,47.4mm)*%
+%ADD216C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (48.8mm,45mm)*%
+%ADD217C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (44mm,42.2mm)*%
+%ADD218C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (43.2mm,42.2mm)*%
+%ADD219C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (42.4mm,42.2mm)*%
+%ADD220C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (41.6mm,42.2mm)*%
+%ADD221C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (41.6mm,24.6mm)*%
+%ADD222C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (42.4mm,24.6mm)*%
+%ADD223C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (43.2mm,24.6mm)*%
+%ADD224C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (44mm,24.6mm)*%
+%ADD225C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (48.8mm,27.4mm)*%
+%ADD226C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (48.8mm,29.8mm)*%
+%ADD227C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (48.8mm,29mm)*%
+%ADD228C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (48.8mm,30.6mm)*%
+%ADD229C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (48.8mm,28.2mm)*%
+%ADD230C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (31.2mm,30.6mm)*%
+%ADD231C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (31.2mm,29.8mm)*%
+%ADD232C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (31.2mm,29mm)*%
+%ADD233C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (31.2mm,28.2mm)*%
+%ADD234C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (31.2mm,27.4mm)*%
+%ADD235C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (44mm,40.6mm)*%
+%ADD236C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (43.2mm,40.6mm)*%
+%ADD237C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (42.4mm,40.6mm)*%
+%ADD238C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (41.6mm,40.6mm)*%
+%ADD239C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (22.4mm,42.2mm)*%
+%ADD240C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (23.2mm,42.2mm)*%
+%ADD241C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (24mm,42.2mm)*%
+%ADD242C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (24.8mm,42.2mm)*%
+%ADD243C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (29.6mm,45mm)*%
+%ADD244C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (29.6mm,47.4mm)*%
+%ADD245C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (29.6mm,46.6mm)*%
+%ADD246C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (29.6mm,48.2mm)*%
+%ADD247C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (29.6mm,45.8mm)*%
+%ADD248C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (12mm,48.2mm)*%
+%ADD249C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (12mm,47.4mm)*%
+%ADD250C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (12mm,46.6mm)*%
+%ADD251C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (12mm,45.8mm)*%
+%ADD252C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (12mm,45mm)*%
+%ADD253C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (24.8mm,58.2mm)*%
+%ADD254C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (24mm,58.2mm)*%
+%ADD255C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (23.2mm,58.2mm)*%
+%ADD256C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (22.4mm,58.2mm)*%
+%ADD257C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (22.4mm,24.6mm)*%
+%ADD258C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (23.2mm,24.6mm)*%
+%ADD259C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (24mm,24.6mm)*%
+%ADD260C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (24.8mm,24.6mm)*%
+%ADD261C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (29.6mm,27.4mm)*%
+%ADD262C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (29.6mm,29.8mm)*%
+%ADD263C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (29.6mm,29mm)*%
+%ADD264C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (29.6mm,30.6mm)*%
+%ADD265C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (29.6mm,28.2mm)*%
+%ADD266C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (12mm,30.6mm)*%
+%ADD267C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (12mm,29.8mm)*%
+%ADD268C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (12mm,29mm)*%
+%ADD269C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (12mm,28.2mm)*%
+%ADD270C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (12mm,27.4mm)*%
+%ADD271C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (24.8mm,40.6mm)*%
+%ADD272C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (24mm,40.6mm)*%
+%ADD273C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (23.2mm,40.6mm)*%
+%ADD274C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (22.4mm,40.6mm)*%
+%ADD275C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (41.6mm,93.4mm)*%
+%ADD276C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (42.4mm,93.4mm)*%
+%ADD277C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (43.2mm,93.4mm)*%
+%ADD278C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (44mm,93.4mm)*%
+%ADD279C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (31.2mm,80.2mm)*%
+%ADD280C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (31.2mm,81mm)*%
+%ADD281C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (31.2mm,81.8mm)*%
+%ADD282C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (31.2mm,82.6mm)*%
+%ADD283C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (31.2mm,83.4mm)*%
+%ADD284C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (48.8mm,81mm)*%
+%ADD285C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (48.8mm,83.4mm)*%
+%ADD286C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (48.8mm,81.8mm)*%
+%ADD287C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (48.8mm,82.6mm)*%
+%ADD288C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (48.8mm,80.2mm)*%
+%ADD289C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (44mm,77.4mm)*%
+%ADD290C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (43.2mm,77.4mm)*%
+%ADD291C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (42.4mm,77.4mm)*%
+%ADD292C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (41.6mm,77.4mm)*%
+%ADD293C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (41.6mm,59.8mm)*%
+%ADD294C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (42.4mm,59.8mm)*%
+%ADD295C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (43.2mm,59.8mm)*%
+%ADD296C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (44mm,59.8mm)*%
+%ADD297C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (48.8mm,62.6mm)*%
+%ADD298C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (48.8mm,65mm)*%
+%ADD299C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (48.8mm,64.2mm)*%
+%ADD300C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (48.8mm,65.8mm)*%
+%ADD301C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (48.8mm,63.4mm)*%
+%ADD302C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (31.2mm,65.8mm)*%
+%ADD303C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (31.2mm,65mm)*%
+%ADD304C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (31.2mm,64.2mm)*%
+%ADD305C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (31.2mm,63.4mm)*%
+%ADD306C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (31.2mm,62.6mm)*%
+%ADD307C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (44mm,75.8mm)*%
+%ADD308C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (43.2mm,75.8mm)*%
+%ADD309C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (42.4mm,75.8mm)*%
+%ADD310C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (41.6mm,75.8mm)*%
+%ADD311C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (22.4mm,77.4mm)*%
+%ADD312C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (23.2mm,77.4mm)*%
+%ADD313C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (24mm,77.4mm)*%
+%ADD314C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (24.8mm,77.4mm)*%
+%ADD315C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (29.6mm,80.2mm)*%
+%ADD316C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (29.6mm,82.6mm)*%
+%ADD317C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (29.6mm,81.8mm)*%
+%ADD318C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (29.6mm,83.4mm)*%
+%ADD319C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (29.6mm,81mm)*%
+%ADD320C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (12mm,83.4mm)*%
+%ADD321C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (12mm,82.6mm)*%
+%ADD322C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (12mm,81.8mm)*%
+%ADD323C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (12mm,81mm)*%
+%ADD324C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (12mm,80.2mm)*%
+%ADD325C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (24.8mm,93.4mm)*%
+%ADD326C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (24mm,93.4mm)*%
+%ADD327C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (23.2mm,93.4mm)*%
+%ADD328C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (22.4mm,93.4mm)*%
+%ADD329C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (22.4mm,59.8mm)*%
+%ADD330C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (23.2mm,59.8mm)*%
+%ADD331C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (24mm,59.8mm)*%
+%ADD332C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (24.8mm,59.8mm)*%
+%ADD333C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (29.6mm,62.6mm)*%
+%ADD334C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (29.6mm,65mm)*%
+%ADD335C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (29.6mm,64.2mm)*%
+%ADD336C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (29.6mm,65.8mm)*%
+%ADD337C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (29.6mm,63.4mm)*%
+%ADD338C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (12mm,65.8mm)*%
+%ADD339C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (12mm,65mm)*%
+%ADD340C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (12mm,64.2mm)*%
+%ADD341C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (12mm,63.4mm)*%
+%ADD342C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (12mm,62.6mm)*%
+%ADD343C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (24.8mm,75.8mm)*%
+%ADD344C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (24mm,75.8mm)*%
+%ADD345C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (23.2mm,75.8mm)*%
+%ADD346C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (22.4mm,75.8mm)*%
+%ADD347C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (60.8mm,75.8mm)*%
+%ADD348C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (61.6mm,75.8mm)*%
+%ADD349C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (62.4mm,75.8mm)*%
+%ADD350C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (63.2mm,75.8mm)*%
+%ADD351C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (50.4mm,62.6mm)*%
+%ADD352C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (50.4mm,63.4mm)*%
+%ADD353C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (50.4mm,64.2mm)*%
+%ADD354C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (50.4mm,65mm)*%
+%ADD355C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (50.4mm,65.8mm)*%
+%ADD356C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (68mm,63.4mm)*%
+%ADD357C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (68mm,65.8mm)*%
+%ADD358C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (68mm,64.2mm)*%
+%ADD359C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (68mm,65mm)*%
+%ADD360C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (68mm,62.6mm)*%
+%ADD361C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (63.2mm,59.8mm)*%
+%ADD362C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (62.4mm,59.8mm)*%
+%ADD363C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (61.6mm,59.8mm)*%
+%ADD364C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (60.8mm,59.8mm)*%
+%ADD365C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (60.8mm,93.4mm)*%
+%ADD366C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (61.6mm,93.4mm)*%
+%ADD367C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (62.4mm,93.4mm)*%
+%ADD368C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (63.2mm,93.4mm)*%
+%ADD369C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (50.4mm,80.2mm)*%
+%ADD370C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (50.4mm,81mm)*%
+%ADD371C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (50.4mm,81.8mm)*%
+%ADD372C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (50.4mm,82.6mm)*%
+%ADD373C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (50.4mm,83.4mm)*%
+%ADD374C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (68mm,81mm)*%
+%ADD375C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (68mm,83.4mm)*%
+%ADD376C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (68mm,81.8mm)*%
+%ADD377C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (68mm,82.6mm)*%
+%ADD378C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (68mm,80.2mm)*%
+%ADD379C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (63.2mm,77.4mm)*%
+%ADD380C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (62.4mm,77.4mm)*%
+%ADD381C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (61.6mm,77.4mm)*%
+%ADD382C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (60.8mm,77.4mm)*%
+%ADD383C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (80mm,75.8mm)*%
+%ADD384C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (80.8mm,75.8mm)*%
+%ADD385C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (81.6mm,75.8mm)*%
+%ADD386C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (82.4mm,75.8mm)*%
+%ADD387C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (69.6mm,62.6mm)*%
+%ADD388C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (69.6mm,63.4mm)*%
+%ADD389C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (69.6mm,64.2mm)*%
+%ADD390C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (69.6mm,65mm)*%
+%ADD391C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (69.6mm,65.8mm)*%
+%ADD392C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (87.2mm,63.4mm)*%
+%ADD393C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (87.2mm,65.8mm)*%
+%ADD394C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (87.2mm,64.2mm)*%
+%ADD395C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (87.2mm,65mm)*%
+%ADD396C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (87.2mm,62.6mm)*%
+%ADD397C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (82.4mm,59.8mm)*%
+%ADD398C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (81.6mm,59.8mm)*%
+%ADD399C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (80.8mm,59.8mm)*%
+%ADD400C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (80mm,59.8mm)*%
+%ADD401C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (80mm,77.4mm)*%
+%ADD402C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (80.8mm,77.4mm)*%
+%ADD403C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (81.6mm,77.4mm)*%
+%ADD404C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (82.4mm,77.4mm)*%
+%ADD405C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (87.2mm,80.2mm)*%
+%ADD406C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (87.2mm,82.6mm)*%
+%ADD407C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (87.2mm,81.8mm)*%
+%ADD408C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (87.2mm,83.4mm)*%
+%ADD409C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (87.2mm,81mm)*%
+%ADD410C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (69.6mm,83.4mm)*%
+%ADD411C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (69.6mm,82.6mm)*%
+%ADD412C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (69.6mm,81.8mm)*%
+%ADD413C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (69.6mm,81mm)*%
+%ADD414C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (69.6mm,80.2mm)*%
+%ADD415C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (82.4mm,93.4mm)*%
+%ADD416C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (81.6mm,93.4mm)*%
+%ADD417C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (80.8mm,93.4mm)*%
+%ADD418C,0.60000*%
+%TA.AperFunction,OtherDrill,Pad Free-F (80mm,93.4mm)*%
+%ADD419C,0.60000*%
+%TA.AperFunction,ComponentDrill*%
+%ADD420C,0.50000*%
+D56*
+X500000Y500000D02*
+D03*
+D57*
+X9500000D02*
+D03*
+D58*
+Y9500000D02*
+D03*
+D59*
+X500000D02*
+D03*
+D60*
+X8000000Y2300000D02*
+D03*
+D61*
+X8080000D02*
+D03*
+D62*
+X8160000D02*
+D03*
+D63*
+X8240000D02*
+D03*
+D64*
+X6960000Y980000D02*
+D03*
+D65*
+Y1060000D02*
+D03*
+D66*
+Y1140000D02*
+D03*
+D67*
+Y1220000D02*
+D03*
+D68*
+Y1300000D02*
+D03*
+D69*
+X8720000Y1060000D02*
+D03*
+D70*
+Y1300000D02*
+D03*
+D71*
+Y1140000D02*
+D03*
+D72*
+Y1220000D02*
+D03*
+D73*
+Y980000D02*
+D03*
+D74*
+X8240000Y700000D02*
+D03*
+D75*
+X8160000D02*
+D03*
+D76*
+X8080000D02*
+D03*
+D77*
+X8000000D02*
+D03*
+D78*
+X6080000D02*
+D03*
+D79*
+X6160000D02*
+D03*
+D80*
+X6240000D02*
+D03*
+D81*
+X6320000D02*
+D03*
+D82*
+X6800000Y980000D02*
+D03*
+D83*
+Y1220000D02*
+D03*
+D84*
+Y1140000D02*
+D03*
+D85*
+Y1300000D02*
+D03*
+D86*
+Y1060000D02*
+D03*
+D87*
+X5040000Y1300000D02*
+D03*
+D88*
+Y1220000D02*
+D03*
+D89*
+Y1140000D02*
+D03*
+D90*
+Y1060000D02*
+D03*
+D91*
+Y980000D02*
+D03*
+D92*
+X6320000Y2300000D02*
+D03*
+D93*
+X6240000D02*
+D03*
+D94*
+X6160000D02*
+D03*
+D95*
+X6080000D02*
+D03*
+D96*
+X4160000D02*
+D03*
+D97*
+X4240000D02*
+D03*
+D98*
+X4320000D02*
+D03*
+D99*
+X4400000D02*
+D03*
+D100*
+X3120000Y980000D02*
+D03*
+D101*
+Y1060000D02*
+D03*
+D102*
+Y1140000D02*
+D03*
+D103*
+Y1220000D02*
+D03*
+D104*
+Y1300000D02*
+D03*
+D105*
+X4880000Y1060000D02*
+D03*
+D106*
+Y1300000D02*
+D03*
+D107*
+Y1140000D02*
+D03*
+D108*
+Y1220000D02*
+D03*
+D109*
+Y980000D02*
+D03*
+D110*
+X4400000Y700000D02*
+D03*
+D111*
+X4320000D02*
+D03*
+D112*
+X4240000D02*
+D03*
+D113*
+X4160000D02*
+D03*
+D114*
+X2240000D02*
+D03*
+D115*
+X2320000D02*
+D03*
+D116*
+X2400000D02*
+D03*
+D117*
+X2480000D02*
+D03*
+D118*
+X2960000Y980000D02*
+D03*
+D119*
+Y1220000D02*
+D03*
+D120*
+Y1140000D02*
+D03*
+D121*
+Y1300000D02*
+D03*
+D122*
+Y1060000D02*
+D03*
+D123*
+X1200000Y1300000D02*
+D03*
+D124*
+Y1220000D02*
+D03*
+D125*
+Y1140000D02*
+D03*
+D126*
+Y1060000D02*
+D03*
+D127*
+Y980000D02*
+D03*
+D128*
+X2480000Y2300000D02*
+D03*
+D129*
+X2400000D02*
+D03*
+D130*
+X2320000D02*
+D03*
+D131*
+X2240000D02*
+D03*
+D132*
+X8000000Y5820000D02*
+D03*
+D133*
+X8080000D02*
+D03*
+D134*
+X8160000D02*
+D03*
+D135*
+X8240000D02*
+D03*
+D136*
+X6960000Y4500000D02*
+D03*
+D137*
+Y4580000D02*
+D03*
+D138*
+Y4660000D02*
+D03*
+D139*
+Y4740000D02*
+D03*
+D140*
+Y4820000D02*
+D03*
+D141*
+X8720000Y4580000D02*
+D03*
+D142*
+Y4820000D02*
+D03*
+D143*
+Y4660000D02*
+D03*
+D144*
+Y4740000D02*
+D03*
+D145*
+Y4500000D02*
+D03*
+D146*
+X8240000Y4220000D02*
+D03*
+D147*
+X8160000D02*
+D03*
+D148*
+X8080000D02*
+D03*
+D149*
+X8000000D02*
+D03*
+D150*
+Y2460000D02*
+D03*
+D151*
+X8080000D02*
+D03*
+D152*
+X8160000D02*
+D03*
+D153*
+X8240000D02*
+D03*
+D154*
+X8720000Y2740000D02*
+D03*
+D155*
+Y2980000D02*
+D03*
+D156*
+Y2900000D02*
+D03*
+D157*
+Y3060000D02*
+D03*
+D158*
+Y2820000D02*
+D03*
+D159*
+X6960000Y3060000D02*
+D03*
+D160*
+Y2980000D02*
+D03*
+D161*
+Y2900000D02*
+D03*
+D162*
+Y2820000D02*
+D03*
+D163*
+Y2740000D02*
+D03*
+D164*
+X8240000Y4060000D02*
+D03*
+D165*
+X8160000D02*
+D03*
+D166*
+X8080000D02*
+D03*
+D167*
+X8000000D02*
+D03*
+D168*
+X6080000Y4220000D02*
+D03*
+D169*
+X6160000D02*
+D03*
+D170*
+X6240000D02*
+D03*
+D171*
+X6320000D02*
+D03*
+D172*
+X6800000Y4500000D02*
+D03*
+D173*
+Y4740000D02*
+D03*
+D174*
+Y4660000D02*
+D03*
+D175*
+Y4820000D02*
+D03*
+D176*
+Y4580000D02*
+D03*
+D177*
+X5040000Y4820000D02*
+D03*
+D178*
+Y4740000D02*
+D03*
+D179*
+Y4660000D02*
+D03*
+D180*
+Y4580000D02*
+D03*
+D181*
+Y4500000D02*
+D03*
+D182*
+X6320000Y5820000D02*
+D03*
+D183*
+X6240000D02*
+D03*
+D184*
+X6160000D02*
+D03*
+D185*
+X6080000D02*
+D03*
+D186*
+Y2460000D02*
+D03*
+D187*
+X6160000D02*
+D03*
+D188*
+X6240000D02*
+D03*
+D189*
+X6320000D02*
+D03*
+D190*
+X6800000Y2740000D02*
+D03*
+D191*
+Y2980000D02*
+D03*
+D192*
+Y2900000D02*
+D03*
+D193*
+Y3060000D02*
+D03*
+D194*
+Y2820000D02*
+D03*
+D195*
+X5040000Y3060000D02*
+D03*
+D196*
+Y2980000D02*
+D03*
+D197*
+Y2900000D02*
+D03*
+D198*
+Y2820000D02*
+D03*
+D199*
+Y2740000D02*
+D03*
+D200*
+X6320000Y4060000D02*
+D03*
+D201*
+X6240000D02*
+D03*
+D202*
+X6160000D02*
+D03*
+D203*
+X6080000D02*
+D03*
+D204*
+X4160000Y5820000D02*
+D03*
+D205*
+X4240000D02*
+D03*
+D206*
+X4320000D02*
+D03*
+D207*
+X4400000D02*
+D03*
+D208*
+X3120000Y4500000D02*
+D03*
+D209*
+Y4580000D02*
+D03*
+D210*
+Y4660000D02*
+D03*
+D211*
+Y4740000D02*
+D03*
+D212*
+Y4820000D02*
+D03*
+D213*
+X4880000Y4580000D02*
+D03*
+D214*
+Y4820000D02*
+D03*
+D215*
+Y4660000D02*
+D03*
+D216*
+Y4740000D02*
+D03*
+D217*
+Y4500000D02*
+D03*
+D218*
+X4400000Y4220000D02*
+D03*
+D219*
+X4320000D02*
+D03*
+D220*
+X4240000D02*
+D03*
+D221*
+X4160000D02*
+D03*
+D222*
+Y2460000D02*
+D03*
+D223*
+X4240000D02*
+D03*
+D224*
+X4320000D02*
+D03*
+D225*
+X4400000D02*
+D03*
+D226*
+X4880000Y2740000D02*
+D03*
+D227*
+Y2980000D02*
+D03*
+D228*
+Y2900000D02*
+D03*
+D229*
+Y3060000D02*
+D03*
+D230*
+Y2820000D02*
+D03*
+D231*
+X3120000Y3060000D02*
+D03*
+D232*
+Y2980000D02*
+D03*
+D233*
+Y2900000D02*
+D03*
+D234*
+Y2820000D02*
+D03*
+D235*
+Y2740000D02*
+D03*
+D236*
+X4400000Y4060000D02*
+D03*
+D237*
+X4320000D02*
+D03*
+D238*
+X4240000D02*
+D03*
+D239*
+X4160000D02*
+D03*
+D240*
+X2240000Y4220000D02*
+D03*
+D241*
+X2320000D02*
+D03*
+D242*
+X2400000D02*
+D03*
+D243*
+X2480000D02*
+D03*
+D244*
+X2960000Y4500000D02*
+D03*
+D245*
+Y4740000D02*
+D03*
+D246*
+Y4660000D02*
+D03*
+D247*
+Y4820000D02*
+D03*
+D248*
+Y4580000D02*
+D03*
+D249*
+X1200000Y4820000D02*
+D03*
+D250*
+Y4740000D02*
+D03*
+D251*
+Y4660000D02*
+D03*
+D252*
+Y4580000D02*
+D03*
+D253*
+Y4500000D02*
+D03*
+D254*
+X2480000Y5820000D02*
+D03*
+D255*
+X2400000D02*
+D03*
+D256*
+X2320000D02*
+D03*
+D257*
+X2240000D02*
+D03*
+D258*
+Y2460000D02*
+D03*
+D259*
+X2320000D02*
+D03*
+D260*
+X2400000D02*
+D03*
+D261*
+X2480000D02*
+D03*
+D262*
+X2960000Y2740000D02*
+D03*
+D263*
+Y2980000D02*
+D03*
+D264*
+Y2900000D02*
+D03*
+D265*
+Y3060000D02*
+D03*
+D266*
+Y2820000D02*
+D03*
+D267*
+X1200000Y3060000D02*
+D03*
+D268*
+Y2980000D02*
+D03*
+D269*
+Y2900000D02*
+D03*
+D270*
+Y2820000D02*
+D03*
+D271*
+Y2740000D02*
+D03*
+D272*
+X2480000Y4060000D02*
+D03*
+D273*
+X2400000D02*
+D03*
+D274*
+X2320000D02*
+D03*
+D275*
+X2240000D02*
+D03*
+D276*
+X4160000Y9340000D02*
+D03*
+D277*
+X4240000D02*
+D03*
+D278*
+X4320000D02*
+D03*
+D279*
+X4400000D02*
+D03*
+D280*
+X3120000Y8020000D02*
+D03*
+D281*
+Y8100000D02*
+D03*
+D282*
+Y8180000D02*
+D03*
+D283*
+Y8260000D02*
+D03*
+D284*
+Y8340000D02*
+D03*
+D285*
+X4880000Y8100000D02*
+D03*
+D286*
+Y8340000D02*
+D03*
+D287*
+Y8180000D02*
+D03*
+D288*
+Y8260000D02*
+D03*
+D289*
+Y8020000D02*
+D03*
+D290*
+X4400000Y7740000D02*
+D03*
+D291*
+X4320000D02*
+D03*
+D292*
+X4240000D02*
+D03*
+D293*
+X4160000D02*
+D03*
+D294*
+Y5980000D02*
+D03*
+D295*
+X4240000D02*
+D03*
+D296*
+X4320000D02*
+D03*
+D297*
+X4400000D02*
+D03*
+D298*
+X4880000Y6260000D02*
+D03*
+D299*
+Y6500000D02*
+D03*
+D300*
+Y6420000D02*
+D03*
+D301*
+Y6580000D02*
+D03*
+D302*
+Y6340000D02*
+D03*
+D303*
+X3120000Y6580000D02*
+D03*
+D304*
+Y6500000D02*
+D03*
+D305*
+Y6420000D02*
+D03*
+D306*
+Y6340000D02*
+D03*
+D307*
+Y6260000D02*
+D03*
+D308*
+X4400000Y7580000D02*
+D03*
+D309*
+X4320000D02*
+D03*
+D310*
+X4240000D02*
+D03*
+D311*
+X4160000D02*
+D03*
+D312*
+X2240000Y7740000D02*
+D03*
+D313*
+X2320000D02*
+D03*
+D314*
+X2400000D02*
+D03*
+D315*
+X2480000D02*
+D03*
+D316*
+X2960000Y8020000D02*
+D03*
+D317*
+Y8260000D02*
+D03*
+D318*
+Y8180000D02*
+D03*
+D319*
+Y8340000D02*
+D03*
+D320*
+Y8100000D02*
+D03*
+D321*
+X1200000Y8340000D02*
+D03*
+D322*
+Y8260000D02*
+D03*
+D323*
+Y8180000D02*
+D03*
+D324*
+Y8100000D02*
+D03*
+D325*
+Y8020000D02*
+D03*
+D326*
+X2480000Y9340000D02*
+D03*
+D327*
+X2400000D02*
+D03*
+D328*
+X2320000D02*
+D03*
+D329*
+X2240000D02*
+D03*
+D330*
+Y5980000D02*
+D03*
+D331*
+X2320000D02*
+D03*
+D332*
+X2400000D02*
+D03*
+D333*
+X2480000D02*
+D03*
+D334*
+X2960000Y6260000D02*
+D03*
+D335*
+Y6500000D02*
+D03*
+D336*
+Y6420000D02*
+D03*
+D337*
+Y6580000D02*
+D03*
+D338*
+Y6340000D02*
+D03*
+D339*
+X1200000Y6580000D02*
+D03*
+D340*
+Y6500000D02*
+D03*
+D341*
+Y6420000D02*
+D03*
+D342*
+Y6340000D02*
+D03*
+D343*
+Y6260000D02*
+D03*
+D344*
+X2480000Y7580000D02*
+D03*
+D345*
+X2400000D02*
+D03*
+D346*
+X2320000D02*
+D03*
+D347*
+X2240000D02*
+D03*
+D348*
+X6080000D02*
+D03*
+D349*
+X6160000D02*
+D03*
+D350*
+X6240000D02*
+D03*
+D351*
+X6320000D02*
+D03*
+D352*
+X5040000Y6260000D02*
+D03*
+D353*
+Y6340000D02*
+D03*
+D354*
+Y6420000D02*
+D03*
+D355*
+Y6500000D02*
+D03*
+D356*
+Y6580000D02*
+D03*
+D357*
+X6800000Y6340000D02*
+D03*
+D358*
+Y6580000D02*
+D03*
+D359*
+Y6420000D02*
+D03*
+D360*
+Y6500000D02*
+D03*
+D361*
+Y6260000D02*
+D03*
+D362*
+X6320000Y5980000D02*
+D03*
+D363*
+X6240000D02*
+D03*
+D364*
+X6160000D02*
+D03*
+D365*
+X6080000D02*
+D03*
+D366*
+Y9340000D02*
+D03*
+D367*
+X6160000D02*
+D03*
+D368*
+X6240000D02*
+D03*
+D369*
+X6320000D02*
+D03*
+D370*
+X5040000Y8020000D02*
+D03*
+D371*
+Y8100000D02*
+D03*
+D372*
+Y8180000D02*
+D03*
+D373*
+Y8260000D02*
+D03*
+D374*
+Y8340000D02*
+D03*
+D375*
+X6800000Y8100000D02*
+D03*
+D376*
+Y8340000D02*
+D03*
+D377*
+Y8180000D02*
+D03*
+D378*
+Y8260000D02*
+D03*
+D379*
+Y8020000D02*
+D03*
+D380*
+X6320000Y7740000D02*
+D03*
+D381*
+X6240000D02*
+D03*
+D382*
+X6160000D02*
+D03*
+D383*
+X6080000D02*
+D03*
+D384*
+X8000000Y7580000D02*
+D03*
+D385*
+X8080000D02*
+D03*
+D386*
+X8160000D02*
+D03*
+D387*
+X8240000D02*
+D03*
+D388*
+X6960000Y6260000D02*
+D03*
+D389*
+Y6340000D02*
+D03*
+D390*
+Y6420000D02*
+D03*
+D391*
+Y6500000D02*
+D03*
+D392*
+Y6580000D02*
+D03*
+D393*
+X8720000Y6340000D02*
+D03*
+D394*
+Y6580000D02*
+D03*
+D395*
+Y6420000D02*
+D03*
+D396*
+Y6500000D02*
+D03*
+D397*
+Y6260000D02*
+D03*
+D398*
+X8240000Y5980000D02*
+D03*
+D399*
+X8160000D02*
+D03*
+D400*
+X8080000D02*
+D03*
+D401*
+X8000000D02*
+D03*
+D402*
+Y7740000D02*
+D03*
+D403*
+X8080000D02*
+D03*
+D404*
+X8160000D02*
+D03*
+D405*
+X8240000D02*
+D03*
+D406*
+X8720000Y8020000D02*
+D03*
+D407*
+Y8260000D02*
+D03*
+D408*
+Y8180000D02*
+D03*
+D409*
+Y8340000D02*
+D03*
+D410*
+Y8100000D02*
+D03*
+D411*
+X6960000Y8340000D02*
+D03*
+D412*
+Y8260000D02*
+D03*
+D413*
+Y8180000D02*
+D03*
+D414*
+Y8100000D02*
+D03*
+D415*
+Y8020000D02*
+D03*
+D416*
+X8240000Y9340000D02*
+D03*
+D417*
+X8160000D02*
+D03*
+D418*
+X8080000D02*
+D03*
+D419*
+X8000000D02*
+D03*
+D420*
+X2613480Y2032000D02*
+D03*
+Y1632000D02*
+D03*
+X4533480Y2032000D02*
+D03*
+Y1632000D02*
+D03*
+X6453480Y2032000D02*
+D03*
+Y1632000D02*
+D03*
+X8373480Y2032000D02*
+D03*
+Y1632000D02*
+D03*
+X2613480Y3792000D02*
+D03*
+Y3392000D02*
+D03*
+X4533480Y3792000D02*
+D03*
+Y3392000D02*
+D03*
+X6453480Y3792000D02*
+D03*
+Y3392000D02*
+D03*
+X8373480Y3792000D02*
+D03*
+Y3392000D02*
+D03*
+X2613480Y5552000D02*
+D03*
+Y5152000D02*
+D03*
+X4533480Y5552000D02*
+D03*
+Y5152000D02*
+D03*
+X6453480Y5552000D02*
+D03*
+Y5152000D02*
+D03*
+X8373480Y5552000D02*
+D03*
+Y5152000D02*
+D03*
+X2613480Y7312000D02*
+D03*
+Y6912000D02*
+D03*
+X4533480Y7312000D02*
+D03*
+Y6912000D02*
+D03*
+X6453480Y7312000D02*
+D03*
+Y6912000D02*
+D03*
+X8373480Y7312000D02*
+D03*
+Y6912000D02*
+D03*
+X2613480Y9072000D02*
+D03*
+Y8672000D02*
+D03*
+X4533480Y9072000D02*
+D03*
+Y8672000D02*
+D03*
+X6453480Y9072000D02*
+D03*
+Y8672000D02*
+D03*
+X8373480Y9072000D02*
+D03*
+Y8672000D02*
+D03*
+%TF.MD5,1e2c665aa10b791fcc51abe164a12358*%
+M02*
