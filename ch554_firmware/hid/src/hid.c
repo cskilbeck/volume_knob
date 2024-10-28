@@ -24,89 +24,92 @@ typedef enum event
 
 void hid_process_event(event_t e)
 {
-    if(e == 0) {
 
-        uint8 modifiers = 0;
-        uint16 key = 0;
+#if !defined(MOUSE_EXPERIMENT)
 
-        switch(e & event_mask) {
+    uint8 modifiers = 0;
+    uint16 key = 0;
 
-        case event_clockwise:
-            key = hid_config.key_clockwise;
-            modifiers = hid_config.mod_clockwise;
-            break;
+    switch(e & event_mask) {
 
-        case event_counterclockwise:
-            key = hid_config.key_counterclockwise;
-            modifiers = hid_config.mod_counterclockwise;
-            break;
+    case event_clockwise:
+        key = hid_config.key_clockwise;
+        modifiers = hid_config.mod_clockwise;
+        break;
 
-        case event_press:
-            key = hid_config.key_press;
-            modifiers = hid_config.mod_press;
-            break;
-        }
+    case event_counterclockwise:
+        key = hid_config.key_counterclockwise;
+        modifiers = hid_config.mod_counterclockwise;
+        break;
 
-        uint16 send_key = key & 0x7fff;
-        uint16 send_modifiers = modifiers;
+    case event_press:
+        key = hid_config.key_press;
+        modifiers = hid_config.mod_press;
+        break;
+    }
 
-        if((e & event_keyup) != 0) {
-            send_key = 0;
-            send_modifiers = 0;
-        }
+    uint16 send_key = key & 0x7fff;
+    uint16 send_modifiers = modifiers;
 
-        if(IS_MEDIA_KEY(key)) {
+    if((e & event_keyup) != 0) {
+        send_key = 0;
+        send_modifiers = 0;
+    }
 
-            consumer_control_hid_report *cc = (consumer_control_hid_report *)usb_endpoint_1_tx_buffer;
-            cc->report_id = 0x02;
-            cc->keycode = send_key;
-            usb_send(endpoint_1, sizeof(consumer_control_hid_report));
+    if(IS_MEDIA_KEY(key)) {
 
-        } else {
+        consumer_control_hid_report *cc = (consumer_control_hid_report *)usb_endpoint_1_tx_buffer;
+        cc->report_id = 0x02;
+        cc->keycode = send_key;
+        usb_send(endpoint_1, sizeof(consumer_control_hid_report));
 
-            keyboard_hid_report *k = (keyboard_hid_report *)usb_endpoint_1_tx_buffer;
-            k->report_id = 0x01;
-            k->modifiers = send_modifiers;
-            k->pad = 0;
-            k->key[0] = send_key;
-            k->key[1] = 0;
-            k->key[2] = 0;
-            k->key[3] = 0;
-            k->key[4] = 0;
-            k->key[5] = 0;
-            usb_send(endpoint_1, sizeof(keyboard_hid_report));
-        }
     } else {
 
-        printf("%02x\n", e);
-        mouse_hid_report *m = (mouse_hid_report *)usb_endpoint_2_tx_buffer;
-        m->report_id = 0x03;
-        m->buttons = 0;
-        m->x = 0;
-        m->y = 0;
-        m->wheel1 = 0;
-        m->wheel2 = 0;
-
-        switch(e & event_mask) {
-
-        case event_clockwise:
-            m->wheel2 = 1;
-            break;
-
-        case event_counterclockwise:
-            m->wheel2 = -1;
-            break;
-
-        case event_press:
-            if((e & event_keyup) == 0) {
-                m->buttons = 1;
-            } else {
-                m->buttons = 0;
-            }
-            break;
-        }
-        usb_send(endpoint_2, sizeof(mouse_hid_report));
+        keyboard_hid_report *k = (keyboard_hid_report *)usb_endpoint_1_tx_buffer;
+        k->report_id = 0x01;
+        k->modifiers = send_modifiers;
+        k->pad = 0;
+        k->key[0] = send_key;
+        k->key[1] = 0;
+        k->key[2] = 0;
+        k->key[3] = 0;
+        k->key[4] = 0;
+        k->key[5] = 0;
+        usb_send(endpoint_1, sizeof(keyboard_hid_report));
     }
+
+#else    // !defined(MOUSE_EXPERIMENT)
+
+    printf("%02x\n", e);
+    mouse_hid_report *m = (mouse_hid_report *)usb_endpoint_2_tx_buffer;
+    m->report_id = 0x03;
+    m->buttons = 0;
+    m->x = 0;
+    m->y = 0;
+    m->wheel1 = 0;
+    m->wheel2 = 0;
+
+    switch(e & event_mask) {
+
+    case event_clockwise:
+        m->wheel2 = 1;
+        break;
+
+    case event_counterclockwise:
+        m->wheel2 = -1;
+        break;
+
+    case event_press:
+        if((e & event_keyup) == 0) {
+            m->buttons = 1;
+        } else {
+            m->buttons = 0;
+        }
+        break;
+    }
+    usb_send(endpoint_2, sizeof(mouse_hid_report));
+
+#endif    // !defined(MOUSE_EXPERIMENT)
 }
 
 //////////////////////////////////////////////////////////////////////

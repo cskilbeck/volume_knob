@@ -15,7 +15,7 @@
 
 //////////////////////////////////////////////////////////////////////
 
-#define NOP_MACRO \
+#define NOP_MACRO(...) \
     do {          \
     } while(0)
 
@@ -50,5 +50,5 @@ void hard_fault();
         }                                                                                     \
     } while(0)
 #else
-#define ASSERT(...) NOP_MACRO
+#define ASSERT(...) NOP_MACRO(__VA_ARGS__)
 #endif

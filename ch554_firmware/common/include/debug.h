@@ -24,8 +24,8 @@ void hexdump(char __code const *msg, uint8 *p, uint8 n);
 
 #else
 
-#define uart0_alternate_pins() NOP_MACRO
-#define uart0_init() NOP_MACRO
-#define hexdump(m, p, n) NOP_MACRO
+#define uart0_alternate_pins() NOP_MACRO()
+#define uart0_init() NOP_MACRO()
+#define hexdump(m, p, n) NOP_MACRO()
 
 #endif

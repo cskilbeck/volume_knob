@@ -18,8 +18,8 @@
 #if defined(DEBUG)
 #include "nanoprintf.h"
 #else
-#define printf(...) NOP_MACRO
-#define puts(...) NOP_MACRO
+#define printf(...) NOP_MACRO(__VA_ARGS__)
+#define puts(...) NOP_MACRO(__VA_ARGS__)
 #endif
 
 //////////////////////////////////////////////////////////////////////

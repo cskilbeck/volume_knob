@@ -67,10 +67,10 @@
 #define BTN_PORT PORT1
 #define LED_PORT PORT1
 
-#define ROTA_PIN 4
-#define ROTB_PIN 5
-#define BTN_PIN 6
-#define LED_PIN 7
+#define BTN_PIN 4
+#define LED_PIN 5
+#define ROTA_PIN 6
+#define ROTB_PIN 7
 
 #define LED_ON 0
 #define LED_OFF 1

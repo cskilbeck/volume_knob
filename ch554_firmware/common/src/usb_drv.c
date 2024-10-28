@@ -10,8 +10,8 @@
 #define usb_printf printf
 #define usb_puts puts
 #else
-#define usb_printf(...) NOP_MACRO
-#define usb_puts(...) NOP_MACRO
+#define usb_printf(...) NOP_MACRO(__VA_ARGS__)
+#define usb_puts(...) NOP_MACRO(__VA_ARGS__)
 #endif
 
 //////////////////////////////////////////////////////////////////////
