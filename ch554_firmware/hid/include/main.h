@@ -4,25 +4,6 @@
 #pragma disable_warning 154
 
 //////////////////////////////////////////////////////////////////////
-// device type config
-
-// USB Micro-B female
-#define DEVICE_ORIGINAL 0
-
-// USB A male
-#define DEVICE_DIRECT 1
-
-// CH554 Dev board
-#define DEVICE_DEVKIT 2
-
-// USB Micro-B female CH554E version
-#define DEVICE_ORIGINAL_V2 3
-
-#if !defined(DEVICE)
-#error DEVICE is not defined?
-#endif
-
-//////////////////////////////////////////////////////////////////////
 
 #if !defined(FREQ_SYS)
 #define FREQ_SYS 24000000
@@ -38,8 +19,8 @@
 
 #define FIRMWARE_VERSION (FIRMWARE_CURRENT_VERSION | DEVICE)
 
+#include "device.h"
 #include "common.h"
-
 #include "hid.h"
 #include "xdata_extra.h"
 #include "hid_config.h"

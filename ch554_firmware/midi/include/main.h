@@ -7,10 +7,6 @@
 
 //////////////////////////////////////////////////////////////////////
 
-#define DEVICE_ORIGINAL 0
-#define DEVICE_DIRECT 1
-#define DEVICE_DEVKIT 2
-
 #if !defined(DEVICE)
 #error Please define DEVICE
 
@@ -55,7 +51,7 @@
 // effectively the max length is 16
 
 #include "common.h"
-
+#include "device.h"
 #include "midi.h"
 #include "xdata_extra.h"
 #include "midi_config.h"
