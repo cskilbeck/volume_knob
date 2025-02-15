@@ -57,23 +57,23 @@ typedef enum midi_config_flags
 
 struct midi_config
 {
-    uint8 config_version;           // Config struct version - must be 1st byte!
-    uint8 rot_control_msb;          // CC index MSB for knob
-    uint8 rot_control_lsb;          // CC index LSB for knob
-    uint8 btn_control_msb;          // CC index MSB for button
-    uint8 btn_control_lsb;          // CC index LSB for button
-    uint16 btn_value_a_14;          // 1st button value (or pressed value if cf_btn_momentary) (14 bit mode)
-    uint16 btn_value_b_14;          // 2nd button value (or released value if cf_btn_momentary) (14 bit mode)
-    uint8 btn_value_a_7;            // 1st button value (or pressed value if cf_btn_momentary) (7 bit mode)
-    uint8 btn_value_b_7;            // 2nd button value (or released value if cf_btn_momentary) (7 bit mode)
-    uint8 channels;                 // rotate channel in low nibble, button channel in high nibble
-    uint8 rot_zero_point;           // Zero point in relative mode (relative mode forces 7 bit mode)
-    uint16 rot_delta_14;            // Rotate delta (14 bit mode)
-    uint8 rot_delta_7;              // Rotate delta (7 bit mode)
-    uint16 rot_current_value_14;    // Current value (in absolute mode) (14 bit mode)
-    uint8 rot_current_value_7;      // Current value (in absolute mode) (7 bit mode)
-    uint8 acceleration;             // 0..3 see table in config.c
-    uint16 flags;                   // Flags, see enum above
+    uint8 config_version;           // 01 Config struct version - must be 1st byte!
+    uint8 rot_control_msb;          // 02 CC index MSB for knob
+    uint8 rot_control_lsb;          // 03 CC index LSB for knob
+    uint8 btn_control_msb;          // 04 CC index MSB for button
+    uint8 btn_control_lsb;          // 05 CC index LSB for button
+    uint16 btn_value_a_14;          // 07 1st button value (or pressed value if cf_btn_momentary) (14 bit mode)
+    uint16 btn_value_b_14;          // 09 2nd button value (or released value if cf_btn_momentary) (14 bit mode)
+    uint8 btn_value_a_7;            // 10 1st button value (or pressed value if cf_btn_momentary) (7 bit mode)
+    uint8 btn_value_b_7;            // 11 2nd button value (or released value if cf_btn_momentary) (7 bit mode)
+    uint8 channels;                 // 12 rotate channel in low nibble, button channel in high nibble
+    uint8 rot_zero_point;           // 13 Zero point in relative mode (relative mode forces 7 bit mode)
+    uint16 rot_delta_14;            // 15 Rotate delta (14 bit mode)
+    uint8 rot_delta_7;              // 16 Rotate delta (7 bit mode)
+    uint16 rot_current_value_14;    // 18 Current value (in absolute mode) (14 bit mode)
+    uint8 rot_current_value_7;      // 19 Current value (in absolute mode) (7 bit mode)
+    uint8 acceleration;             // 20 0..3 see table in config.c
+    uint16 flags;                   // 22 Flags, see enum above
 
     uint8 pad[CONFIG_MAX_LEN - 22];
 };

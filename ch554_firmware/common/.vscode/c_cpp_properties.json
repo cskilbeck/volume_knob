@@ -40,6 +40,23 @@
             "cppStandard": "c++17",
             "intelliSenseMode": "windows-msvc-x64",
             "configurationProvider": "ms-vscode.makefile-tools"
+        },
+        {
+            "name": "SDCC",
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE",
+                "DEBUG"
+            ],
+            "windowsSdkVersion": "10.0.22621.0",
+            "compilerPath": "cl.exe",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "windows-msvc-x64"
         }
     ],
     "version": 4

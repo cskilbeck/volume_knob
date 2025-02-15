@@ -60,10 +60,11 @@ typedef struct sysex_identity_response
 
 enum midi_packet_header_t
 {
-    midi_packet_start = 0x4,    // SysEx starts or continues with following three bytes
-    midi_packet_end_1 = 0x5,    // 1 Single-byte System Common Message or SysEx ends with following single byte.
-    midi_packet_end_2 = 0x6,    // SysEx ends with following two bytes.
-    midi_packet_end_3 = 0x7,    // SysEx ends with following three bytes.
+    midi_packet_start = 0x04,    // SysEx starts or continues with following three bytes
+    midi_packet_end_1 = 0x05,    // 1 Single-byte System Common Message or SysEx ends with following single byte.
+    midi_packet_end_2 = 0x06,    // SysEx ends with following two bytes.
+    midi_packet_end_3 = 0x07,    // SysEx ends with following three bytes.
+    midi_packet_cc = 0x0b,       // Change Control msg
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -71,8 +72,8 @@ enum midi_packet_header_t
 static uint8 device_id = 0;
 static uint8 *midi_sysex_ptr;
 static uint8 midi_sysex_remain = 0;
-static uint8 sysex_recv_length = 0;
-static uint8 sysex_recv_packet_offset = 0;
+static uint8 recv_length = 0;
+static uint8 recv_packet_offset = 0;
 
 #define CONFIG_7BIT_LEN (((CONFIG_MAX_LEN * 8) + 6) / 7)
 
@@ -217,9 +218,9 @@ void handle_sysex_in()
     if(midi_recv_buffer[0] == 0xF0 &&                      // sysex status byte
        midi_recv_buffer[1] == 0x7E &&                      // non-realtime
        midi_recv_buffer[3] == 0x06 &&                      // machine control command
-       midi_recv_buffer[sysex_recv_length - 1] == 0xF7)    // sysex terminator
+       midi_recv_buffer[recv_length - 1] == 0xF7)    // sysex terminator
     {
-        hexdump("SYSEX", midi_recv_buffer, sysex_recv_length);
+        hexdump("SYSEX", midi_recv_buffer, recv_length);
 
         switch(midi_recv_buffer[4]) {
 
@@ -273,18 +274,49 @@ void handle_sysex_in()
         } break;
         }
     }
-    sysex_recv_length = 0;
+    recv_length = 0;
 }
 
 //////////////////////////////////////////////////////////////////////
 
 static void sysex_parse_add(uint8 length)
 {
-    if(length > (sizeof(midi_recv_buffer) - sysex_recv_length)) {
-        sysex_recv_length = 0;
+    if(length > (sizeof(midi_recv_buffer) - recv_length)) {
+        recv_length = 0;
     } else {
-        memcpy(midi_recv_buffer + sysex_recv_length, usb_endpoint_2_rx_buffer + sysex_recv_packet_offset + 1, length);
-        sysex_recv_length += length;
+        memcpy(midi_recv_buffer + recv_length, usb_endpoint_2_rx_buffer + recv_packet_offset + 1, length);
+        recv_length += length;
+    }
+}
+
+//////////////////////////////////////////////////////////////////////
+
+static void cc_parse()
+{
+    uint8 channel = usb_endpoint_2_rx_buffer[1];
+    if((channel & 0xB0) == 0xB0) {
+        channel &= 0x0F;
+        uint8 param = usb_endpoint_2_rx_buffer[2];
+        uint8 value = usb_endpoint_2_rx_buffer[3];
+        if(channel == get_rot_channel()) {
+            if(config_flag(cf_btn_extended)) {
+                uint16 cur = midi_config.rot_current_value_14;
+                if(param == midi_config.rot_control_msb) {
+                    cur &= 0x007f;
+                    cur |= value << 7;
+                    midi_config.rot_current_value_14 = cur;
+                    printf("MSB=%d\n", value);
+                } else if(param == midi_config.rot_control_lsb) {
+                    cur &= 0xff80;
+                    cur |= value;
+                    midi_config.rot_current_value_14 = cur;
+                    printf("LSB=%d\n", value);
+                }
+            } else if(param == midi_config.rot_control_msb) {
+                midi_config.rot_current_value_7 = value;
+                printf("VAL=%d\n", value);
+            }
+        }
     }
 }
 
@@ -294,13 +326,17 @@ void process_midi_packet_in(uint8 length)
 {
     hexdump("midi_in", usb_endpoint_2_rx_buffer, length);
 
-    sysex_recv_packet_offset = 0;
+    recv_packet_offset = 0;
 
-    while(sysex_recv_packet_offset < length) {
+    while(recv_packet_offset < length) {
 
-        uint8 cmd = usb_endpoint_2_rx_buffer[sysex_recv_packet_offset];
+        uint8 cmd = usb_endpoint_2_rx_buffer[recv_packet_offset];
 
         switch(cmd) {
+
+        case midi_packet_cc:
+            cc_parse();
+            break;
 
         case midi_packet_start:
         case midi_packet_end_3:
@@ -316,11 +352,11 @@ void process_midi_packet_in(uint8 length)
             break;
 
         default:
-            sysex_recv_length = 0;
-            sysex_recv_packet_offset = length;
+            recv_length = 0;
+            recv_packet_offset = length;
             break;
         }
-        sysex_recv_packet_offset += 4;
+        recv_packet_offset += 4;
     }
     handle_sysex_in();
 }

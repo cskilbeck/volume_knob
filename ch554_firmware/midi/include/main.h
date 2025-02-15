@@ -5,6 +5,8 @@
 #pragma disable_warning 110
 #pragma disable_warning 154
 
+#include "vs_lint.h"
+
 //////////////////////////////////////////////////////////////////////
 
 #if !defined(DEVICE)
@@ -51,7 +53,6 @@
 // effectively the max length is 16
 
 #include "common.h"
-#include "device.h"
 #include "midi.h"
 #include "xdata_extra.h"
 #include "midi_config.h"

@@ -24,6 +24,7 @@
 
 //////////////////////////////////////////////////////////////////////
 
+#include "device.h"
 #include "ch554.h"
 #include "ch554_usb.h"
 #include "types.h"

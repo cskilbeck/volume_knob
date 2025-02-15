@@ -5,7 +5,7 @@
 // should these be in here or in main.c?
 static __code uint8 const accel_values[2][4] = { { 0, 1, 2, 3 }, { 0, 20, 40, 80 } };
 
-#define DEFAULT_FLAGS cf_led_flash_on_limit | cf_led_flash_on_click | cf_btn_momentary | cf_rotate_extended
+#define DEFAULT_FLAGS cf_led_flash_on_limit | cf_led_flash_on_click | cf_btn_momentary
 
 __code const midi_config_t default_midi_config = {
 
