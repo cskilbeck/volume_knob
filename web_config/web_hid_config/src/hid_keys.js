@@ -491,8 +491,40 @@ for (const [key, value] of Object.entries(consumer_control_keys)) {
     consumer_names[value] = key | 0x8000;
 }
 
+const mouse_event_entries = [
+    { name: "Mouse: Left Button",     keycode: 0x1001 },
+    { name: "Mouse: Right Button",    keycode: 0x1002 },
+    { name: "Mouse: Middle Button",   keycode: 0x1004 },
+    { name: "Mouse: Back Button",     keycode: 0x1008 },
+    { name: "Mouse: Forward Button",  keycode: 0x1010 },
+    { name: "Mouse: Scroll Up",       keycode: 0x2001 },
+    { name: "Mouse: Scroll Down",     keycode: 0x20FF },
+    { name: "Mouse: Scroll Right",    keycode: 0x3001 },
+    { name: "Mouse: Scroll Left",     keycode: 0x30FF },
+    { name: "Mouse: Move X", keycode: 0x4005, is_mouse_move: true },
+    { name: "Mouse: Move Y", keycode: 0x5005, is_mouse_move: true },
+];
+
+let mouse_event_names = {};
+
+for (const entry of mouse_event_entries) {
+    key_codes.push({ name: entry.name, keycode: entry.keycode, is_consumer_key: false, is_mouse_event: true, is_mouse_move: entry.is_mouse_move || false });
+    if (entry.is_mouse_move) {
+        // key by type tag so any delta value resolves to the right name
+        mouse_event_names[entry.keycode & 0x7000] = entry.name;
+    } else {
+        mouse_event_names[entry.keycode] = entry.name;
+    }
+}
+
 key_codes.sort((x, y) => {
 
+    if (x.is_mouse_event && !y.is_mouse_event) {
+        return 1;
+    }
+    if (!x.is_mouse_event && y.is_mouse_event) {
+        return -1;
+    }
     if (x.is_consumer_key && !y.is_consumer_key) {
         return 1;
     }
@@ -504,6 +536,16 @@ key_codes.sort((x, y) => {
 
 //////////////////////////////////////////////////////////////////////
 
+export function is_mouse_event(keycode) {
+    return (keycode & 0x8000) === 0 && (keycode & 0x7000) !== 0;
+}
+
+export function is_mouse_move(keycode) {
+    return (keycode & 0x8000) === 0 && ((keycode & 0x7000) === 0x4000 || (keycode & 0x7000) === 0x5000);
+}
+
+//////////////////////////////////////////////////////////////////////
+
 export default {
 
     key_modifiers,
@@ -512,8 +554,12 @@ export default {
     key_names,
 
     consumer_names,
+    mouse_event_names,
 
     hid_keys,
 
-    consumer_control_keys
+    consumer_control_keys,
+
+    is_mouse_event,
+    is_mouse_move
 }

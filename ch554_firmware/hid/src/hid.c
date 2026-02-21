@@ -24,11 +24,9 @@ typedef enum event
 
 void hid_process_event(event_t e)
 {
-
-#if !defined(MOUSE_EXPERIMENT)
-
-    uint8 modifiers = 0;
+    uint8 is_keyup = (e & event_keyup) != 0;
     uint16 key = 0;
+    uint8 modifiers = 0;
 
     switch(e & event_mask) {
 
@@ -48,68 +46,51 @@ void hid_process_event(event_t e)
         break;
     }
 
-    uint16 send_key = key & 0x7fff;
-    uint16 send_modifiers = modifiers;
-
-    if((e & event_keyup) != 0) {
-        send_key = 0;
-        send_modifiers = 0;
-    }
-
-    if(IS_MEDIA_KEY(key)) {
+    if(IS_CONSUMER_KEY(key)) {
 
         consumer_control_hid_report *cc = (consumer_control_hid_report *)usb_endpoint_1_tx_buffer;
         cc->report_id = 0x02;
-        cc->keycode = send_key;
+        cc->keycode = is_keyup ? 0 : (key & 0x7fff);
         usb_send(endpoint_1, sizeof(consumer_control_hid_report));
 
-    } else {
+    } else if(IS_KEYBOARD_KEY(key)) {
 
         keyboard_hid_report *k = (keyboard_hid_report *)usb_endpoint_1_tx_buffer;
         k->report_id = 0x01;
-        k->modifiers = send_modifiers;
+        k->modifiers = is_keyup ? 0 : modifiers;
         k->pad = 0;
-        k->key[0] = send_key;
+        k->key[0] = is_keyup ? 0 : KEY_VALUE_U8(key);
         k->key[1] = 0;
         k->key[2] = 0;
         k->key[3] = 0;
         k->key[4] = 0;
         k->key[5] = 0;
         usb_send(endpoint_1, sizeof(keyboard_hid_report));
-    }
 
-#else    // !defined(MOUSE_EXPERIMENT)
+    } else {
 
-    printf("%02x\n", e);
-    mouse_hid_report *m = (mouse_hid_report *)usb_endpoint_2_tx_buffer;
-    m->report_id = 0x03;
-    m->buttons = 0;
-    m->x = 0;
-    m->y = 0;
-    m->wheel1 = 0;
-    m->wheel2 = 0;
-
-    switch(e & event_mask) {
-
-    case event_clockwise:
-        m->wheel2 = 1;
-        break;
-
-    case event_counterclockwise:
-        m->wheel2 = -1;
-        break;
-
-    case event_press:
-        if((e & event_keyup) == 0) {
-            m->buttons = 1;
-        } else {
-            m->buttons = 0;
+        mouse_hid_report *m = (mouse_hid_report *)usb_endpoint_2_tx_buffer;
+        m->report_id = 0x03;
+        m->buttons = 0;
+        m->x = 0;
+        m->y = 0;
+        m->wheel1 = 0;
+        m->wheel2 = 0;
+        if(!is_keyup) {
+            if(IS_MOUSE_BUTTON(key)) {
+                m->buttons = KEY_VALUE_U8(key);
+            } else if(IS_MOUSE_WHEEL_V(key)) {
+                m->wheel1 = KEY_VALUE_I8(key);
+            } else if(IS_MOUSE_WHEEL_H(key)) {
+                m->wheel2 = KEY_VALUE_I8(key);
+            } else if(IS_MOUSE_MOVE_X(key)) {
+                m->x = KEY_VALUE_I8(key);
+            } else if(IS_MOUSE_MOVE_Y(key)) {
+                m->y = KEY_VALUE_I8(key);
+            }
         }
-        break;
+        usb_send(endpoint_2, sizeof(mouse_hid_report));
     }
-    usb_send(endpoint_2, sizeof(mouse_hid_report));
-
-#endif    // !defined(MOUSE_EXPERIMENT)
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -131,7 +112,7 @@ void hid_tick()
 void hid_update()
 {
     // send key on/off to usb hid if there are some waiting to be sent
-    if(!QUEUE_IS_EMPTY(hid_queue) && usb_is_endpoint_idle(endpoint_1)) {
+    if(!QUEUE_IS_EMPTY(hid_queue) && usb_is_endpoint_idle(endpoint_1) && usb_is_endpoint_idle(endpoint_2)) {
         uint8 p;
         QUEUE_POP(hid_queue, p);
         hid_process_event(p);

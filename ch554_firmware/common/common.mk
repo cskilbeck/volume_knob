@@ -39,7 +39,7 @@ $(OBJ)%.rel : %.c
 $(REL_FILES): $(MAKEFILE_LIST) | $(OBJ)
 
 $(TARGET).bin: $(REL_FILES) $(SOURCES) | $(BIN)
-	@echo Link
+	@echo Link $(PROJECT)
 	@$(CC) $(REL_FILES) $(LFLAGS) -o $(TARGET).ihx
 	@$(OBJCOPY) -I ihex -O binary $(TARGET).ihx $(TARGET).bin
 

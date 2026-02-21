@@ -15,7 +15,7 @@
 
 //////////////////////////////////////////////////////////////////////
 
-#define FIRMWARE_CURRENT_VERSION 0x01000000lu
+#define FIRMWARE_CURRENT_VERSION 0x02000000lu
 
 #define FIRMWARE_VERSION (FIRMWARE_CURRENT_VERSION | DEVICE)
 

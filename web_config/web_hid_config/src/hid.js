@@ -40,7 +40,8 @@ const flags = {
     cf_led_flash_on_ccw: 0x02,
     cf_led_flash_on_press: 0x04,
     cf_led_flash_on_release: 0x08,
-    cf_reverse_rotation: 0x10
+    cf_reverse_rotation: 0x10,
+    // cf_mousewheel: 0x20,  // deprecated - mouse events now encoded in key_* fields
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -103,11 +104,11 @@ function config_from_bytes(bytes, offset) {
     Object.assign(def_config, default_config);
     Object.assign(new_config, default_config);
 
-    if (bytes[offset] != CONFIG_VERSION) {
+    if (bytes[offset] !== CONFIG_VERSION) {
         return def_config;
     }
 
-    if (bytes.BYTES_PER_ELEMENT != 1) {
+    if (bytes.BYTES_PER_ELEMENT !== 1) {
         return def_config;
     }
 
@@ -124,7 +125,7 @@ function config_from_bytes(bytes, offset) {
                 field_size = 2;
                 break;
         }
-        if (field_size == 0) {
+        if (field_size === 0) {
             console.log("ERROR: bad field size/offset array for unmarshalling config");
             return def_config;
         }
@@ -156,7 +157,7 @@ function bytes_from_config(config) {
                 field_size = 2;
                 break;
         }
-        if (field_size == 0) {
+        if (field_size === 0) {
             console.log("ERROR: bad field size/offset array for marshalling config");
             return null;
         }
@@ -262,11 +263,13 @@ function on_hid_input_report(e) {
                 let b3 = data[4] || 0;
                 device.firmware_version = b3 | (b2 << 7) | (b1 << 14) | (b0 << 21);
                 device.firmware_version_str = `${b3}.${b2}.${b1}.${b0}`;
+                device.firmware_major = b3;
                 console.log(`Firmware version ${device.firmware_version_str}`);
                 break;
 
             case hid_custom_response.hcc_here_is_config:
                 device.config = config_from_bytes(data, 1);
+                device.config_loaded = true;
                 if (device.on_config_loaded != null) {
                     device.on_config_loaded();
                 }
@@ -297,9 +300,11 @@ async function init_device(d) {
         device = {
             firmware_version: 0x00000000,
             firmware_version_str: "0.0.0.0",
+            firmware_major: null,
             hid_device: d,
             name: d.productName,
             config: {},
+            config_loaded: false,
             on_config_loaded: null,
             on_config_saved: null
         };
@@ -326,7 +331,7 @@ async function init_device(d) {
 function on_connection_event(event) {
 
     let name = event.device.productName;
-    if (hid_devices.value[name] && event.type == 'disconnect') {
+    if (hid_devices.value[name] && event.type === 'disconnect') {
         delete hid_devices.value[name];
     }
 }

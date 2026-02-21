@@ -133,8 +133,8 @@ const pill_border_px = computed(() => { return ((theLabel.value.offsetHeight - p
     position: relative;
     font-size: v-bind('props.fontSize');
     display: block;
-    margin: 0px;
-    padding: 0px;
+    margin: 0;
+    padding: 0;
     width: 100%;
     height: 100%;
 }
@@ -163,11 +163,11 @@ const pill_border_px = computed(() => { return ((theLabel.value.offsetHeight - p
 .pill-container:before {
     position: absolute;
     content: "";
-    margin: 0px;
+    margin: 0;
     padding: v-bind('`${pill_size_px * 0.5}px`');
-    width: 0px;
-    height: 0px;
-    left: 0%;
+    width: 0;
+    height: 0;
+    left: 0;
     top: 50%;
     border-radius: v-bind('`${props.roundedPercent * 0.5}%`');
     transform: v-bind('`translate(${pill_border_px - props.borderPixels}px, -50%)`');
@@ -196,7 +196,7 @@ input:checked+.pill-container:before {
 
 /* unchecked: checked text hidden on the left */
 input+.pill-container span.checked-text-span {
-    opacity: 0%;
+    opacity: 0;
     right: 100%;
     transform: v-bind('`translate(${-props.marginPixels - props.borderPixels}px, -50%`');
 }
@@ -216,7 +216,7 @@ input:checked+.pill-container span.checked-text-span {
 
 /* checked: unchecked text hidden on the right */
 input:checked+.pill-container span.unchecked-text-span {
-    opacity: 0%;
+    opacity: 0;
     transform: v-bind('`translate(${theLabel.offsetWidth + props.marginPixels - props.borderPixels}px, -50%)`');
 }
 </style>

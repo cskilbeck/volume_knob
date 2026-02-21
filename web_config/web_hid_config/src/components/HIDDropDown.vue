@@ -19,6 +19,10 @@ const props = defineProps({
         type: Number,
         required: true,
         default: 0
+    },
+    show_mouse: {
+        type: Boolean,
+        default: false
     }
 });
 
@@ -72,6 +76,8 @@ function modifiers_text(intro, value) {
 const modifier_label = computed(() => {
     if ((current_keycode.value & 0x8000) != 0) {
         return "Consumer control key";
+    } else if (keys.is_mouse_event(current_keycode.value)) {
+        return "Mouse event";
     } else {
         return modifiers_text("Left", current_mod.value & 0xf) + modifiers_text(" Right", (current_mod.value >> 4) & 0xf);
     }
@@ -80,7 +86,7 @@ const modifier_label = computed(() => {
 //////////////////////////////////////////////////////////////////////
 
 const modifier_class = computed(() => {
-    if ((current_keycode.value & 0x8000) != 0) {
+    if ((current_keycode.value & 0x8000) != 0 || keys.is_mouse_event(current_keycode.value)) {
         return "dimmer-text";
     } else {
         return "";
@@ -105,10 +111,12 @@ let found_text = ref(false);
 
 function do_search() {
 
+    const all_keys = props.show_mouse ? keys.key_codes : keys.key_codes.filter(k => !k.is_mouse_event);
+
     matching_keys.value = [];
     if (search_text.value != "") {
         const needle = search_text.value.toUpperCase();
-        for (const key of keys.key_codes) {
+        for (const key of all_keys) {
             if (key.name.toUpperCase().includes(needle)) {
                 matching_keys.value.push(key);
             }
@@ -117,7 +125,7 @@ function do_search() {
     found_text.value = matching_keys.value.length != 0;
 
     if (!found_text.value) {
-        Object.assign(matching_keys.value, keys.key_codes);
+        Object.assign(matching_keys.value, all_keys);
     }
 }
 
@@ -131,20 +139,49 @@ watch(search_text, (n) => {
 //////////////////////////////////////////////////////////////////////
 
 function on_select_key(key) {
-    current_keycode.value = (current_keycode.value & 0xffff0000) | key.keycode | (key.is_consumer_key ? 0x8000 : 0);
+    if (key.is_mouse_event) {
+        current_keycode.value = key.keycode;
+    } else {
+        current_keycode.value = (current_keycode.value & 0xffff0000) | key.keycode | (key.is_consumer_key ? 0x8000 : 0);
+    }
 }
 
 //////////////////////////////////////////////////////////////////////
 
 onMounted(() => { search_text.value = ""; });
 
-Object.assign(matching_keys.value, keys.key_codes);
+Object.assign(matching_keys.value, props.show_mouse ? keys.key_codes : keys.key_codes.filter(k => !k.is_mouse_event));
 
 //////////////////////////////////////////////////////////////////////
 
 function keycode_name(keycode) {
-    return ((keycode & 0x8000) == 0) ? keys.hid_keys[keycode & 0x7fff] : keys.consumer_control_keys[keycode & 0x7fff];
+    if ((keycode & 0x8000) != 0) {
+        return keys.consumer_control_keys[keycode & 0x7fff];
+    } else if (keys.is_mouse_move(keycode)) {
+        const name = keys.mouse_event_names[keycode & 0x7000];
+        const raw = keycode & 0xFF;
+        const delta = raw > 127 ? raw - 256 : raw;
+        return `${name} (${delta >= 0 ? '+' : ''}${delta})`;
+    } else if (keys.is_mouse_event(keycode)) {
+        return keys.mouse_event_names[keycode];
+    } else {
+        return keys.hid_keys[keycode & 0x00ff];
+    }
 }
+
+//////////////////////////////////////////////////////////////////////
+
+const mouse_move_delta = computed({
+    get() {
+        const raw = current_keycode.value & 0xFF;
+        return raw > 127 ? raw - 256 : raw;
+    },
+    set(v) {
+        if (typeof v !== 'number' || isNaN(v)) return;
+        const clamped = Math.max(-128, Math.min(127, Math.trunc(v)));
+        current_keycode.value = (current_keycode.value & 0xFF00) | (clamped & 0xFF);
+    }
+});
 
 //////////////////////////////////////////////////////////////////////
 
@@ -185,43 +222,50 @@ function keycode_name(keycode) {
                                 {{ key.keycode.toString(16).toUpperCase().padStart(4, '0') }}
                             </div>
                             <span class="mx-0 px-0 bg-secondary-subtle text-center" style="min-width: 4rem;">
-                                {{ key.is_consumer_key ? "CC" : "Keyboard" }}
+                                {{ key.is_mouse_event ? "Mouse" : key.is_consumer_key ? "CC" : "Keyboard" }}
                             </span>
                         </div>
                     </a>
                 </li>
             </div>
         </ul>
-        <button class="btn btn-sm dropdown-toggle border-secondary-subtle tertiary-bg rounded-0" href="#" role="button" data-bs-toggle="dropdown" :disabled="(current_keycode & 0x8000) != 0">
-            Modifiers
-        </button>
-        <form class="dropdown-menu modifiers-dropdown rounded-0">
-            <div class="row mx-3 mt-1">
-                <div class="col">
+        <template v-if="keys.is_mouse_move(current_keycode)">
+            <input type="number" v-model.number="mouse_move_delta" min="-128" max="127"
+                class="form-control border-secondary-subtle tertiary-bg rounded-0 small-text text-end"
+                style="width: 5.5rem; flex: 0 0 5.5rem;" />
+        </template>
+        <template v-else>
+            <button class="btn btn-sm dropdown-toggle border-secondary-subtle tertiary-bg rounded-0" href="#" role="button" data-bs-toggle="dropdown" :disabled="(current_keycode & 0x8000) != 0 || keys.is_mouse_event(current_keycode)">
+                Modifiers
+            </button>
+            <form class="dropdown-menu modifiers-dropdown rounded-0">
+                <div class="row mx-3 mt-1">
+                    <div class="col">
+                    </div>
+                    <div class="col text-center">
+                        Left
+                    </div>
+                    <div class="col text-center">
+                        Right
+                    </div>
                 </div>
-                <div class="col text-center">
-                    Left
+                <div class="row mx-3" v-for="(val, name) in keys.key_modifiers">
+                    <div class="col text-end">
+                        {{ name }}
+                    </div>
+                    <div class="col text-center">
+                        <input class="form-check-input" type="checkbox" :checked="(current_mod & val) != 0" @change="update_modifiers($event.target.checked, val)" />
+                    </div>
+                    <div class="col text-center">
+                        <input class="form-check-input" type="checkbox" :checked="(current_mod & (val << 4)) != 0" @change="update_modifiers($event.target.checked, val << 4)" />
+                    </div>
                 </div>
-                <div class="col text-center">
-                    Right
+                <div class="row">
+                    <div class="col mb-1">
+                    </div>
                 </div>
-            </div>
-            <div class="row mx-3" v-for="(val, name) in keys.key_modifiers">
-                <div class="col text-end">
-                    {{ name }}
-                </div>
-                <div class="col text-center">
-                    <input class="form-check-input" type="checkbox" :checked="(current_mod & val) != 0" @change="update_modifiers($event.target.checked, val)" />
-                </div>
-                <div class="col text-center">
-                    <input class="form-check-input" type="checkbox" :checked="(current_mod & (val << 4)) != 0" @change="update_modifiers($event.target.checked, val << 4)" />
-                </div>
-            </div>
-            <div class="row">
-                <div class="col mb-1">
-                </div>
-            </div>
-        </form>
+            </form>
+        </template>
 
     </div>
     <div class="row">

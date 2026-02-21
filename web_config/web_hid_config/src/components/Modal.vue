@@ -52,7 +52,7 @@ function width_style() {
 }
 
 const backdropClick = (event) => {
-    if (event.target.id == 'backdrop' && props.closeable && !props.backdropNoClose) {
+    if (event.target.id === 'backdrop' && props.closeable && !props.backdropNoClose) {
         emit("update:modelValue", false);
     }
 }
