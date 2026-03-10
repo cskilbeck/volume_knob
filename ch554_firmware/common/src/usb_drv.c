@@ -496,7 +496,9 @@ static void usb_init_strings()
 
     uint8 name_prefix = usb_cfg.product_name_length;
 
-    product_name_string[0] = (name_prefix + SERIAL_LEN + 1) * 2;
+    // name + serial + space * 2
+    // then 2 more for this header
+    product_name_string[0] = (name_prefix + SERIAL_LEN + 1) * 2 + 2;
     product_name_string[1] = USB_DESCR_TYP_STRING;
 
     serial_number_string[0] = sizeof(serial_number_string);
