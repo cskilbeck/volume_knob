@@ -16,6 +16,7 @@ let got_hid_api = ref(!!navigator.hid);
 let got_midi_api = ref(!!navigator.requestMIDIAccess);
 
 let midi_started = false;
+const scanning = ref(false);
 
 if (!got_hid_api.value && !got_midi_api.value) {
   notSupportedModel.value = true;
@@ -25,23 +26,33 @@ if (!got_hid_api.value && !got_midi_api.value) {
 
 async function scan() {
 
-  if (got_hid_api.value) {
-    hid.init_devices();
-  }
+  if (scanning.value) return;
+  scanning.value = true;
 
-  if (got_midi_api.value) {
-    if (!midi_started) {
-      try {
-        const main_midi_object = await navigator.requestMIDIAccess({ "sysex": true });
-        midi.on_midi_startup(main_midi_object);
-        midi_started = true;
-      } catch (err) {
-        console.log(`requestMIDIAccess failed: ${err}`);
+  try {
+    // Fire HID picker concurrently with MIDI access. We re-enable the Scan
+    // button when the HID picker is dismissed (so a second click doesn't
+    // stack a duplicate init_device on the same device).
+    const hid_promise = got_hid_api.value ? hid.init_devices() : Promise.resolve();
+
+    if (got_midi_api.value) {
+      if (!midi_started) {
+        try {
+          const main_midi_object = await navigator.requestMIDIAccess({ "sysex": true });
+          midi.on_midi_startup(main_midi_object);
+          midi_started = true;
+        } catch (err) {
+          console.log(`requestMIDIAccess failed: ${err}`);
+        }
+      }
+      if (midi_started) {
+        midi.init_devices();
       }
     }
-    if (midi_started) {
-      midi.init_devices();
-    }
+
+    await hid_promise.catch(() => { /* picker errors are non-fatal */ });
+  } finally {
+    scanning.value = false;
   }
 }
 
@@ -61,7 +72,9 @@ const device_count = computed(() =>
 
 const any_scanned = computed(() => hid.scanned.done || midi.scanned.done);
 
-const scan_disabled = computed(() => !got_hid_api.value && !got_midi_api.value);
+const scan_disabled = computed(() =>
+  (!got_hid_api.value && !got_midi_api.value) || scanning.value
+);
 
 //////////////////////////////////////////////////////////////////////
 
@@ -148,7 +161,7 @@ const scan_disabled = computed(() => !got_hid_api.value && !got_midi_api.value);
       </div>
     </Modal>
 
-    <Modal v-model="notSupportedModel" maxwidth="32%" closeable header="WebHID and WebMIDI not supported">
+    <Modal v-model="notSupportedModel" maxwidth="80%" closeable header="WebHID and WebMIDI not supported">
       <div class="row">
         <div class="col text-center">
           I'm afraid your browser doesn't support the Web HID or Web MIDI APIs, so the Tiny USB Knob can't be configured here.

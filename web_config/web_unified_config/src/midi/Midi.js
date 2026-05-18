@@ -438,9 +438,16 @@ function init_devices() {
 
     console.log(`init_devices`);
 
-    // Preserve the demo device (if present) across rescans — the WebMIDI
-    // enumeration only sees real ports, so we'd otherwise lose it.
-    const preserved_dummy = midi_devices.value.find(d => d.demo) || null;
+    // Snapshot existing devices by name so we can REUSE them across rescans.
+    // Replacing them with fresh objects would orphan the callbacks (on_control_change
+    // etc.) that MidiDevice.vue set on the original objects — Vue's keyed v-for
+    // reuses the component instance for the same device.name, so setup doesn't
+    // re-run and the new objects never get callbacks installed. This also
+    // preserves the demo device through rescans.
+    const existing_by_name = {};
+    for (const d of midi_devices.value) {
+        existing_by_name[d.name] = d;
+    }
 
     midi_devices.value = [];
     device_index = 0;
@@ -448,8 +455,6 @@ function init_devices() {
     scanned.done = true;
 
     console.log(`${midi.inputs.size} inputs, ${midi.outputs.size} outputs`);
-
-    // initial setup of callbacks for midi messages
 
     for (const input of midi.inputs.values()) {
         console.log(`Found ${input.name} at ${input.id}`);
@@ -461,38 +466,54 @@ function init_devices() {
 
         console.log(`Found ${output.name} at ${output.id}`);
 
-        let device = {
-            kind: 'midi',
-            device_index: device_index,
-            firmware_version: 0x00000000,
-            firmware_version_str: "0.0.0.0",
-            input: null,            // inputs get assigned when replies come back
-            output: output,
-            name: output.name,
-            config: {},
-            on_config_loaded: null,
-            on_config_saved: null,
-            on_control_change: null
-        };
+        let device = existing_by_name[output.name];
 
-        Object.assign(device.config, default_config);
+        if (device) {
+            // Reuse — refresh the output reference (a new MIDIOutput instance
+            // may have replaced the old one) and renumber.
+            device.output = output;
+            device.device_index = device_index;
+            delete existing_by_name[output.name];
+        } else {
+            device = {
+                kind: 'midi',
+                device_index: device_index,
+                firmware_version: 0x00000000,
+                firmware_version_str: "0.0.0.0",
+                input: null,            // inputs get assigned when replies come back
+                output: output,
+                name: output.name,
+                config: {},
+                on_config_loaded: null,
+                on_config_saved: null,
+                on_control_change: null
+            };
 
-        Object.defineProperty(device, 'active', {
-            get() {
-                return this.input != null && this.input.state == 'connected';
-            }
-        });
+            Object.assign(device.config, default_config);
+
+            Object.defineProperty(device, 'active', {
+                get() {
+                    return this.input != null && this.input.state == 'connected';
+                }
+            });
+        }
 
         midi_devices.value[device_index] = device;
 
         device_index += 1;
     }
 
-    if (preserved_dummy) {
-        preserved_dummy.device_index = device_index;
-        if (preserved_dummy._set_port_index) preserved_dummy._set_port_index(device_index);
-        midi_devices.value[device_index] = preserved_dummy;
-        device_index += 1;
+    // Anything left in existing_by_name is either the demo or a real device
+    // whose output is no longer enumerated (unplugged). Keep the demo, drop
+    // the rest.
+    for (const name in existing_by_name) {
+        const d = existing_by_name[name];
+        if (d.demo) {
+            d.device_index = device_index;
+            if (d._set_port_index) d._set_port_index(device_index);
+            midi_devices.value[device_index] = d;
+            device_index += 1;
+        }
     }
 
     console.log(`init devices scanned ${device_index} devices`);

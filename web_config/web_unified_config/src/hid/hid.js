@@ -350,7 +350,7 @@ function init_devices() {
     navigator.hid.addEventListener("connect", on_connection_event);
     navigator.hid.addEventListener("disconnect", on_connection_event);
 
-    navigator.hid.requestDevice({
+    return navigator.hid.requestDevice({
         filters: [{
             vendorId: 0x16D0,
             productId: 0x114B,
@@ -363,6 +363,16 @@ function init_devices() {
             scanned.value.done = true;
 
             for (let d of devices) {
+                // If we already have a fully-initialised entry, don't re-fire
+                // init_device — it would just stack another pair of pending
+                // get_config / get_firmware_version sends on the same device.
+                // We still proceed for tracked-but-wedged entries (firmware_major
+                // null) so the user can use Scan as a recovery action.
+                const existing = hid_devices.value[d.productName];
+                if (existing && existing.firmware_major !== null) {
+                    console.log(`${d.productName} already initialised, skipping`);
+                    continue;
+                }
                 if (d.opened) {
                     console.log(`${d.productName} already open...`);
                     init_device(d);
