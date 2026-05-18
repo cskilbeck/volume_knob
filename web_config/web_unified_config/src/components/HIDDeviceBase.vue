@@ -73,6 +73,7 @@ const {
                                     </svg>
                                 </button>
                                 <strong>{{ device.name }}</strong>
+                                <span v-if="device.demo" class="badge bg-warning text-dark ms-2 rounded-0">DEMO</span>
                                 <span class="d-inline-block" style="width:1em"></span>
                                 <input class="bg-secondary-subtle text-secondary rounded-0 focus-ring ps-2 bright-focus-input" type="text" @blur="save_name()" v-model="device_label"
                                     @keypress='(e) => { e.key === "Enter" && e.currentTarget.blur(); }'>

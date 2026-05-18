@@ -1,9 +1,12 @@
 //////////////////////////////////////////////////////////////////////
 // web midi stuff
 
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { make_dummy_midi_ports } from './dummy_midi.js'
 
 const CONFIG_LEN = 26;
+
+const DUMMY_MIDI_NAME = "Demo Tiny MIDI Knob";
 
 const CONFIG_VERSION = 0x09
 
@@ -435,6 +438,10 @@ function init_devices() {
 
     console.log(`init_devices`);
 
+    // Preserve the demo device (if present) across rescans — the WebMIDI
+    // enumeration only sees real ports, so we'd otherwise lose it.
+    const preserved_dummy = midi_devices.value.find(d => d.demo) || null;
+
     midi_devices.value = [];
     device_index = 0;
 
@@ -480,6 +487,14 @@ function init_devices() {
 
         device_index += 1;
     }
+
+    if (preserved_dummy) {
+        preserved_dummy.device_index = device_index;
+        if (preserved_dummy._set_port_index) preserved_dummy._set_port_index(device_index);
+        midi_devices.value[device_index] = preserved_dummy;
+        device_index += 1;
+    }
+
     console.log(`init devices scanned ${device_index} devices`);
 }
 
@@ -657,6 +672,112 @@ function on_midi_startup(midi_obj) {
 
 //////////////////////////////////////////////////////////////////////
 
+let auto_rotate_interval = null;
+
+function start_auto_rotate(device, ports) {
+    let phase = 0;
+    auto_rotate_interval = setInterval(() => {
+        // Don't fight the user mid-edit. Document.activeElement is the focused
+        // form control; if any is focused, hold off this tick.
+        const el = document.activeElement;
+        if (el && (el.tagName === 'INPUT' || el.tagName === 'SELECT' || el.tagName === 'TEXTAREA')) {
+            return;
+        }
+        phase += 0.06;
+        const cfg = device.config || default_config;
+        const channel = (cfg.channels || 0) & 0xf;
+        const cc = cfg.rot_control_msb ?? 7;
+        const val = Math.floor((Math.sin(phase) + 1) * 63);  // 0..126
+        ports.emit_cc(channel, cc, val);
+    }, 120);
+}
+
+function stop_auto_rotate() {
+    if (auto_rotate_interval) {
+        clearInterval(auto_rotate_interval);
+        auto_rotate_interval = null;
+    }
+}
+
+function add_dummy_device() {
+    if (midi_devices.value.some(d => d.demo)) return;
+
+    const ports = make_dummy_midi_ports({
+        default_config,
+        bytes_from_config,
+        bytes_to_bits7,
+        bits7_to_bytes,
+        CONFIG_LEN,
+        MIDI_MANUFACTURER_ID,
+        MIDI_FAMILY_CODE_LOW,
+        MIDI_FAMILY_CODE_HIGH,
+        MIDI_MODEL_NUMBER_LOW,
+        MIDI_MODEL_NUMBER_HIGH,
+        sysex_request_device_id,
+        sysex_request_toggle_led,
+        sysex_request_get_flash,
+        sysex_request_set_flash,
+        sysex_request_bootloader,
+        sysex_response_device_id,
+        sysex_response_get_flash,
+        sysex_response_set_flash_ack,
+    });
+
+    const idx = device_index;
+    ports.set_device_index(idx);
+
+    const device = {
+        kind: 'midi',
+        demo: true,
+        device_index: idx,
+        firmware_version: 0x00000000,
+        firmware_version_str: "0.0.0.0",
+        input: ports.input,
+        output: ports.output,
+        name: DUMMY_MIDI_NAME,
+        config: {},
+        on_config_loaded: null,
+        on_config_saved: null,
+        on_control_change: null,
+        _set_port_index: ports.set_device_index,
+    };
+
+    Object.assign(device.config, default_config);
+
+    Object.defineProperty(device, 'active', {
+        get() {
+            return this.input != null && this.input.state == 'connected';
+        }
+    });
+
+    ports.input.removeEventListener("midimessage", on_midi_message);
+    ports.input.addEventListener("midimessage", on_midi_message);
+
+    midi_devices.value[idx] = device;
+    device_index += 1;
+
+    scanned.done = true;
+
+    // Drive the existing handshake: device-ID → flash-read → on_config_loaded.
+    connect_device(device);
+
+    start_auto_rotate(device, ports);
+}
+
+function remove_dummy_device() {
+    stop_auto_rotate();
+    const i = midi_devices.value.findIndex(d => d.demo);
+    if (i >= 0) {
+        midi_devices.value.splice(i, 1);
+        // If the dummy was last, drop device_index back so the next demo gets the same slot.
+        if (i === device_index - 1) device_index -= 1;
+    }
+}
+
+const has_dummy = computed(() => midi_devices.value.some(d => d.demo));
+
+//////////////////////////////////////////////////////////////////////
+
 export default {
     midi,
     midi_devices,
@@ -670,5 +791,8 @@ export default {
     read_flash,
     write_flash,
     default_config,
-    flags
+    flags,
+    add_dummy_device,
+    remove_dummy_device,
+    has_dummy,
 }

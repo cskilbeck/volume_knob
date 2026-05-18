@@ -45,6 +45,16 @@ async function scan() {
   }
 }
 
+function toggle_hid_demo() {
+  if (hid.has_dummy.value) hid.remove_dummy_device();
+  else hid.add_dummy_device();
+}
+
+function toggle_midi_demo() {
+  if (midi.has_dummy.value) midi.remove_dummy_device();
+  else midi.add_dummy_device();
+}
+
 const device_count = computed(() =>
   Object.keys(hid.hid_devices.value).length + midi.midi_devices.value.length
 );
@@ -72,7 +82,13 @@ const scan_disabled = computed(() => !got_hid_api.value && !got_midi_api.value);
           <h5 class="text-center pt-4 pb-3">Tiny USB Knob Configurator</h5>
         </div>
         <div class="col-4 pt-3 text-end">
-          <button :disabled="scan_disabled" class="btn border border-secondary tertiary-bg btn-sm mx-4 rounded-0" @click="scan()">
+          <button class="btn border border-secondary tertiary-bg btn-sm mx-1 rounded-0" @click="toggle_hid_demo()">
+            {{ hid.has_dummy.value ? '− Demo HID' : '+ Demo HID' }}
+          </button>
+          <button class="btn border border-secondary tertiary-bg btn-sm mx-1 rounded-0" @click="toggle_midi_demo()">
+            {{ midi.has_dummy.value ? '− Demo MIDI' : '+ Demo MIDI' }}
+          </button>
+          <button :disabled="scan_disabled" class="btn border border-secondary tertiary-bg btn-sm mx-2 rounded-0" @click="scan()">
             Scan
           </button>
           <DarkMode />

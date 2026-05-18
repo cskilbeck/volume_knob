@@ -461,12 +461,12 @@ function reset_to_defaults() {
         </symbol>
     </svg>
 
-    <div class="container border rounded-3 bg-device border-secondary bg-secondary-subtle pt-2 mb-4" :class="collapsed ? 'pb-2' : ' pb-4'">
+    <div class="container border rounded-0 bg-device border-secondary bg-secondary-subtle pt-2 mb-4" :class="collapsed ? 'pb-2' : ' pb-4'" style="min-width: 1000px;">
 
-        <div class='row'>
+        <div class='row py-1'>
             <div class='col text-left ms-2' :class="!collapsed ? 'mb-1' : ''">
                 <div class="row">
-                    <div class="col ps-0">
+                    <div class="col-5 ps-0">
                         <div class="row">
                             <div class="col pe-0 me-0">
                                 <button class="btn" @click="toggle_expand()" style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem;">
@@ -475,72 +475,33 @@ function reset_to_defaults() {
                                     </svg>
                                 </button>
                                 <strong>{{ device.name }}</strong>
+                                <span v-if="device.demo" class="badge bg-warning text-dark ms-2 rounded-0">DEMO</span>
                                 <span class="d-inline-block" style="width:1em"></span>
-                                <input class="bg-secondary-subtle text-secondary rounded focus-ring ps-2 bright-focus-input" type="text" @blur="save_name()" v-model="device_label"
+                                <input class="bg-secondary-subtle text-secondary rounded-0 focus-ring ps-2 bright-focus-input" type="text" @blur="save_name()" v-model="device_label"
                                     @keypress='(e) => { e.key === "Enter" && e.currentTarget.blur(); }'>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
+                    <div class="col-5">
+                        <div class='btn-group rounded-0' role="group" v-if='device.active'>
 
-        <div class='row p-1' v-if="!collapsed">
-
-            <!-- Name, Serial, Buttons -->
-
-            <div class='col-lg-3'>
-                <div class='row mt-1'>
-                    <div class="col-6 text-center">
-                        <button class='btn btn-sm tertiary-bg border border-secondary-subtle' @click='toggle_connection(device)'>
-                            {{ !device.active ? 'Connect' : 'Disconnect' }}
-                        </button>
-                        <div class="small mt-3" v-if="device.active">
-                            Firmware version
-                            <div class="text-body-secondary font-monospace">
-                                {{ props.device.firmware_version_str }}
-                            </div>
-                        </div>
-                        <div class="row text-center mt-3" v-if="device.active">
-                            <div class="col">
-                                <svg viewBox="0 0 100 100" width="40" height="40">
-                                    <ellipse id="preview-knob-outline" ry="45" rx="45" cy="50" cx="50" />
-                                    <path id="preview-knob-tick" :transform="rot_matrix" d="M 50 40 V 20" />
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="row text-center" v-if="device.active">
-                            <div class="col">
-                                <span style="width:40px;display:inline-block">
-                                    <div class="progress border bg-body border-secondary" role="progressbar" aria-valuemax="16383" aria-valuemin="0" aria-valuenow="0" style="height:8px">
-                                        <div class="progress-bar value-bar" :style="`width:${rotation_value * 100 / 16383}%`">
-                                        </div>
-                                    </div>
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class='btn-group-vertical' role="group" v-if='device.active'>
-
-                            <button class='btn btn-sm tertiary-bg border border-secondary-subtle' @click='midi.flash_device_led(device.device_index)'>
-                                <span class="mx-2">Flash LED</span>
+                            <button class='btn btn-sm rounded-0 tertiary-bg border border-secondary-subtle' @click='midi.flash_device_led(device.device_index)'>
+                                Flash LED
                             </button>
 
-                            <button class='btn btn-sm tertiary-bg border border-secondary-subtle' @click='midi.read_flash(device.device_index)'>
-                                <span class="mx-2">Read from device</span>
+                            <button class='btn btn-sm rounded-0 tertiary-bg border border-secondary-subtle' @click='midi.read_flash(device.device_index)'>
+                                Read from device
                             </button>
 
-                            <button class='btn btn-sm tertiary-bg border border-secondary-subtle' :class="{ 'red-text': config_changed }" @click='store_config()'>
-                                <span class="mx-2">Store to device</span>
+                            <button class='btn btn-sm rounded-0 tertiary-bg border border-secondary-subtle' :class="{ 'red-text': config_changed }" @click='store_config()'>
+                                Store to device
                             </button>
 
-                            <div class="dropdown w-100">
-                                <button class="w-100 btn btn-sm rounded-0 tertiary-bg border-secondary-subtle btn-secondary dropdown-toggle border-top-0" href="#" role="button"
-                                    data-bs-toggle="dropdown" aria-expanded="false">
+                            <div class="btn-group rounded-0" role="group">
+                                <button class="w-100 btn btn-sm rounded-0 tertiary-bg border-secondary-subtle dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                     Settings
                                 </button>
-                                <ul class="dropdown-menu">
+                                <ul class="dropdown-menu rounded-0">
                                     <li>
                                         <a class="dropdown-item" href="#" @click="fileDownload(JSON.stringify(config_from_ui(), 4, ' '), 'midi_knob_settings.json');">
                                             Export
@@ -556,7 +517,9 @@ function reset_to_defaults() {
                                             Paste
                                         </a>
                                     </li>
-                                    <hr class="my-0" />
+                                    <li>
+                                        <hr class='m-0' />
+                                    </li>
                                     <li>
                                         <a class="dropdown-item" href="#" @click='reset_to_defaults()'>
                                             Reset to defaults
@@ -565,11 +528,48 @@ function reset_to_defaults() {
                                 </ul>
                             </div>
 
-                            <button class='btn btn-sm tertiary-bg border border-secondary-subtle' @click='flashModal = true'>
-                                <span class="mx-2">Advanced</span>
+                            <button class='btn rounded-0 btn-sm tertiary-bg border border-secondary-subtle' @click='flashModal = true'>
+                                Advanced
                             </button>
 
                         </div>
+                    </div>
+                    <div class="col-2 small pt-1 pe-3" v-if="device.active">
+                        <div class="row">
+                            <div class="col text-end">
+                                Firmware version
+                                <span class="text-body-secondary font-monospace me-2">{{ props.device.firmware_version_str }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class='row p-1' v-if="!collapsed">
+
+            <!-- Name, Serial, Buttons -->
+
+            <div class='col-lg-2 text-center'>
+                <button class='btn btn-sm rounded-0 tertiary-bg border border-secondary-subtle' @click='toggle_connection(device)'>
+                    {{ !device.active ? 'Connect' : 'Disconnect' }}
+                </button>
+                <div class="row text-center mt-3" v-if="device.active">
+                    <div class="col">
+                        <svg viewBox="0 0 100 100" width="40" height="40">
+                            <ellipse id="preview-knob-outline" ry="45" rx="45" cy="50" cx="50" />
+                            <path id="preview-knob-tick" :transform="rot_matrix" d="M 50 40 V 20" />
+                        </svg>
+                    </div>
+                </div>
+                <div class="row text-center" v-if="device.active">
+                    <div class="col">
+                        <span style="width:40px;display:inline-block">
+                            <div class="progress border bg-body border-secondary rounded-0" role="progressbar" aria-valuemax="16383" aria-valuemin="0" aria-valuenow="0" style="height:8px">
+                                <div class="progress-bar value-bar" :style="`width:${rotation_value * 100 / 16383}%`">
+                                </div>
+                            </div>
+                        </span>
                     </div>
                 </div>
             </div>

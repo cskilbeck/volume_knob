@@ -1,11 +1,14 @@
 //////////////////////////////////////////////////////////////////////
 
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import keys from './hid_keys.js'
+import { make_dummy_hid_device } from './dummy_hid.js'
 
 let hid_devices = ref({});
 
 let scanned = ref({});
+
+const DUMMY_HID_NAME = "Demo Tiny USB Knob";
 
 //////////////////////////////////////////////////////////////////////
 // next midi device index
@@ -375,6 +378,31 @@ function init_devices() {
 
 //////////////////////////////////////////////////////////////////////
 
+function add_dummy_device() {
+    if (hid_devices.value[DUMMY_HID_NAME]) return;
+    const fake = make_dummy_hid_device({
+        default_config,
+        bytes_from_config,
+        hid_custom_command,
+        hid_custom_response,
+    });
+    // init_device synchronously inserts the device into hid_devices.value
+    // before its first await, so we can flag it as demo immediately after.
+    init_device(fake);
+    if (hid_devices.value[DUMMY_HID_NAME]) {
+        hid_devices.value[DUMMY_HID_NAME].demo = true;
+    }
+    scanned.value.done = true;
+}
+
+function remove_dummy_device() {
+    delete hid_devices.value[DUMMY_HID_NAME];
+}
+
+const has_dummy = computed(() => DUMMY_HID_NAME in hid_devices.value);
+
+//////////////////////////////////////////////////////////////////////
+
 export default {
     hid_devices,
     default_config,
@@ -384,5 +412,8 @@ export default {
     goto_firmware_update_mode,
     get_config,
     set_config,
-    init_devices
+    init_devices,
+    add_dummy_device,
+    remove_dummy_device,
+    has_dummy,
 }
