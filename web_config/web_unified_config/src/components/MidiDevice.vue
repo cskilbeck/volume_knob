@@ -8,8 +8,8 @@ import Toggle from './Toggle.vue'
 import Modal from './Modal.vue'
 import CCDropDown from './CCDropDown.vue';
 
-import CC from '../CC.js'
-import midi from '../Midi.js'
+import CC from '../midi/CC.js'
+import midi from '../midi/Midi.js'
 
 import fileDownload from 'js-file-download';
 

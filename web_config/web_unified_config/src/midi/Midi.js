@@ -455,6 +455,7 @@ function init_devices() {
         console.log(`Found ${output.name} at ${output.id}`);
 
         let device = {
+            kind: 'midi',
             device_index: device_index,
             firmware_version: 0x00000000,
             firmware_version_str: "0.0.0.0",
