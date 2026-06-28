@@ -8,7 +8,16 @@ const CONFIG_LEN = 26;
 
 const DUMMY_MIDI_NAME = "Demo Tiny MIDI Knob";
 
-const CONFIG_VERSION = 0x09
+const CONFIG_VERSION = 0x0A
+
+// Config versions this UI knows how to read/write. The layout is append-only
+// (new fields land in the old 'pad' region), so 0x09 and 0x0A share the same
+// offsets for every field that existed in 0x09 — we just won't show 0x0A-only
+// controls (the absolute-range min/max) for a 0x09 device.
+const SUPPORTED_CONFIG_VERSIONS = [0x09, 0x0A]
+
+// config_version at/above which the firmware honours rot_min/rot_max
+const CONFIG_VERSION_ABS_RANGE = 0x0A
 
 const MIDI_MANUFACTURER_ID = 0x36;    // Cheetah Marketing, defunct?
 
@@ -117,7 +126,9 @@ const default_config = {
     rot_current_value_14: 0,        // current value (in absolute mode) (14 bit mode)
     rot_current_value_7: 0,         // current value (in absolute mode) (7 bit mode)
     acceleration: 0,
-    flags: default_flags            // flags, see enum above
+    flags: default_flags,           // flags, see enum above
+    rot_min: 0,                     // absolute-mode lower limit (0 => full range)
+    rot_max: 0                      // absolute-mode upper limit (0 => full range)
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -145,7 +156,9 @@ let config_map = [
     ["uint16", "rot_current_value_14"],
     ["uint8", "rot_current_value_7"],
     ["uint8", "acceleration"],
-    ["uint16", "flags"]
+    ["uint16", "flags"],
+    ["uint16", "rot_min"],
+    ["uint16", "rot_max"]
 ];
 
 // similar source code synchronization problem with the flags
@@ -160,7 +173,7 @@ function config_from_bytes(bytes) {
     Object.assign(def_config, default_config);
     Object.assign(new_config, default_config);
 
-    if (bytes[0] != CONFIG_VERSION) {
+    if (!SUPPORTED_CONFIG_VERSIONS.includes(bytes[0])) {
         return def_config;
     }
 
@@ -813,6 +826,7 @@ export default {
     write_flash,
     default_config,
     flags,
+    CONFIG_VERSION_ABS_RANGE,
     add_dummy_device,
     remove_dummy_device,
     has_dummy,

@@ -25,7 +25,9 @@ __code const midi_config_t default_midi_config = {
     0x0000,            // uint16 rot_current_value_14; // current value (in absolute mode) (14 bit mode)
     0x00,              // uint8 rot_current_value_7;   // current value (in absolute mode) (7 bit mode)
     0x02,              // uint8 acceleration;          // 0..3 see table in config.c
-    DEFAULT_FLAGS      // uint16 flags;                // flags, see enum above
+    DEFAULT_FLAGS,     // uint16 flags;                // flags, see enum above
+    0x0000,            // uint16 rot_min;              // absolute-mode lower limit (0 => full range)
+    0x0000             // uint16 rot_max;              // absolute-mode upper limit (0 => full range)
 };
 
 //////////////////////////////////////////////////////////////////////

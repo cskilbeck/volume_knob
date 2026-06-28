@@ -438,13 +438,26 @@ void do_absolute_rotation(int16 offset)
     bool extended = config_flag(cf_rotate_extended);
     bool at_limit = false;
     int32 cur = extended ? midi_config.rot_current_value_14 : midi_config.rot_current_value_7;
-    int16 limit = extended ? 0x3fff : 0x7f;
+    int16 ceiling = extended ? 0x3fff : 0x7f;
+
+    // resolve the configurable absolute range. rot_max == 0 (or beyond the active
+    // mode's ceiling) means 'use the full range', and rot_min > rot_max drops the
+    // lower limit. This keeps old/zeroed configs behaving exactly as before.
+    int32 lo = midi_config.rot_min;
+    int32 hi = midi_config.rot_max;
+    if(hi == 0 || hi > ceiling) {
+        hi = ceiling;
+    }
+    if(lo > hi) {
+        lo = 0;
+    }
+
     cur += (int32)offset * (rotation_velocity + 1);
-    if(cur < 0) {
-        cur = 0;
+    if(cur < lo) {
+        cur = lo;
         at_limit = true;
-    } else if(cur > limit) {
-        cur = limit;
+    } else if(cur > hi) {
+        cur = hi;
         at_limit = true;
     }
     if(extended) {

@@ -2,7 +2,7 @@
 
 //////////////////////////////////////////////////////////////////////
 
-import { toRaw, watch, ref, nextTick } from 'vue';
+import { toRaw, watch, ref, computed, nextTick } from 'vue';
 
 import Toggle from './Toggle.vue'
 import Modal from './Modal.vue'
@@ -70,6 +70,12 @@ let ui_object = ui_from_config(midi.default_config);
 let ui = ref(ui_object);
 
 //////////////////////////////////////////////////////////////////////
+// does the connected firmware honour the absolute-mode min/max range?
+// (older 0x09 firmware ignores it, so hide the control for those devices)
+
+const supports_range = computed(() => (ui.value.config_version ?? 0) >= midi.CONFIG_VERSION_ABS_RANGE);
+
+//////////////////////////////////////////////////////////////////////
 // noddy compare for config objects
 
 function shallowEqual(object1, object2) {
@@ -128,6 +134,8 @@ function config_from_ui() {
         rot_current_value_14: ui.value.rot_current_value_14,
         rot_current_value_7: ui.value.rot_current_value_7,
         acceleration: ui.value.acceleration,
+        rot_min: ui.value.rot_min,
+        rot_max: ui.value.rot_max,
 
         flags: (ui.value.rotate_extended ? midi.flags.cf_rotate_extended : 0)
             | (ui.value.rotate_relative ? midi.flags.cf_rotate_relative : 0)
@@ -194,6 +202,8 @@ function ui_from_config(config) {
         rot_current_value_14: config.rot_current_value_14,
         rot_current_value_7: config.rot_current_value_7,
         acceleration: config.acceleration,
+        rot_min: config.rot_min,
+        rot_max: config.rot_max,
 
         rotate_extended: (config.flags & midi.flags.cf_rotate_extended) != 0,
         rotate_relative: (config.flags & midi.flags.cf_rotate_relative) != 0,
@@ -272,6 +282,19 @@ watch(() => { return ui },
         ui.value.rot_delta_7 = constrain(ui.value.rot_delta_7, 1, 0x7f);
         ui.value.btn_value_a_7 = constrain(ui.value.btn_value_a_7, 0, 0x7f);
         ui.value.btn_value_b_7 = constrain(ui.value.btn_value_b_7, 0, 0x7f);
+        let rot_ceiling = ui.value.rotate_extended ? 0x3fff : 0x7f;
+        ui.value.rot_min = constrain(ui.value.rot_min, 0, rot_ceiling);
+        ui.value.rot_max = constrain(ui.value.rot_max, 0, rot_ceiling);
+        // min == 0 && max == 0 means 'full range'; any other combination must
+        // satisfy min < max, so a non-zero min pushes max above it
+        if (ui.value.rot_min != 0 || ui.value.rot_max != 0) {
+            if (ui.value.rot_max <= ui.value.rot_min) {
+                ui.value.rot_max = constrain(ui.value.rot_min + 1, 1, rot_ceiling);
+            }
+            if (ui.value.rot_min >= ui.value.rot_max) {
+                ui.value.rot_min = ui.value.rot_max - 1;
+            }
+        }
         ui.value.rot_channel = constrain(ui.value.rot_channel, 0, 15);
         ui.value.btn_channel = constrain(ui.value.btn_channel, 0, 15);
 
@@ -608,16 +631,6 @@ function reset_to_defaults() {
                                 </CCDropDown>
                             </div>
                         </div>
-                        <div class="row ps-1">
-                            <div class="col">
-                                <div class="form-check">
-                                    <label class="form-check-label user-select-none" for="rotate_reverse_check">
-                                        Reverse rotation
-                                    </label>
-                                    <input class="form-check-input pull-left" type="checkbox" id="rotate_reverse_check" v-model="ui.rotate_reverse">
-                                </div>
-                            </div>
-                        </div>
                     </div>
                     <div class="col-lg">
                         <div class="row">
@@ -668,13 +681,38 @@ function reset_to_defaults() {
                                 </Toggle>
                             </div>
                         </div>
-                        <div class="row" :class="{ 'hide': !ui.rotate_relative }">
-                            <div class='col'>
-                                <div class="input-group mb-2">
+                    </div>
+                </div>
+                <div class="row pb-2 justify-content-end" v-show="!ui.rotate_relative && supports_range">
+                    <div class="col-auto" style="width: 80%;">
+                        <div class="input-group">
+                            <input type="number" class="form-control" v-model.number="ui.rot_min">
+                            <span class="input-group-text user-select-none">Min</span>
+                            <input type="number" class="form-control" v-model.number="ui.rot_max">
+                            <span class="input-group-text user-select-none">Max</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="row pb-2" v-show="ui.rotate_relative">
+                    <div class="col-lg d-none d-lg-block"></div>
+                    <div class="col-lg">
+                        <div class="row">
+                            <div class="col">
+                                <div class="input-group">
                                     <input type="number" class="form-control" v-model.number="ui.rot_zero_point">
                                     <span class="input-group-text user-select-none">Zero</span>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row px-2 pb-2">
+                    <div class="col">
+                        <div class="form-check">
+                            <label class="form-check-label user-select-none" for="rotate_reverse_check">
+                                Reverse rotation
+                            </label>
+                            <input class="form-check-input pull-left" type="checkbox" id="rotate_reverse_check" v-model="ui.rotate_reverse">
                         </div>
                     </div>
                 </div>

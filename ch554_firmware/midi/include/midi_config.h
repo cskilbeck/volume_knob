@@ -5,7 +5,7 @@
 //
 // KEEP THIS IN SYNC WITH THE WEB UI, THAT'S A HASSLE!!!!
 
-#define CONFIG_VERSION 0x09
+#define CONFIG_VERSION 0x0A
 
 //////////////////////////////////////////////////////////////////////
 // flags in config.cf_flags
@@ -74,8 +74,8 @@ struct midi_config
     uint8 rot_current_value_7;      // 19 Current value (in absolute mode) (7 bit mode)
     uint8 acceleration;             // 20 0..3 see table in config.c
     uint16 flags;                   // 22 Flags, see enum above
-
-    uint8 pad[CONFIG_MAX_LEN - 22];
+    uint16 rot_min;                 // 24 Absolute-mode lower limit (active mode's units)
+    uint16 rot_max;                 // 26 Absolute-mode upper limit (0 => full range)
 };
 
 typedef struct midi_config midi_config_t;
