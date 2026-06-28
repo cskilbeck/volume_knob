@@ -8,16 +8,37 @@ const CONFIG_LEN = 26;
 
 const DUMMY_MIDI_NAME = "Demo Tiny MIDI Knob";
 
+// The 1st config byte = (device type << 4) | format version  (see firmware device.h)
+//   device type: 0x0 = MIDI, 0x8 = HID   |   format version: 0..15
+// MIDI keeps device type 0x0, so every value it ever shipped (0x01..0x0A) already
+// conforms — no renumbering, backward compatible by construction.
+const DEVTYPE_MIDI = 0x0
+
+const config_device_type = (v) => (v >> 4) & 0xf
+const config_format_version = (v) => v & 0xf
+
+// current MIDI config: format version 10 (byte 0x0A)
 const CONFIG_VERSION = 0x0A
 
-// Config versions this UI knows how to read/write. The layout is append-only
-// (new fields land in the old 'pad' region), so 0x09 and 0x0A share the same
-// offsets for every field that existed in 0x09 — we just won't show 0x0A-only
-// controls (the absolute-range min/max) for a 0x09 device.
-const SUPPORTED_CONFIG_VERSIONS = [0x09, 0x0A]
+// oldest MIDI format whose byte layout this UI can still parse — fields are
+// append-only from here, landing in the old 'pad' region, so a newer UI keeps
+// reading older devices and just hides controls they don't support.
+const MIDI_MIN_READABLE_FORMAT = 0x9
+// format that introduced rot_min/rot_max
+const MIDI_FORMAT_ABS_RANGE = 0x0A
 
-// config_version at/above which the firmware honours rot_min/rot_max
-const CONFIG_VERSION_ABS_RANGE = 0x0A
+// can this UI read/write a device reporting this config byte?
+function is_supported_config_version(v) {
+    return config_device_type(v) === DEVTYPE_MIDI &&
+        config_format_version(v) >= MIDI_MIN_READABLE_FORMAT &&
+        config_format_version(v) <= config_format_version(CONFIG_VERSION);
+}
+
+// does the firmware behind this config byte honour rot_min/rot_max?
+function supports_abs_range(v) {
+    return config_device_type(v) === DEVTYPE_MIDI &&
+        config_format_version(v) >= MIDI_FORMAT_ABS_RANGE;
+}
 
 const MIDI_MANUFACTURER_ID = 0x36;    // Cheetah Marketing, defunct?
 
@@ -173,7 +194,7 @@ function config_from_bytes(bytes) {
     Object.assign(def_config, default_config);
     Object.assign(new_config, default_config);
 
-    if (!SUPPORTED_CONFIG_VERSIONS.includes(bytes[0])) {
+    if (!is_supported_config_version(bytes[0])) {
         return def_config;
     }
 
@@ -826,7 +847,7 @@ export default {
     write_flash,
     default_config,
     flags,
-    CONFIG_VERSION_ABS_RANGE,
+    supports_abs_range,
     add_dummy_device,
     remove_dummy_device,
     has_dummy,

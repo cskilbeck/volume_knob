@@ -11,7 +11,13 @@ let scanned = ref({});
 const DUMMY_HID_NAME = "Demo Tiny USB Knob";
 
 //////////////////////////////////////////////////////////////////////
-// next midi device index
+// config_version byte = (device type << 4) | format version (see firmware device.h)
+//   device type 0x8 = HID; format version 0..15. 0x82 = HID, format 2.
+// Strict equality below is deliberate: HID's pre-0x82 formats are NOT append-only
+// (0x81 inserted key_release before the modifiers; 0x82 removed it, shifting every
+//  later field), so a 0x80/0x81 device can't be parsed by this config_map — falling
+//  back to defaults is safer than misreading it. Future formats should append into
+//  pad (like MIDI) so they can share one map + the nibble decode used in Midi.js.
 
 const CONFIG_VERSION = 0x82;
 

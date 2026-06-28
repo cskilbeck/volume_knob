@@ -5,7 +5,8 @@
 //
 // KEEP THIS IN SYNC WITH THE WEB UI, THAT'S A HASSLE!!!!
 
-#define CONFIG_VERSION 0x0A
+// MIDI device type, config format version 10 (byte stays 0x0A — see device.h)
+#define CONFIG_VERSION MAKE_CONFIG_VERSION(CONFIG_DEVTYPE_MIDI, 0x0A)
 
 //////////////////////////////////////////////////////////////////////
 // flags in config.cf_flags

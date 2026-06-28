@@ -73,7 +73,7 @@ let ui = ref(ui_object);
 // does the connected firmware honour the absolute-mode min/max range?
 // (older 0x09 firmware ignores it, so hide the control for those devices)
 
-const supports_range = computed(() => (ui.value.config_version ?? 0) >= midi.CONFIG_VERSION_ABS_RANGE);
+const supports_range = computed(() => midi.supports_abs_range(ui.value.config_version ?? 0));
 
 //////////////////////////////////////////////////////////////////////
 // noddy compare for config objects
