@@ -349,27 +349,38 @@ function store_config() {
 
 // rot version
 
-function cc_rot_msb_changed() {
-    if (!loading_config) {
-        let cc = CC.CCs[ui.value.rot_control_msb];
-        let is_msb = CC.is_MSB(cc);
-        ui.value.rotate_extended = is_msb;
-        if (is_msb) {
-            ui.value.rot_control_lsb = cc.alt;
-        }
+// 14-bit pairs CC n with CC n+32 by convention, so turning Extended on fills the
+// LSB in rather than making the user look it up.
+//
+// It hangs off the checkbox, and ONLY the checkbox. It used to hang off the CC
+// selector, where it also set the extended flag itself — which meant nudging the
+// CC number field through 0..31 silently switched 14-bit on and off, because
+// every controller in that range is an MSB type. On this device that also
+// rescaled the min/max ceiling (see rot_ceiling below), so the damage was not
+// merely cosmetic. The flag is now only ever changed by the user clicking the
+// checkbox, or by a config arriving from the device.
+//
+// Reads the event rather than the flag: v-model and this handler both listen for
+// 'change', and relying on which runs first is a trap.
+function rot_extended_changed(event) {
+    if (!event.target.checked) {
+        return;
+    }
+    let cc = CC.CCs[ui.value.rot_control_msb];
+    if (CC.is_MSB(cc)) {
+        ui.value.rot_control_lsb = cc.alt;
     }
 }
 
 // button version
 
-function cc_btn_msb_changed() {
-    if (!loading_config) {
-        let cc = CC.CCs[ui.value.btn_control_msb];
-        let is_msb = CC.is_MSB(cc);
-        ui.value.btn_extended = is_msb;
-        if (is_msb) {
-            ui.value.btn_control_lsb = cc.alt;
-        }
+function btn_extended_changed(event) {
+    if (!event.target.checked) {
+        return;
+    }
+    let cc = CC.CCs[ui.value.btn_control_msb];
+    if (CC.is_MSB(cc)) {
+        ui.value.btn_control_lsb = cc.alt;
     }
 }
 
@@ -613,13 +624,13 @@ function reset_to_defaults() {
                                     <label class="form-check-label user-select-none" for="extended_check_rot">
                                         Extended CC
                                     </label>
-                                    <input class="form-check-input pull-left" type="checkbox" id="extended_check_rot" v-model="ui.rotate_extended">
+                                    <input class="form-check-input pull-left" type="checkbox" id="extended_check_rot" v-model="ui.rotate_extended" @change="rot_extended_changed">
                                 </div>
                             </div>
                         </div>
                         <div class="row">
                             <div class='col'>
-                                <CCDropDown v-model="ui.rot_control_msb" v-on:update:modelValue="cc_rot_msb_changed">
+                                <CCDropDown v-model="ui.rot_control_msb">
                                     {{ ui.rotate_extended ? 'MSB' : 'CC' }}
                                 </CCDropDown>
                             </div>
@@ -733,13 +744,13 @@ function reset_to_defaults() {
                                 <div class="form-check">
                                     <label class="form-check-label user-select-none" for="extended_check_btn">Extended
                                         CC</label>
-                                    <input class="form-check-input pull-left" type="checkbox" id="extended_check_btn" v-model="ui.btn_extended">
+                                    <input class="form-check-input pull-left" type="checkbox" id="extended_check_btn" v-model="ui.btn_extended" @change="btn_extended_changed">
                                 </div>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col">
-                                <CCDropDown v-model="ui.btn_control_msb" v-on:update:modelValue="cc_btn_msb_changed">
+                                <CCDropDown v-model="ui.btn_control_msb">
                                     {{ ui.btn_extended ? 'MSB' : 'CC' }}
                                 </CCDropDown>
                             </div>

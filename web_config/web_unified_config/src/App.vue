@@ -66,6 +66,11 @@ function toggle_midi_demo() {
   else midi.add_dummy_device();
 }
 
+function toggle_adapter_demo() {
+  if (midi.has_dummy_adapter.value) midi.remove_dummy_adapter();
+  else midi.add_dummy_adapter();
+}
+
 const device_count = computed(() =>
   Object.keys(hid.hid_devices.value).length + midi.midi_devices.value.length
 );
@@ -84,22 +89,28 @@ const scan_disabled = computed(() =>
   <main>
 
     <div class="container container-wide">
-      <div class="row">
-        <div class="col-4 pt-4">
+      <!-- Flex rather than three fixed col-4s: the toolbar sizes to its
+           content, so adding a button pushes the title along instead of
+           wrapping the row. -->
+      <div class="d-flex align-items-center pt-3 pb-2 gap-3">
+        <div class="flex-shrink-0 text-nowrap">
           <span v-show='any_scanned'>
             Found {{ device_count }}
             device{{ device_count != 1 ? "s" : "" }}
           </span>
         </div>
-        <div class="col-4">
-          <h5 class="text-center pt-4 pb-3">Tiny USB Knob Configurator</h5>
+        <div class="flex-grow-1">
+          <h5 class="text-center mb-0">Tiny USB Things Configurator</h5>
         </div>
-        <div class="col-4 pt-3 text-end">
+        <div class="flex-shrink-0 text-end text-nowrap">
           <button class="btn border border-secondary tertiary-bg btn-sm mx-1 rounded-0" @click="toggle_hid_demo()">
             {{ hid.has_dummy.value ? '− Demo HID' : '+ Demo HID' }}
           </button>
           <button class="btn border border-secondary tertiary-bg btn-sm mx-1 rounded-0" @click="toggle_midi_demo()">
             {{ midi.has_dummy.value ? '− Demo MIDI' : '+ Demo MIDI' }}
+          </button>
+          <button class="btn border border-secondary tertiary-bg btn-sm mx-1 rounded-0" @click="toggle_adapter_demo()">
+            {{ midi.has_dummy_adapter.value ? '− Demo Adapter' : '+ Demo Adapter' }}
           </button>
           <button :disabled="scan_disabled" class="btn border border-secondary tertiary-bg btn-sm mx-2 rounded-0" @click="scan()">
             Scan

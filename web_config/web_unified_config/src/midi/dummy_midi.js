@@ -4,6 +4,7 @@
 // without USB hardware.
 
 export function make_dummy_midi_ports({
+    name = "Demo Tiny MIDI Knob",
     default_config,
     bytes_from_config,
     bytes_to_bits7,
@@ -23,8 +24,6 @@ export function make_dummy_midi_ports({
     sysex_response_get_flash,
     sysex_response_set_flash_ack,
 }) {
-    const name = "Demo Tiny MIDI Knob";
-
     let stored_bytes = bytes_from_config(default_config);
     let dev_idx = 0;
 
@@ -42,8 +41,11 @@ export function make_dummy_midi_ports({
         open() { return Promise.resolve(this); }
     }
 
-    const input = new DummyMIDIPort("input", "demo-midi-in");
-    const output = new DummyMIDIPort("output", "demo-midi-out");
+    // Qualified by name because devices are keyed on their output port's id.
+    // Both demos sharing one id would collide in exactly the way two real
+    // adapters used to — the knob demo and the adapter demo are two devices.
+    const input = new DummyMIDIPort("input", `demo-midi-in:${name}`);
+    const output = new DummyMIDIPort("output", `demo-midi-out:${name}`);
 
     function dispatch_midi(reply_bytes) {
         setTimeout(() => {
@@ -123,5 +125,20 @@ export function make_dummy_midi_ports({
         input.dispatchEvent(ev);
     }
 
-    return { input, output, set_device_index, emit_cc };
+    // Emit an arbitrary MIDI message, so a demo device can produce traffic for
+    // a monitor to display. emit_cc above is the knob's rotation; this is for
+    // devices whose whole job is passing MIDI through.
+    function emit_raw(bytes) {
+        const data = new Uint8Array(bytes);
+        let ev;
+        try {
+            ev = new MIDIMessageEvent("midimessage", { data });
+        } catch (_) {
+            ev = new Event("midimessage");
+            ev.data = data;
+        }
+        input.dispatchEvent(ev);
+    }
+
+    return { input, output, set_device_index, emit_cc, emit_raw };
 }
