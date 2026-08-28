@@ -208,12 +208,33 @@ const ADAPTER_MODEL_NUMBER_LOW = 0x23;   // 0x3323
 const ADAPTER_MODEL_NUMBER_HIGH = 0x33;
 
 const ADAPTER_CONFIG_LEN = 32;
-const ADAPTER_CONFIG_VERSION = (DEVTYPE_ADAPTER << 4) | 0x0;
+// Format 0x1 added dz_heel/dz_toe; 0x2 re-purposed sw_threshold/sw_hysteresis
+// as the independent sw_low/sw_high edges. This constant is the NEWEST format
+// this app understands; it is deliberately not what gets written back to a
+// device. See the note on `version` in adapter_config_map.
+const ADAPTER_CONFIG_VERSION = (DEVTYPE_ADAPTER << 4) | 0x3;
+export const ADAPTER_FORMAT_DEADZONE = 0x1;
+export const ADAPTER_FORMAT_SCHMITT = 0x2;
+// 0x3 added the AF_LOG_CURVE flag. No struct change — flags had spare bits —
+// but the format is bumped anyway so the UI can hide a control that older
+// firmware would accept and then ignore.
+export const ADAPTER_FORMAT_CURVE = 0x3;
 
 // Mirrors adapter_config_t in midi_adapter/firmware/src/config.h, which is
 // __attribute__((packed)) precisely so this flat map is valid. config.h carries
 // a _Static_assert on the struct size — but that cannot catch a REORDERING, so
 // if the struct changes, change this with it.
+// Positional: this array IS the wire format, and it must stay in step with
+// adapter_config_t in the firmware's config.h.
+//
+// *** `version` round-trips from the device and must keep doing so. ***
+//
+// The firmware rejects any stored config whose format is NEWER than the build
+// running (config.c, version_acceptable) and falls back to defaults when it
+// does. So writing this app's newest version byte to a device on older firmware
+// would not fail loudly — it would wipe that user's settings. The byte read
+// from the device is therefore the byte written back, and nothing in the store
+// path may "tidy" that by assigning ADAPTER_CONFIG_VERSION.
 const adapter_config_map = [
     ["uint8", "version"],
     ["uint8", "mode"],
@@ -225,15 +246,22 @@ const adapter_config_map = [
     ["uint16", "in_max"],
     ["uint16", "out_min"],
     ["uint16", "out_max"],
-    ["uint8", "deadband"],
+    ["uint8", "jitter_filter"],
     ["uint8", "smoothing"],
-    ["uint16", "sw_threshold"],
-    ["uint16", "sw_hysteresis"],
+    // Format 0x2 renamed these from sw_threshold/sw_hysteresis (a centre and a
+    // half-width) to two independent Schmitt edges. Same offsets and widths, so
+    // an older device still PARSES — its two values simply mean the older
+    // thing. The panel hides the controls below format 0x2 for that reason, and
+    // because they are hidden the values read from such a device are written
+    // back untouched rather than reinterpreted.
+    ["uint16", "sw_low"],
+    ["uint16", "sw_high"],
     ["uint16", "sw_value_on"],
     ["uint16", "sw_value_off"],
     ["uint8", "led_brightness"],
-    ["uint8", "pad0"], ["uint8", "pad1"], ["uint8", "pad2"],
-    ["uint8", "pad3"], ["uint8", "pad4"], ["uint8", "pad5"],
+    // Format 0x1, appended into what used to be pad0/pad1.
+    ["uint8", "dz_heel"], ["uint8", "dz_toe"],
+    ["uint8", "pad2"], ["uint8", "pad3"], ["uint8", "pad4"], ["uint8", "pad5"],
 ];
 
 const adapter_flags = {
@@ -244,6 +272,7 @@ const adapter_flags = {
     af_sw_norm_closed: 0x0010,
     af_sw_toggle: 0x0020,
     af_led_activity: 0x0040,
+    af_log_curve: 0x0080,
 };
 
 export const ADAPTER_MODE = { midi: 0, expression: 1, switch: 2 };
@@ -257,11 +286,12 @@ const adapter_default_config = {
     flags: adapter_flags.af_led_activity,
     in_min: 0, in_max: 4095,
     out_min: 0, out_max: 16383,
-    deadband: 8, smoothing: 2,
-    sw_threshold: 2048, sw_hysteresis: 256,
+    jitter_filter: 8, smoothing: 2,
+    sw_low: 1792, sw_high: 2304,
     sw_value_on: 16383, sw_value_off: 0,
     led_brightness: 100,
-    pad0: 0, pad1: 0, pad2: 0, pad3: 0, pad4: 0, pad5: 0,
+    dz_heel: 0, dz_toe: 0,
+    pad2: 0, pad3: 0, pad4: 0, pad5: 0,
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -296,8 +326,10 @@ const DEVICE_TYPES = [
         config_map: adapter_config_map,
         default_config: adapter_default_config,
         flags: adapter_flags,
+        // 0x0 is still readable: its trailing bytes are padding, so it parses
+        // cleanly and the panel hides the controls format 0x1 added.
         min_format: 0x0,
-        max_format: 0x0,
+        max_format: config_format_version(ADAPTER_CONFIG_VERSION),
         can_flash: false,
     },
 ];
@@ -889,8 +921,20 @@ function on_midi_message(event) {
                     case sysex_response_probe: {
                         let d = midi_devices.value[device_index];
                         if (d !== undefined && d.on_probe != null) {
-                            // 8 bytes = four uint16, little endian
-                            d.on_probe(bits7_to_bytes(data, 5, 8));
+                            // uint16 little endian: TIP with RING high, TIP with
+                            // RING low, RING with TIP high, RING with TIP low,
+                            // and — firmware new enough — TIP against its own
+                            // pull-up, which is the only reading that sees a
+                            // tip-sleeve footswitch.
+                            //
+                            // The count is derived from the message rather than
+                            // fixed, because the fifth value was APPENDED: an
+                            // older device sends four, and asking bits7_to_bytes
+                            // for ten bytes it does not have yields NaN in the
+                            // tail rather than an error. 7 bits in, 8 bits out.
+                            const packed_len = data.length - 6;
+                            const raw_len = Math.min(10, Math.floor(packed_len * 7 / 8));
+                            d.on_probe(bits7_to_bytes(data, 5, raw_len));
                         }
                     } break;
 

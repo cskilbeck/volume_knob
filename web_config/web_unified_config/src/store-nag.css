@@ -1,0 +1,70 @@
+/*
+ * "Store to device", when the panel has drifted from what the device is running.
+ *
+ * Shared by all three device types (HID keyboards, the MIDI knob, the TRS
+ * adapter) so that "you have unsaved changes" looks the same everywhere. It
+ * lives in its own file, imported once from main.js, rather than being pasted
+ * into each component's <style> block — which is what happened to .red-text,
+ * now defined identically in two places.
+ *
+ * This replaces .red-text on those buttons, which was a colour change and
+ * nothing else. Users were walking away without storing and losing their work
+ * silently, so it is loud on purpose: a static colour shift on one of three
+ * identical-looking buttons is easy to miss entirely.
+ *
+ * .red-text itself is still used for the firmware-update warning text, and is
+ * deliberately left alone.
+ *
+ * !important throughout because Bootstrap's .btn sets these directly and would
+ * otherwise win on specificity.
+ */
+.store-nag {
+    /*
+     * Lifted out of the normal flow so the glow is not clipped.
+     *
+     * These buttons sit in a Bootstrap .btn-group, where the siblings are
+     * adjacent with no gap. A box-shadow paints outside the border box but
+     * still in DOM order, so the NEXT button in the group painted straight over
+     * the right-hand half of the glow. z-index only applies to positioned
+     * elements, hence position: relative.
+     */
+    position: relative;
+    z-index: 2;
+
+    background-color: #ff1a1a !important;
+    color: #ffff00 !important;
+    font-weight: 700;
+    border-color: #00ffff !important;
+    box-shadow: 0 0 6px 2px rgba(0, 255, 255, 0.9),
+                inset 0 0 4px rgba(0, 255, 255, 0.5) !important;
+    animation: store-nag-wobble 2.4s ease-in-out infinite;
+}
+
+.store-nag:hover {
+    background-color: #ff4d4d !important;
+    color: #ffff00 !important;
+}
+
+/*
+ * Intermittent rather than continuous: the whole wobble happens in the first
+ * ~15% of the cycle and the button sits still for the rest. Something that
+ * never stops moving becomes wallpaper within seconds, and is far more
+ * unpleasant to work next to.
+ */
+@keyframes store-nag-wobble {
+    0%   { transform: rotate(0deg)    scale(1); }
+    3%   { transform: rotate(-3deg)   scale(1.06); }
+    6%   { transform: rotate(3deg)    scale(1.06); }
+    9%   { transform: rotate(-2deg)   scale(1.04); }
+    12%  { transform: rotate(2deg)    scale(1.02); }
+    15%  { transform: rotate(0deg)    scale(1); }
+    100% { transform: rotate(0deg)    scale(1); }
+}
+
+/* Motion is the part that causes trouble for people with vestibular disorders.
+ * They still get the colour and the glow, which carry the message on their own. */
+@media (prefers-reduced-motion: reduce) {
+    .store-nag {
+        animation: none;
+    }
+}

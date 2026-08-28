@@ -527,7 +527,7 @@ function reset_to_defaults() {
                                 Read from device
                             </button>
 
-                            <button class='btn btn-sm rounded-0 tertiary-bg border border-secondary-subtle' :class="{ 'red-text': config_changed }" @click='store_config()'>
+                            <button class='btn btn-sm rounded-0 tertiary-bg border border-secondary-subtle' :class="{ 'store-nag': config_changed }" @click='store_config()'>
                                 Store to device
                             </button>
 
