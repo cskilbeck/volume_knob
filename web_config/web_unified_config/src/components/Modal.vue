@@ -63,8 +63,16 @@ const backdropClick = (event) => {
     <teleport to="body">
         <transition name="fade">
             <div v-if="modelValue" class="pt-4 position-fixed top-0 start-0 h-100 w-100 z-2" style="background-color: rgba(0, 0, 0, 0.8)">
-                <div id="backdrop" @click="backdropClick" class="modal1-dialog h-75 overflow-auto align-items-center d-flex z3">
-                    <div class="card px-0" :class="(container == null) ? 'container' : `container-${container}`" :style="width_style()">
+                <!-- Centred with `m-auto` on the card rather than
+                     `align-items-center` here. They look identical while the
+                     card fits, but a card TALLER than this box overflows a
+                     centred flex item at both ends, and since scrolling starts
+                     at the top edge the overflowing top is then unreachable —
+                     which clipped the header off the firmware instructions.
+                     Auto margins collapse to zero when there is no spare room,
+                     so tall content starts at the top and scrolls properly. -->
+                <div id="backdrop" @click="backdropClick" class="modal1-dialog h-75 overflow-auto d-flex z3">
+                    <div class="card px-0 m-auto" :class="(container == null) ? 'container' : `container-${container}`" :style="width_style()">
                         <div class="card-header h5 text-center py-2 px-5">
                             <span>
                                 {{ header }}

@@ -18,9 +18,24 @@ let got_midi_api = ref(!!navigator.requestMIDIAccess);
 let midi_started = false;
 const scanning = ref(false);
 
+// Set when requestMIDIAccess REJECTS — which is a different failure from the API
+// being absent, and the one that used to be invisible. A browser that has Web
+// MIDI can still refuse: the user (or a policy) can deny the permission, and it
+// is remembered, so every later visit fails silently with an empty page and no
+// explanation. It was only ever written to the console.
+const midi_denied = ref(false);
+
+// Nothing works at all, so a modal is proportionate.
 if (!got_hid_api.value && !got_midi_api.value) {
   notSupportedModel.value = true;
 }
+
+// One API missing is NOT the same as none: the app still does its job for the
+// other kind of device, so this is an inline notice rather than a modal that
+// has to be dismissed on every visit. Chrome on Android is the real case —
+// Web MIDI yes, Web HID no.
+const partial_support = computed(() =>
+  got_hid_api.value !== got_midi_api.value);
 
 //////////////////////////////////////////////////////////////////////
 
@@ -43,6 +58,7 @@ async function scan() {
           midi_started = true;
         } catch (err) {
           console.log(`requestMIDIAccess failed: ${err}`);
+          midi_denied.value = true;
         }
       }
       if (midi_started) {
@@ -125,6 +141,33 @@ const scan_disabled = computed(() =>
           </button>
         </div>
       </div>
+    </div>
+
+    <div class="container container-wide" v-if="partial_support || midi_denied">
+
+      <div class="alert alert-warning rounded-0 py-2 px-3 small" v-if="midi_denied">
+        <strong>This browser blocked access to MIDI devices.</strong>
+        Web MIDI needs permission, and a refusal is remembered &mdash; so nothing will
+        appear until it is allowed. Click the icon at the left of the address bar, set
+        MIDI device control to <em>Allow</em>, then reload and scan again.
+      </div>
+
+      <div class="alert alert-warning rounded-0 py-2 px-3 small" v-if="partial_support && !got_midi_api">
+        <strong>This browser does not support Web MIDI.</strong>
+        The TRS MIDI Adapter and the MIDI version of the Tiny USB Knob cannot be
+        configured here. HID keyboards still work.
+        <a href="https://caniuse.com/midi" target="_blank" rel="noreferrer noopener">Which
+          browsers support Web MIDI</a>.
+      </div>
+
+      <div class="alert alert-warning rounded-0 py-2 px-3 small" v-if="partial_support && !got_hid_api">
+        <strong>This browser does not support Web HID.</strong>
+        HID keyboards and the HID version of the Tiny USB Knob cannot be configured here.
+        MIDI devices still work.
+        <a href="https://caniuse.com/webhid" target="_blank" rel="noreferrer noopener">Which
+          browsers support Web HID</a>.
+      </div>
+
     </div>
 
     <div class="container container-wide">
