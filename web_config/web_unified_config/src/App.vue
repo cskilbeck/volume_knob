@@ -5,18 +5,25 @@
 import DeviceList from './components/DeviceList.vue'
 import DarkMode from './components/DarkMode.vue'
 import Modal from './components/Modal.vue'
+import UnsupportedNotice from './components/UnsupportedNotice.vue'
 import hid from './hid/hid.js'
 import midi from './midi/Midi.js'
-import { computed, ref } from 'vue'
+import { site, wants_hid, wants_midi, OTHER_SITES, COMPONENT_HOME } from './site.js'
+import { is_firefox, is_touch_device } from './platform.js'
+import { computed, onMounted, ref } from 'vue'
 
 const closeableModal = ref(false);
-const notSupportedModel = ref(false);
 
 let got_hid_api = ref(!!navigator.hid);
 let got_midi_api = ref(!!navigator.requestMIDIAccess);
 
 let midi_started = false;
 const scanning = ref(false);
+
+// The static index.html carries the right title per domain (see
+// scripts/build-sites.mjs), but `npm run dev` and ?site= don't, so keep them
+// in step.
+document.title = site.title;
 
 // Set when requestMIDIAccess REJECTS — which is a different failure from the API
 // being absent, and the one that used to be invisible. A browser that has Web
@@ -25,17 +32,33 @@ const scanning = ref(false);
 // explanation. It was only ever written to the console.
 const midi_denied = ref(false);
 
-// Nothing works at all, so a modal is proportionate.
-if (!got_hid_api.value && !got_midi_api.value) {
-  notSupportedModel.value = true;
-}
+// Does THIS SITE's transport exist here? A MIDI-only site does not care that
+// Web HID is missing, which is exactly the noise Firefox users used to get.
+const needed_api_present = computed(() =>
+  (wants_hid && got_hid_api.value) || (wants_midi && got_midi_api.value));
+
+// Capability decides, platform only picks the wording (see platform.js).
+const support_state = computed(() =>
+  needed_api_present.value ? 'ready' : (is_touch_device ? 'no-platform' : 'no-api'));
+
+// Firefox has Web MIDI but hides SysEx behind an add-on install, with a dialog
+// that reads like a malware warning. Say so first, in our own words, so it
+// arrives expected rather than out of nowhere. Only on sites that need MIDI,
+// and only while it hasn't already been granted.
+// Off on usbknob.com, whose behaviour is frozen — flip firefox_notice there if
+// you decide the explanation is worth having on the everything-view too.
+const firefox_midi_warning = computed(() =>
+  site.firefox_notice && is_firefox && wants_midi &&
+  support_state.value === 'ready' && !midi_started);
 
 // One API missing is NOT the same as none: the app still does its job for the
 // other kind of device, so this is an inline notice rather than a modal that
 // has to be dismissed on every visit. Chrome on Android is the real case —
-// Web MIDI yes, Web HID no.
+// Web MIDI yes, Web HID no. Kept only on usbknob.com (the everything-view);
+// on a single-device site the missing API is either fatal (handled by
+// support_state) or irrelevant.
 const partial_support = computed(() =>
-  got_hid_api.value !== got_midi_api.value);
+  site.partial_banners && got_hid_api.value !== got_midi_api.value);
 
 //////////////////////////////////////////////////////////////////////
 
@@ -48,9 +71,14 @@ async function scan() {
     // Fire HID picker concurrently with MIDI access. We re-enable the Scan
     // button when the HID picker is dismissed (so a second click doesn't
     // stack a duplicate init_device on the same device).
-    const hid_promise = got_hid_api.value ? hid.init_devices() : Promise.resolve();
+    //
+    // wants_hid is what keeps navigator.hid.requestDevice() — and its
+    // unavoidable device picker — away from people who only own a MIDI
+    // device. It is the whole point of the per-domain split.
+    const hid_promise = (wants_hid && got_hid_api.value)
+      ? hid.init_devices() : Promise.resolve();
 
-    if (got_midi_api.value) {
+    if (wants_midi && got_midi_api.value) {
       if (!midi_started) {
         try {
           const main_midi_object = await navigator.requestMIDIAccess({ "sysex": true });
@@ -71,6 +99,47 @@ async function scan() {
     scanning.value = false;
   }
 }
+
+//////////////////////////////////////////////////////////////////////
+// Re-attach devices the user has ALREADY granted, on load, with no click and
+// no prompt of any kind. Off for usbknob.com, whose behaviour is frozen.
+
+async function midi_already_granted() {
+  try {
+    if (!navigator.permissions?.query) return false;
+    const status = await navigator.permissions.query({ name: 'midi', sysex: true });
+    return status.state === 'granted';
+  } catch (err) {
+    // Firefox throws on the unknown permission name. Returning false here is
+    // load-bearing: falling through to requestMIDIAccess would pop the
+    // add-on install dialog with no user gesture behind it, which is strictly
+    // worse than the behaviour we are trying to improve.
+    return false;
+  }
+}
+
+onMounted(async () => {
+
+  if (!site.silent_reconnect || support_state.value !== 'ready') return;
+
+  if (wants_hid && got_hid_api.value) {
+    // getDevices() returns only devices already granted, so a first-time
+    // visitor sees nothing and nothing is shown to them.
+    hid.init_known_devices().catch(err => console.log(`init_known_devices: ${err}`));
+  }
+
+  if (wants_midi && got_midi_api.value && !midi_started) {
+    if (await midi_already_granted()) {
+      try {
+        midi.on_midi_startup(await navigator.requestMIDIAccess({ "sysex": true }));
+        midi_started = true;
+        midi.init_devices();
+      } catch (err) {
+        console.log(`silent requestMIDIAccess failed: ${err}`);
+      }
+    }
+  }
+});
 
 function toggle_hid_demo() {
   if (hid.has_dummy.value) hid.remove_dummy_device();
@@ -94,8 +163,21 @@ const device_count = computed(() =>
 const any_scanned = computed(() => hid.scanned.done || midi.scanned.done);
 
 const scan_disabled = computed(() =>
-  (!got_hid_api.value && !got_midi_api.value) || scanning.value
+  !needed_api_present.value || scanning.value
 );
+
+// A device this site does not render, but which answered an Identity Request
+// anyway — so we know exactly what it is and where it belongs. Costs nothing:
+// a MIDI site probes every port regardless. Never shown on usbknob.com, which
+// renders these devices itself.
+const wrong_door = computed(() => {
+  if (!site.wrong_door) return [];
+  const homes = midi.midi_devices.value
+    .filter(d => d.type && !site.midi_components.includes(d.type.component))
+    .map(d => COMPONENT_HOME[d.type.component])
+    .filter(Boolean);
+  return [...new Map(homes.map(h => [h.url, h])).values()];
+});
 
 //////////////////////////////////////////////////////////////////////
 
@@ -116,19 +198,19 @@ const scan_disabled = computed(() =>
           </span>
         </div>
         <div class="flex-grow-1">
-          <h5 class="text-center mb-0">Tiny USB Things Configurator</h5>
+          <h5 class="text-center mb-0">{{ site.title }}</h5>
         </div>
         <div class="flex-shrink-0 text-end text-nowrap">
-          <button class="btn border border-secondary tertiary-bg btn-sm mx-1 rounded-0" @click="toggle_hid_demo()">
+          <button v-if="site.demos.includes('hid')" class="btn border border-secondary tertiary-bg btn-sm mx-1 rounded-0" @click="toggle_hid_demo()">
             {{ hid.has_dummy.value ? '− Demo HID' : '+ Demo HID' }}
           </button>
-          <button class="btn border border-secondary tertiary-bg btn-sm mx-1 rounded-0" @click="toggle_midi_demo()">
+          <button v-if="site.demos.includes('midi')" class="btn border border-secondary tertiary-bg btn-sm mx-1 rounded-0" @click="toggle_midi_demo()">
             {{ midi.has_dummy.value ? '− Demo MIDI' : '+ Demo MIDI' }}
           </button>
-          <button class="btn border border-secondary tertiary-bg btn-sm mx-1 rounded-0" @click="toggle_adapter_demo()">
+          <button v-if="site.demos.includes('adapter')" class="btn border border-secondary tertiary-bg btn-sm mx-1 rounded-0" @click="toggle_adapter_demo()">
             {{ midi.has_dummy_adapter.value ? '− Demo Adapter' : '+ Demo Adapter' }}
           </button>
-          <button :disabled="scan_disabled" class="btn border border-secondary tertiary-bg btn-sm mx-2 rounded-0" @click="scan()">
+          <button v-if="support_state === 'ready'" :disabled="scan_disabled" class="btn border border-secondary tertiary-bg btn-sm mx-2 rounded-0" @click="scan()">
             Scan
           </button>
           <DarkMode />
@@ -140,6 +222,25 @@ const scan_disabled = computed(() =>
             </svg>
           </button>
         </div>
+      </div>
+    </div>
+
+    <div class="container container-wide" v-if="firefox_midi_warning">
+      <!-- Said BEFORE the click, because Firefox's own dialog says "This access
+           is not guaranteed to be safe" and arrives with no context. -->
+      <div class="alert alert-secondary rounded-0 py-2 px-3 small">
+        <strong>Firefox needs a small add-on to reach MIDI devices.</strong>
+        When you click Scan, Firefox will offer to install it and will warn you
+        about trusting this site &mdash; that is its standard wording for any site
+        using MIDI, and the add-on only grants access to MIDI devices. Chrome, Edge
+        and Opera work without it.
+      </div>
+    </div>
+
+    <div class="container container-wide" v-if="wrong_door.length">
+      <div class="alert alert-info rounded-0 py-2 px-3 small" v-for="home in wrong_door" :key="home.url">
+        Found a <strong>{{ home.name }}</strong> &mdash; that one is configured at
+        <a :href="home.url">{{ home.url.replace('https://', '') }}</a>.
       </div>
     </div>
 
@@ -171,18 +272,34 @@ const scan_disabled = computed(() =>
     </div>
 
     <div class="container container-wide">
-      <DeviceList :hid_devices="hid.hid_devices" :midi_devices="midi.midi_devices" />
+      <DeviceList v-if="support_state === 'ready'" :hid_devices="hid.hid_devices" :midi_devices="midi.midi_devices" />
+      <UnsupportedNotice v-else :state="support_state" />
     </div>
 
-    <Modal v-model="closeableModal" maxwidth="40%" closeable header="It's a Configurator for the Tiny USB Knob">
+    <!-- The HID site cannot detect a MIDI device without asking for the MIDI
+         permission we are avoiding, so it gets a standing link rather than the
+         wrong_door notice above. -->
+    <div class="container container-wide" v-if="OTHER_SITES.length">
+      <div class="row">
+        <div class="col text-center small text-body-secondary my-4">
+          Got a different one?
+          <span v-for="(other, i) in OTHER_SITES" :key="other.url">
+            <span v-if="i > 0"> &middot; </span>
+            <a :href="other.url" class="text-body-secondary">{{ other.name }}</a>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <Modal v-model="closeableModal" maxwidth="40%" closeable :header="`It's a Configurator for the ${site.product}`">
       <div class="row">
         <div class="col my-3 text-center">
-          Configures both the HID (volume/keyboard) and MIDI variants of the Tiny USB Knob.
+          {{ site.blurb }}
         </div>
       </div>
       <div class="row">
         <div class="col my-2 text-center">
-          Get your own Tiny USB Knob <a href="https://www.etsy.com/uk/shop/TinyLittleGadgets" target="_blank" rel="noreferrer noopener">here</a>
+          Get your own {{ site.product }} <a :href="site.store_url" target="_blank" rel="noreferrer noopener">here</a>
         </div>
       </div>
       <div class="row mt-3">
@@ -215,21 +332,10 @@ const scan_disabled = computed(() =>
       </div>
     </Modal>
 
-    <Modal v-model="notSupportedModel" maxwidth="80%" closeable header="WebHID and WebMIDI not supported">
-      <div class="row">
-        <div class="col text-center">
-          I'm afraid your browser doesn't support the Web HID or Web MIDI APIs, so the Tiny USB Knob can't be configured here.
-        </div>
-      </div>
-      <div class="row mt-3">
-        <div class="col text-center">
-          Find out which browsers will work
-          <a href="https://caniuse.com/webhid" target="_blank" rel="noreferrer noopener">here (HID)</a>
-          and
-          <a href="https://caniuse.com/midi" target="_blank" rel="noreferrer noopener">here (MIDI)</a>.
-        </div>
-      </div>
-    </Modal>
+    <!-- The old "not supported" modal lived here. It has been replaced by
+         UnsupportedNotice above: a modal had to be dismissed on every visit and
+         then left the reader looking at a page that could never work, and it
+         could not tell "wrong browser" from "wrong kind of device". -->
   </main>
 </template>
 

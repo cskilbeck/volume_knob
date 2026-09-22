@@ -348,21 +348,73 @@ function on_connection_event(event) {
 
 //////////////////////////////////////////////////////////////////////
 
-function init_devices() {
+const HID_FILTER = {
+    vendorId: 0x16D0,
+    productId: 0x114B,
+    usage: 1,
+    usagePage: 0xFF00
+};
+
+function attach_listeners() {
 
     navigator.hid.removeEventListener("connect", on_connection_event);
     navigator.hid.removeEventListener("disconnect", on_connection_event);
 
     navigator.hid.addEventListener("connect", on_connection_event);
     navigator.hid.addEventListener("disconnect", on_connection_event);
+}
+
+//////////////////////////////////////////////////////////////////////
+// Devices the user has ALREADY granted us, on a previous visit.
+//
+// getDevices() never shows the picker and needs no user gesture — permission
+// is remembered per origin — so this can run on load. A first-time visitor
+// gets an empty list and sees nothing; a returning one gets their knob back
+// without the device dialog that used to greet them on every single visit.
+//
+// requestDevice() applies its filter itself; getDevices() does not, so the
+// same filter has to be applied by hand here.
+
+async function init_known_devices() {
+
+    attach_listeners();
+
+    const devices = await navigator.hid.getDevices();
+
+    for (const d of devices) {
+
+        if (d.vendorId !== HID_FILTER.vendorId || d.productId !== HID_FILTER.productId) {
+            continue;
+        }
+
+        const existing = hid_devices.value[d.productName];
+        if (existing && existing.firmware_major !== null) {
+            continue;
+        }
+
+        try {
+            if (!d.opened) {
+                await d.open();
+            }
+            await init_device(d);
+            scanned.value.done = true;
+        } catch (err) {
+            // A device that is present but won't open (claimed elsewhere, or
+            // unplugged mid-flight) is not an error worth showing: Scan is
+            // still there and does the full dance.
+            console.log(`${d.productName} could not be reopened: ${err}`);
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////////////////
+
+function init_devices() {
+
+    attach_listeners();
 
     return navigator.hid.requestDevice({
-        filters: [{
-            vendorId: 0x16D0,
-            productId: 0x114B,
-            usage: 1,
-            usagePage: 0xFF00
-        }]
+        filters: [HID_FILTER]
     }).then(
 
         (devices) => {
@@ -426,6 +478,7 @@ export default {
     flags,
     flash_device_led,
     goto_firmware_update_mode,
+    init_known_devices,
     get_config,
     set_config,
     init_devices,

@@ -4,6 +4,7 @@ import HIDDevice_1 from './HIDDevice_1.vue'
 import HIDDevice_2 from './HIDDevice_2.vue'
 import MidiDevice from './MidiDevice.vue'
 import MidiAdapterDevice from './MidiAdapterDevice.vue'
+import { site } from '../site.js'
 
 const props = defineProps({
     hid_devices: {
@@ -30,8 +31,14 @@ const MIDI_COMPONENTS = {
     MidiAdapterDevice,
 };
 
+// ...and then narrowed to the devices THIS SITE is for. A single-device site
+// still enumerates every MIDI port — Web MIDI has no per-device permission, so
+// it cannot do otherwise — but it renders only its own gadget. App.vue turns
+// the ones we skip here into a link to the right domain.
 function midi_component(device) {
-    return MIDI_COMPONENTS[device.type?.component] ?? null;
+    const name = device.type?.component;
+    if (!name || !site.midi_components.includes(name)) return null;
+    return MIDI_COMPONENTS[name] ?? null;
 }
 
 </script>
