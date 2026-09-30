@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build && node scripts/build-sites.mjs",
     "build:bundle": "vite build",
+    "test:hid": "node --test \"test/*.test.mjs\"",
     "preview": "vite preview"
   },
   "dependencies": {

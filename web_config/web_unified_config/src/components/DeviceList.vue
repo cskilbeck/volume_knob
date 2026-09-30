@@ -2,6 +2,7 @@
 
 import HIDDevice_1 from './HIDDevice_1.vue'
 import HIDDevice_2 from './HIDDevice_2.vue'
+import HIDDevicePending from './HIDDevicePending.vue'
 import MidiDevice from './MidiDevice.vue'
 import MidiAdapterDevice from './MidiAdapterDevice.vue'
 import { site } from '../site.js'
@@ -17,8 +18,12 @@ const props = defineProps({
     }
 })
 
+// A device that has not said which firmware it runs gets the pending panel
+// rather than nothing: rendering nothing is what made a working knob look
+// like a broken product on 2026-09-30. The real panel needs firmware_major,
+// because it picks which controls exist.
 function hid_component(device) {
-    if (device.firmware_major === null) return null;
+    if (device.firmware_major === null) return HIDDevicePending;
     return device.firmware_major >= 2 ? HIDDevice_2 : HIDDevice_1;
 }
 

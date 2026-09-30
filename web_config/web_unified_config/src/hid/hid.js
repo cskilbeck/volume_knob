@@ -226,6 +226,102 @@ async function get_firmware_version(device) {
 }
 
 //////////////////////////////////////////////////////////////////////
+// Ask again if the device never answered.
+//
+// There is no request/response correlation in this protocol at all: replies
+// are matched only by their type byte, nothing carries a sequence number, and
+// a lost report is simply never noticed. get_config and get_firmware_version
+// go out back to back, and a device that is still servicing the first one can
+// drop the second - which is exactly what a user hit on 2026-09-30: config
+// came back, the firmware version never did, and because hid_component() in
+// DeviceList.vue renders nothing while firmware_major is null, a perfectly
+// healthy knob was invisible. One dropped report should not be permanent.
+//
+// Cheap and bounded: 4 tries over ~2s, only re-asking for what is actually
+// missing, and it stops the moment an answer lands.
+
+const IDENTIFY_RETRY_MS = 500;
+const IDENTIFY_RETRIES = 4;
+
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+async function ensure_identified(device) {
+
+    // A second caller (Scan arriving while the silent reconnect is still in
+    // flight) joins the retry loop already running instead of starting a
+    // rival one and doubling the traffic.
+    if (device.identifying) {
+        return;
+    }
+    device.identifying = true;
+    device.identify_failed = false;
+
+    try {
+        for (let attempt = 1; attempt <= IDENTIFY_RETRIES; ++attempt) {
+
+            await sleep(IDENTIFY_RETRY_MS);
+
+            if (device.firmware_major !== null && device.config_loaded) {
+                return;
+            }
+
+            if (!device.hid_device || !device.hid_device.opened) {
+                console.log(`${device.name} is no longer open, giving up`);
+                device.identify_failed = true;
+                return;
+            }
+
+            console.log(`${device.name}: no reply yet, retry ${attempt}/${IDENTIFY_RETRIES}` +
+                ` (version: ${device.firmware_major !== null}, config: ${device.config_loaded})`);
+
+            if (!device.config_loaded) {
+                await get_config(device);
+            }
+            if (device.firmware_major === null) {
+                await get_firmware_version(device);
+            }
+        }
+
+        if (device.firmware_major === null) {
+            console.log(`${device.name} never reported a firmware version - unplug and replug it`);
+            device.identify_failed = true;
+        }
+    } finally {
+        device.identifying = false;
+    }
+}
+
+//////////////////////////////////////////////////////////////////////
+// Ask again, from the UI. Same path as first contact, so a device that was
+// merely unlucky the first time round recovers without a page reload.
+
+async function retry_identify(device) {
+
+    if (device.identifying) {
+        return;
+    }
+    device.identify_failed = false;
+
+    if (device.hid_device && !device.hid_device.opened) {
+        try {
+            await device.hid_device.open();
+        } catch (err) {
+            console.log(`Could not reopen ${device.name}: ${err}`);
+            device.identify_failed = true;
+            return;
+        }
+    }
+
+    if (!device.config_loaded) {
+        await get_config(device);
+    }
+    if (device.firmware_major === null) {
+        await get_firmware_version(device);
+    }
+    await ensure_identified(device);
+}
+
+//////////////////////////////////////////////////////////////////////
 
 async function get_config(device) {
 
@@ -315,6 +411,12 @@ async function init_device(d) {
             name: d.productName,
             config: {},
             config_loaded: false,
+            // Identification state, so the UI can show a device that is still
+            // being talked to rather than rendering nothing at all. A device
+            // with firmware_major === null used to be invisible, which made a
+            // healthy knob look like a broken product.
+            identifying: false,      // a retry loop is running for this device
+            identify_failed: false,  // it ran out of retries
             on_config_loaded: null,
             on_config_saved: null
         };
@@ -334,6 +436,7 @@ async function init_device(d) {
 
     await get_config(device);
     await get_firmware_version(device);
+    await ensure_identified(device);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -373,7 +476,23 @@ function attach_listeners() {
 // without the device dialog that used to greet them on every single visit.
 //
 // requestDevice() applies its filter itself; getDevices() does not, so the
-// same filter has to be applied by hand here.
+// same filter has to be applied by hand here — ALL FOUR fields of it.
+//
+// Matching on vendor and product alone is not enough. On Windows, Chrome
+// enumerates a HID device once per TOP-LEVEL COLLECTION, so the knob comes
+// back twice: once for its keyboard/consumer collection and once for the
+// vendor collection we actually talk to. They share vendor and product ids.
+// Opening the keyboard one and writing to it fails with
+//   NotAllowedError: Failed to write the report
+// because Chrome blocks writes to protected collections, and it leaves a
+// device in hid_devices that can never answer — keyed by productName, so if
+// the two collections report the same name it swallows the real device's
+// replies as well. The picker never offered that collection; neither should we.
+
+function has_config_collection(d) {
+    return (d.collections || []).some(
+        c => c.usagePage === HID_FILTER.usagePage && c.usage === HID_FILTER.usage);
+}
 
 async function init_known_devices() {
 
@@ -384,6 +503,11 @@ async function init_known_devices() {
     for (const d of devices) {
 
         if (d.vendorId !== HID_FILTER.vendorId || d.productId !== HID_FILTER.productId) {
+            continue;
+        }
+
+        if (!has_config_collection(d)) {
+            console.log(`Skipping ${d.productName}: no ${HID_FILTER.usagePage.toString(16)}/${HID_FILTER.usage} collection`);
             continue;
         }
 
@@ -479,6 +603,7 @@ export default {
     flash_device_led,
     goto_firmware_update_mode,
     init_known_devices,
+    retry_identify,
     get_config,
     set_config,
     init_devices,
